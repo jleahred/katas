@@ -1,0 +1,315 @@
+= Elixir. Problema construcción torres
+
+
+Recientemente un compañero me planteó el siguiente problema.
+Un problema ideal para hacer una kata con Elixir...
+
+
+
+== Enunciado
+
+Hay que construir todas las torres posibles de altura n apilando piezas que son idénticas en todo menos en la altura.
+La altura de las piezas es 1, 2, 3, 4... y hay infinitas piezas.
+La torre se construye apilando una pieza encima de otra, no hay varias piezas en el mismo nivel.
+
+¿Para una altura n, cuantas torres diferentes se pueden construir?
+
+=== Ejemplos
+
+[horizontal]
+Torre altura 1::
++
+----------------- 
+1
+-----------------
+
+Torre altura 2::
++
+----------------- 
+ 1 1
+ 2 _
+-----------------
+
+Torre altura 3::
++
+----------------- 
+ 1 1 1
+ 2 _ 1
+ 1 2 _
+ 3 _ _
+-----------------
+
+Para construir todas las torres, tenemos que buscar un procedimiento ordenado.
+
+
+== Procedimiento ordenado contrucción torres
+
+[horizontal]
+Ejemplo construcción torre altura 3::
++
+----------------- 
+ 1 .... 1 .... 1    111
+        2           12_
+        
+ 2 .... 1           2_1
+ 
+ 3                  3__
+ 
+-----------------
+
+Ejemplo construcción torre altura 4::
++
+----------------- 
+ 1 .... 1 .... 1 .... 1    1111
+               2           112_
+        2 .... 1           12_1
+        3                  13__
+
+
+ 2 .... 1 .... 1           2_11
+        2                  2_2_
+
+ 3 .... 1                  3__1
+ 
+ 4                         4___
+-----------------
+
+== Algoritmo en elixir
+
+[source,ruby]
+--------------------
+defmodule  Tower do
+
+    def (comb_size  t_size),  do:   (comb_size  t_size, {0, 0, []})
+
+    
+    defp (comb_size   t_size, {nsol, sum, _list})  when t_size==sum, do:  nsol+1
+
+    defp (comb_size   t_size, {nsol, sum, list})  do
+        1..(t_size-sum) 
+            |>  Enum.reduce  nsol, &(&2 + comb_size t_size, {nsol, sum+&1, [&1|list]})
+    end
+
+end
+--------------------
+
+Este algoritmo es una translación muy directa del esquema anterior, excepto que los elementos los añadimos por la izquierda en vez de por la derecha (por razones de rendimento)
+
+
+
+== Otras alternativas
+
+Viendo los primeros casos...
+
+.t(1)
+----------------- 
+ 1    (1)
+-----------------
+.t(2)
+----------------- 
+ 1 .... 1    (11)
+        
+ 2           (2_)
+-----------------
+.t(3)
+----------------- 
+ 1 .... 1 .... 1    (111)
+        2           (12_)
+        
+ 2 .... 1           (2_1)
+ 
+ 3                  (3__)
+-----------------
+.t(4)
+----------------- 
+ 1 .... 1 .... 1 .... 1    (1111)
+               2           (112_)
+        2 .... 1           (12_1)
+        3                  (13__)
+
+
+ 2 .... 1 .... 1           (2_11)
+        2                  (2_2_)
+
+ 3 .... 1                  (3__1)
+ 
+ 4                         (4___)
+-----------------
+
+Es trivial reducirlo...
+
+.t(2)
+----------------- 
+ 1 .... t(1)
+        
+ 2
+-----------------
+
+.t(3)
+----------------- 
+ 1 .... 1 .... t(1)
+        2
+        
+ 2 .... t(1)
+ 
+ 3
+-----------------
+
+
+Otro pasito en +t(3)+
+
+.t(3)
+----------------- 
+ 1 .... t(2)
+        
+ 2 .... t(1)
+ 
+ 3
+-----------------
+
+En +t(4)+ reduciendo...
+
+.t(4)
+----------------- 
+ 1 .... t(3)
+        
+ 2 .... t(2)
+ 
+ 3 .... t(1)
+ 
+ 4
+-----------------
+
+
+-----------------
+t(4) =  t(3) + t(2) + t(1) + 1
+
+t(3) =  t(2) + t(1) + 1
+
+t(2) =  t(1) + 1
+
+t(1) =  1
+-----------------
+
++t(4)+ es por tanto... +8+ +(1+1+2+4)+
+
+De forma general...
+
+-----------------
+t(1) = 1
+t(n) = sum[m=n-1 -> m=1]( t(m) ) +1
+-----------------
+
+
+
+=== Implementción en elixir
+
+
+[source,ruby]
+--------------------
+defmodule  Tower do
+
+    def (comb_size 1),  do:    1
+
+    def (comb_size n)   do
+        Enum.sum(n-1 .. 1  |>  Stream.map(&(comb_size &1))) + 1
+    end
+
+end
+--------------------
+
+
+
+Es un algoritmo más corto pero terriblemente ineficiente. Pide +memoización+, de no ser porque...
+
+
+=== Se puede reducir más
+
+Partiendo de...
+
+-----------------
+t(1) = 1
+t(n) = sum[m=n-1 -> m=1]( t(m) ) +1
+
+
+t(4) =  t(3) + t(2) + t(1) + 1
+t(3) =         t(2) + t(1) + 1
+t(2) =                t(1) + 1
+t(1) =                       1
+-----------------
+
+Se ve fácilmente que...
+-----------------
+t(1) =  1
+t(n) =  t(n-1) + t(n-1)
+-----------------
+
+-----------------
+t(1) =  1
+t(n) =  2 * t(n-1)
+-----------------
+
+=== Alg elixir
+
+[source,ruby]
+--------------------
+defmodule  Tower do
+
+    #t(1) =  1
+    #t(n) =  2 * t(n-1)
+
+    def (comb_size 1),  do:    1
+
+    def (comb_size n),  do:    2 * comb_size n-1
+
+end
+--------------------
+
+Esto es por deporte, porque en realidad, la ecuación anterior es que es equivalente a +pow(2, n)+
+
+
+[source,ruby]
+--------------------
+defmodule  Tower do
+
+    def (comb_size n),  do:    (power 2, n)
+
+    
+    def (power  b, e),  do:   1..e |> Enum.reduce (fn(_n, acc) -> b*acc end)
+
+end
+--------------------
+
+
+== Variación enunciado
+
+Modificando el enunciado, ya no tendríamos una solución tan simple...
+
+Hay que construir todas las torres posibles de altura +n+ apilando piezas que son idénticas en todo menos en la altura.
+La altura de las piezas es 1, 2, 3, 4... hasta +m+ y hay infinitas piezas.
+La torre se construye apilando una pieza encima de otra, no hay varias piezas en el mismo nivel.
+
+¿Para una altura de la torre +n+, y una altura máxima de pieza +m+ cuantas torres diferentes se pueden construir?
+
+
+La modificación en el primer algoritmo es sencilla.
+
+
+[source,ruby]
+--------------------
+defmodule  Tower do
+
+    def (comb_size  t_size, max_ps),  do:   (comb_size  t_size, max_ps, {0, 0, []})
+
+    
+    defp (comb_size   t_size, _max_ps, {nsol, sum, _list})  when t_size==sum,   do:  nsol+1
+
+    defp (comb_size   t_size,  max_ps, {nsol, sum, list})  do
+        1..(min(t_size-sum, max_ps)) 
+            |>  Enum.reduce  nsol, &(&2 + comb_size t_size, 
+                                     max_ps, 
+                                     {nsol, sum+&1, [&1|list]})
+    end
+
+end
+--------------------

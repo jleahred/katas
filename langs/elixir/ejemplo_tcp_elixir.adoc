@@ -1,0 +1,272 @@
+= Elixir. TCP server sencillo
+ 
+
+Para ser _telnet friendly_ recibiremos y enviaremos texto separado por retornos de carro.
+El programa se limitará a responder lo mismo que reciba.
+
+Para trocear los mensajes en líneas separadas por retorno de carro, leeremos byte a byte y los meteremos en un buffer.
+
+[NOTE]
+Sí, hay otra forma de hacerlo más sencillo, pero hacerlo a mano es más didáctico.
+Al final también indicaremos la forma _erlangish_
+
+¿Es mejor que el buffer sea un +binary+ o una +lista+?
+
+---------------
+iex> {microsecs, :ok} = :timer.tc fn -> (1..1000 |> Enum.each fn _ -> (1..1000 |> (Enum.reduce [], &( [rem(&1, 10)+48|&2])) |> Enum.reverse |> to_string) end) end; IO.puts microsecs/1000000.0
+3.493395
+
+
+iex> {microsecs, :ok} = :timer.tc fn->(1..1000 |> Enum.each fn _ -> (1..1000 |> Enum.reduce "", &(&2 <> (<<rem(&1, 10)+48>>))) end) end; IO.puts microsecs/1000000.0                                                                  
+7.098454
+---------------
+
+La respuesta es una lista.
+
+Crearemos un +socket tcp+, que pondremos a la escucha.
+Luego le pondremos a esperar  conexiones.
+Para cada conexión nueva, lanzaremos el programa de eco y pondremos otro proceso esperando otra conexión.
+
+.Diagrama de procesos
+["graphviz", "tcp_echo.png"]
+---------------------------------------------------------------------
+digraph automata_0 {
+  size ="8.5, 11";
+  node [shape = circle, width=1];
+  
+  
+  listen  ->  w_connect  [label="spawn"]
+  
+  cli_connect1[shape = circle, width=0.1, label=""];
+  cli_connect2[shape = circle, width=0.1, label=""];
+  cli_connectn[shape = circle, width=0.1, label=""];
+  
+  w_connect [label="acccept\nconn n"]
+
+  w_connect -> cli_connect1   [label="cli_connect 1"]
+  cli_connect1 -> w_connect   [label=""]
+  run_server_1 [label="run\nserver 1"]
+  cli_connect1 -> run_server_1  [label="spawn"]
+  
+  w_connect -> cli_connect2   [label="cli_connect 2"]
+  cli_connect2 -> w_connect    [label=""]
+  run_server_2 [label="run\nserver 2"]
+  cli_connect2 -> run_server_2  [label="spawn"]
+
+  w_connect -> cli_connectn   [label="cli_connect n"]
+  cli_connectn -> w_connect    [label=""]
+  run_server_n [label="run\nserver n"]
+  cli_connectn -> run_server_n  [label="spawn"]
+
+  
+  "tcp server echo" [ shape = plaintext ];
+}
+---------------------------------------------------------------------
+
+Aunque por el momento no lo consideraremos, +accept connection+ debería rearrancarse en caso de caída.
+
+Los procesos +run server n+ no es necesario ni conveniente que se arranquen.
+También conviene mantenerlos aislados (no enlazados con el proceso padre).
+Si uno de estos procesos falla (y el fallo es parte de la implementación en este caso), afectará
+a dicha conexión y ninguna otra.
+
+
+
+== Socket escuchando
+[source, ruby]
+--------------------
+defmodule TcpExample do
+
+    def  new  port  do
+        {:ok, lsocket} = (:gen_tcp.listen  port, [  active:         false, 
+                                                    reuseaddr:      true])
+        spawn_link   fn ->  loop_accept_socket  lsocket   end
+    end
+    
+    
+    defp  loop_accept_socket   lsocket   do
+        {:ok, socket} = :gen_tcp.accept(lsocket)    <1>
+        spawn  fn ->  loop_server  socket   end     <2>
+        loop_accept_socket   lsocket                <3>
+    end
+
+end    
+--------------------
+
+<1> Ponemos el socket a la escucha y esperamos indefinidamente a que alguien se conecte.
+<2> Una vez se produce la conexión, lanzamos el proceso +server+ 
+<3> esperamos otra conexión.
+
+
+== Run server
+
+[source, ruby]
+--------------------
+defmodule TcpExample2 do
+
+    def  new  port  do
+    ...    
+    
+    defp  loop_accept_socket   lsocket   do
+    ...
+    
+    defp  loop_server  socket  do
+
+        try  do:
+            
+            read_line(socket)  |>  write_line(socket)   <1>
+            loop_server  socket                         <2>
+            
+        after   :gen_tcp.close  socket                  <3>
+        
+    end
+    
+    
+    
+end
+--------------------
+
+<1> Leemos una línea, la escribimos en el socket
+<2> y repetimos indefinidamente.
+<3> En caso de que haya un error, liberamos el socket "aceptado".
+
+El resto son detalles, interesantes pero detalles.
+
+
+=== Read and write line
+
+[source, ruby]
+--------------------
+defmodule TcpExample2 do
+
+    def  new  port  do
+    ...    
+    
+    defp  loop_accept_socket   lsocket   do
+    ...
+    
+    defp  loop_server  socket  do
+    ...    
+    
+    defp  read_line  socket,  buffer\\[]  do
+    
+        {:ok, byte} =  :gen_tcp.recv(socket, 1, 5000)       <1>
+        buffer = [byte | buffer]                            <2>
+        if  byte == '\n',   do:     (buffer |> Enum.reverse  |>  to_string),    <3>
+        else:                       (read_line  socket, buffer)                 <4>
+        
+    end
+    
+    
+    defp   write_line   line,  socket  do
+        :gen_tcp.send   socket,  line
+    end
+    
+end
+--------------------
+
+<1> Leemos carácter a carácter esperando como mucho 5 segundos entre ellos.
+Si en 5 segundos no recibimos nada, +recv+ terminará, pero no devolverá un {:ok, _} y se provocará un fallo.
+Este fallo matará el proceso (bien) pero previamente realizará un +close+.
+
+<2> Vamos añadiendo el byte al buffer
+
+<3> Cuando el byte es un retorno de carro, es el momento de devolver lo recibido
+<4> En otro caso, seguimos leyendo
+
+
+== Código completo
+
+[source, ruby]
+--------------------
+defmodule TcpExample2 do
+
+    def  new  port  do
+        {:ok, lsocket} = (:gen_tcp.listen  port, [  active:         false, 
+                                                    reuseaddr:      true])
+        spawn_link   fn ->  loop_accept_socket  lsocket   end
+    end
+    
+    
+    defp  loop_accept_socket   lsocket   do
+        {:ok, socket} = :gen_tcp.accept(lsocket)
+        spawn  fn ->  loop_server  socket   end
+        loop_accept_socket   lsocket
+    end
+
+    
+    defp  loop_server  socket  do
+
+        try  do:
+            
+            read_line(socket)  |>  write_line(socket)
+            loop_server  socket
+            
+        after   :gen_tcp.close  socket
+        
+    end
+    
+    
+    defp  read_line  socket,  buffer\\[]  do
+    
+        {:ok, byte} =  :gen_tcp.recv(socket, 1, 5000)
+        buffer = [byte | buffer]
+        if  byte == '\n',   do:     (buffer |> Enum.reverse  |>  to_string),
+        else:                       (read_line  socket, buffer)
+        
+    end
+    
+    
+    defp   write_line   line,  socket  do
+        :gen_tcp.send   socket,  line
+    end
+    
+end
+--------------------
+
+
+== Pequeña mejora
+
+[source, ruby]
+--------------------
+defmodule TcpExample2 do
+
+    def  new  port  do
+        {:ok, lsocket} = (:gen_tcp.listen  port, [:binary, 
+                                                  packet: :line, 
+                                                  active: false])  <1>
+        spawn_link   fn ->  loop_accept_socket  lsocket   end
+    end
+    
+    
+    defp  loop_accept_socket   lsocket   do
+    ...
+    
+    defp  loop_server  socket  do
+    ...    
+    
+    defp  read_line  socket   do
+    
+        {:ok, line} = :gen_tcp.recv(socket, 0, 5000)                <2>
+        line
+        
+    end
+    
+    
+    defp   write_line   line,  socket  do
+        :gen_tcp.send   socket,  line
+    end
+    
+end
+--------------------
+
+<1> A erlang le podemos decir que queremos recibir los paquetes cortados por líneas de texto.
+<2> Haciendo trivial la recepción de las líneas
+
+Ver +keywords list+...
+----------
+iex> [:binary, packet: :line, active: false] == [:binary, {:packet, :line}, {:active, false}]
+true
+----------
+
+Próximamente, habrá que completar el desarrollo con +application+, +actors+, supervisión y otros amigos +otp+

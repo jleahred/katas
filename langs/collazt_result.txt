@@ -1,0 +1,35 @@
+go no paralel 
+Biggest Collazt size of 2929311 is 661 
+calulated time... 1.665770638s
+
+go paralel
+calulated time... 21.558534089s
+Biggest Collazt size of 1604775 is 1606 
+located in cache. 2999000
+failed in cache. 6651846
+
+
+elixir paralel
+it took... 3.34686 seconds
+cache size... 6514015
+{2298025, 560}
+
+
+python
+(2298025, 560)
+real    0m9.876s
+user    0m9.744s
+sys     0m0.128s
+
+
+
+
+elixir paralel manual cache manager
+iex(2)> Collazt.biggest_till 3000000
+it took... 35.503954 seconds
+{2298025, 560}
+go...
+calulated time... 34.668261145s                                                                                      
+Biggest Collazt size of 2231979 is 1866                                                                              
+located in cache. 2999000                                                                                            
+failed in cache. 6653297  

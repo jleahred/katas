@@ -1,0 +1,147 @@
+= Elixir Collazt
+
+// compile: asciidoctor -a source-highlighter=highlightjs  -o __builds/elixir.html 
+
+
+El problema propuesto es...
+
+
+
+Este problema es interesante.
+
+La optimización obvia es la _memoización_
+Algo no trivial en lenguajes declarativos, pero en Elixir/Erlag/OTP no parece muy complejo (las baterías incluidas de la EVM)
+
+
+Solución sin optimización...
+
+[source,ruby]
+--------------------
+defmodule Collazt   do
+
+    def biggest_till   n  do
+        start = :erlang.now
+        
+        result = 1..n 
+                    |> Stream.map(&({&1, Collazt.size &1})) 
+                    |> Enum.max_by &(elem &1, 1)
+        
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"        
+        
+        IO.puts "#{inspect(result)}"
+    end
+
+
+    def   (size   n),   do:    (size 0, n)
+
+    
+    
+    defp   (size   acc, 1),    do:   (acc + 1)
+    defp   (size   acc, n)     do
+            size   acc+1, (if (rem n, 2) == 0,   
+                            do:    (div n, 2), 
+                            else:  3*n+1)
+    end
+--------------------
+
+
+
+La clave está aquí...
+
+[source,ruby]
+--------------------
+        result = 1..n 
+                    |> Stream.map(&({&1, Collazt.size &1})) 
+                    |> Enum.max_by &(elem &1, 1)
+        
+--------------------
+
+ Itera desde 1 hasta n
+ |>  para cada uno calcula el tamaño de collazt
+ |>  quédate con el máximo
+
+
+Todo de forma perezosa, sin despilfarrar memoria.
+
+
+¿Y dónde ponemos la _memoización_?
+El lugar más obvio es...
+
+[source,ruby]
+--------------------
+    def   (size2   cache, n),   do:    (size2  cache, 0, n)
+
+    
+    
+    defp   (size2   _, acc, 1),    do:      acc + 1
+    
+    
+    defp   (size2   cache, acc, n)     do
+        case   :ets.lookup(cache, n)   do
+            []  ->       
+                        result = size2   cache, acc+1, (if (rem n, 2) == 0,   
+                                            do:    (div n, 2), 
+                                            else:  3*n+1)
+                        (:ets.insert  cache, {n, result-acc})
+                        result
+                        
+            [c] ->      elem(c, 1) + acc
+        end        
+        
+    end
+--------------------
+
+
+La ampliación es sencilla gracias a las tablas +ets+/+dets+ de +Erlang+
+
+
+Pero... hemos perdido la recursió de cola. Para recuperarla, deberíamos de utilizar además de un acumulado una lista... vamos, lo que hace el lenguaje por nosotros, ganas de complicarnos la vida para nada.
+
+
+
+La solución completa con _memoización_
+[source,ruby]
+--------------------
+defmodule Collazt   do
+
+    def biggest_till2   n  do
+        start = :erlang.now
+        
+        cache = :ets.new(:a, [:set])
+        result = 1..n 
+                    |> Stream.map(&({&1, (Collazt.size2 cache, &1)})) 
+                    |> Enum.max_by &(elem &1, 1)
+        
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"        
+        
+        IO.puts "#{inspect(result)}"
+        IO.puts "cache size... #{:ets.info(cache, :size)}"
+    end
+
+
+    def   (size2   cache, n),   do:    (size2  cache, 0, n)
+
+    
+    
+    defp   (size2   _, acc, 1),    do:      acc + 1
+    
+    
+    defp   (size2   cache, acc, n)     do
+        case   :ets.lookup(cache, n)   do
+            []  ->       
+                        result = size2   cache, acc+1, (if (rem n, 2) == 0,   
+                                            do:    (div n, 2), 
+                                            else:  3*n+1)
+                        (:ets.insert  cache, {n, result-acc})
+                        result
+                        
+            [c] ->      elem(c, 1) + acc
+        end        
+        
+    end
+
+    
+end
+--------------------

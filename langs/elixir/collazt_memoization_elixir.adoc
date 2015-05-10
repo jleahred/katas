@@ -1,0 +1,408 @@
+= Collazt. Algoritmo sencillo Elixir.
+
+
+Se trata de buscar la secuenca de Collazt más larga para números inferiores a 1_000_000.
+
+http://projecteuler.net/problem=14
+
+
+Una se cuencia de Collazt para un número +n+ se genera...
+------------
+    n → n/2 (n is even)
+    n → 3n + 1 (n is odd)
+------------
+
+
+
+== Solución directa
+
+La secuencia la podemos generar en +Elixir+...
+
+[source,ruby]
+--------------------
+defmodule  Collazt  do
+
+    def  generate_serie  n  do
+        (generate_serie [], n)  |>  Enum.reverse
+    end
+    
+    defp  generate_serie  serie,  1  do
+        [1 | serie]
+    end
+
+    defp  generate_serie  serie,  n  do
+        if  rem(n, 2) == 0   do
+            generate_serie  [n|serie],  div(n,2)
+        else
+            generate_serie  [n|serie],  3*n + 1
+        end
+        
+    end
+
+end
+--------------------
+
+
+Aquí tenemos una horrible repetición de código en que podemos quitar fácilmente gracias a que en +Elixir+ todos son expresiones.
+[source,ruby]
+--------------------
+    defp  generate_serie  serie,  n  do
+        next =   if  (rem n, 2) == 0,   do:   (div n,2),
+                 else:                         3*n + 1
+        generate_serie  [n|serie],  next
+        
+    end
+--------------------
+
+
+
+
+Pero sólo interesa el tamaño para este problema...
+
+[source,ruby]
+--------------------
+defmodule  Collazt  do
+
+    def   (serie_size  n),  do:      (serie_size 1, n)
+    
+
+    defp  (serie_size  acc,  1),  do:   acc
+
+    defp  serie_size  acc,  n  do
+        next =   if  (rem n, 2) == 0,   do:   (div n,2),
+                 else:                         3*n + 1
+        serie_size  acc+1,  next
+    end
+    
+end
+--------------------
+
+Ahora sólo queda calcular el tamaño de +Collazt+ desde 1 hasta 1_000_000 y obtener el mayor...
+
+Probemos a generar una lista con las tuplas { n, collazt_size }
+
+[source,ruby]
+--------------------
+iex(8)> 1..13  |>  Enum.map &({&1, Collazt.serie_size &1})
+[{1, 1}, {2, 2}, {3, 8}, {4, 3}, {5, 6}, {6, 9}, {7, 17}, {8, 4}, {9, 20},
+ {10, 7}, {11, 15}, {12, 10}, {13, 10}]
+--------------------
+
+Y sólo queda obtener el que tenga +serie Collazt+ mayor
+
+[source,ruby]
+--------------------
+iex(9)> (1..13
+...(9)> |> (Enum.map &({&1, Collazt.serie_size &1}))
+...(9)> |> (Enum.max_by &(elem &1, 1)))
+{9, 20}
+--------------------
+
+
+Ya casi está, sólo queda cambiar el 13 por 1_000_000. Pero... Enum.map, nos devolvería una lista con 1_000_000 de elementos.
+Luego recorreríamos esos elementos para buscar el máximo.
+¿Es necesario guardar ese 1_000_000 de elementos? ¿Y si le pedimos 10_000_000?
+
+No, no es necesario. Podemos trabajar con una lista perezosa y no gastar innecesariamente memoria.
+
+[source,ruby]
+--------------------
+iex(9)> (1..13
+...(9)> |> (Stream.map &({&1, serie_size &1}))
+...(9)> |> (Enum.max_by &(elem &1, 1)))
+{9, 20}
+--------------------
+
+
+Mucho mejor ahora.
+
+El código completo sería...
+
+
+[source,ruby]
+--------------------
+defmodule  Collazt  do
+
+    def biggest_till   n  do
+        start = :erlang.now
+        
+        result = 1..n 
+                    |> Stream.map(&({&1, serie_size &1})) 
+                    |> Enum.max_by &(elem &1, 1)
+        
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"        
+        
+        IO.puts "#{inspect(result)}"
+    end
+    
+
+
+    def   (serie_size  n),  do:      (serie_size 1, n)
+    
+
+    defp  (serie_size  acc,  1),  do:   acc
+
+    defp  serie_size  acc,  n  do
+        next =   if  (rem n, 2) == 0,   do:   (div n,2),
+                 else:                         3*n + 1
+        serie_size  acc+1,  next
+    end
+    
+end
+----------------
+
+Pero queda algo más. Podemos y debemos eliminar los frecuentes cálculos de números repetidos.
+
+
+
+
+
+== Memoización
+
+Para ello lo lógico, es guardar el valor de los ya calculados. Los cambios a realizar...
+
+[source,ruby]
+--------------------
+    def biggest_till   n  do
+        ...
+        cache = :ets.new(:cache, [:set, :public])
+        ...
+        :ets.delete(cache)
+    end
+    
+    
+
+
+    defp   (serie_size   acc, cache, n)     do
+        case   :ets.lookup(cache, n)   do
+            []  ->
+                ...
+                (:ets.insert  cache, {n, result-acc})
+                result
+                        
+            [{_, s}] ->      s + acc
+        end        
+        
+    end
+
+end
+--------------------
+
+Ha sido necesario realizar pocos cambios.
+
+[NOTE]
+Observa que la función, ya no es recursiva de cola
+
+El código completo...
+
+[source,ruby]
+--------------------
+defmodule  Collazt  do
+
+    def biggest_till   n  do
+        cache = :ets.new(:cache, [:set, :public] )
+        start = :erlang.now
+        
+        result = 1..n 
+                    |> Stream.map(&({&1, (serie_size cache, &1)})) 
+                    |> Enum.max_by &(elem &1, 1)
+        
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"        
+        
+        IO.puts "cache size... #{:ets.info(cache, :size)}"
+        IO.puts "#{inspect(result)}"
+        :ets.delete(cache)
+    end
+    
+
+
+    defp  (serie_size  cache, n),  do:      (serie_size 1, cache, n)
+    
+
+    defp  (serie_size  acc,  _ , 1),  do:   acc
+
+    defp   (serie_size   acc, cache, n)     do
+        case   :ets.lookup(cache, n)   do
+            []  ->
+                next =   if  (rem n, 2) == 0,   do:   (div n,2),
+                        else:                         (3*n + 1)
+                result = serie_size  acc+1,  cache, next
+        
+                (:ets.insert  cache, {n, result-acc})
+                result
+                        
+            [{_, s}] ->      s + acc
+        end        
+        
+    end
+
+end
+--------------------
+
+Con esto ya hemos conseguido una mejora considerable. En mi máquina tarda la mitad gracias a la memoización. Pero hay otra mejora evidente.
+
+Cuando se ejecuta este código, no consume memoria gracias a las listas perezosas +Stream+, pero sólo calienta uno de los micros.
+
+¿Qué tal si los utilizamos todos al mismo tiempo?
+
+
+== Paralelización
+
+Quiero utilizar los 4 cores de mi máquina al mismo tiempo. ¿Cómo?
+
+Al estilo Erlang. No necesitas dividir el poblema en 4 partes casi iguales, divídelo en muchas y ejecuta todas al mismo tiempo.
+
+Algunas terminarán mucho antes que otras, pero como son muchas, es fácil que siempre haya tareas en ejecución paralela.
+
+Los cambios a realizar serían...
+
+[source,ruby]
+--------------------
+    def biggest_till   n  do
+        ...
+        
+        parent = self
+        
+        parts = 100  # number of processes to run
+        step = max(1, div(n, parts))
+        steps = div(n, step)
+
+        # run parts processes to calculate        
+        1..steps
+            |> Enum.each &(spawn(
+                            fn -> (biggets_interval (&1-1)*step+1, &1 *step, cache, parent) 
+                            end))
+        
+        
+        result = loop_get_best_result  0, steps,  {0, 0}
+
+        ...        
+    end
+    
+    # get best result from all process
+    defp  (loop_get_best_result  steps, steps, {r_num, r_counter}),  do:   {r_num, r_counter}
+    
+    defp  loop_get_best_result  counter, steps, {r_num, r_counter}  do
+        receive do
+            {:result, {rnum, rcounter}}  ->
+                best = (if r_counter < rcounter,  do:   {rnum, rcounter},
+                        else:                           {r_num, r_counter})
+                loop_get_best_result  counter+1, steps, best
+            _     ->   IO.puts "ERROR"
+        end
+    end
+    
+--------------------
+
+El código completo...
+
+[source,ruby]
+--------------------
+defmodule  Collazt  do
+
+    def biggest_till   n  do
+        cache = :ets.new(:cache, [:set, :public, {:write_concurrency, true}])
+        start = :erlang.now
+
+        parent = self
+        
+        parts = 100  # number of process
+        step = max(1, div(n, parts))
+        steps = div(n,step)
+        
+        1..steps
+            |> Enum.each &(spawn(fn -> (biggets_interval (&1-1)*step+1, &1 *step, cache, parent) end))
+        
+        
+        result = loop_get_best_result  0, steps,  {0, 0}
+        
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"        
+        
+        IO.puts "cache size... #{:ets.info(cache, :size)}"
+        IO.puts "#{inspect(result)}"
+        :ets.delete(cache)
+    end
+
+
+    # get best result from all process
+    defp  (loop_get_best_result  steps, steps, {r_num, r_counter}),  do:   {r_num, r_counter}
+    
+    defp  loop_get_best_result  counter, steps, {r_num, r_counter}  do
+        receive do
+            {:result, {rnum, rcounter}}  ->
+                best = (if r_counter < rcounter,  do:   {rnum, rcounter},
+                        else:                           {r_num, r_counter})
+                loop_get_best_result  counter+1, steps, best
+            _     ->   IO.puts "ERROR"
+        end
+    end
+
+
+    defp  biggets_interval  first, till, cache, parent   do
+        result = first..till
+                    |> Stream.map(&({&1, (serie_size 1, cache, &1)})) 
+                    |> Enum.max_by &(elem &1, 1)
+        send parent, { :result, result }
+    end
+
+
+    defp  (serie_size  acc,  _ , 1),  do:   acc
+
+    defp   (serie_size   acc, cache, n)     do
+        case   :ets.lookup(cache, n)   do
+            []  ->
+                next =   if  (rem n, 2) == 0,   do:   (div n,2),
+                        else:                         (3*n + 1)
+                result = serie_size  acc+1,  cache, next
+        
+                (:ets.insert  cache, {n, result-acc})
+                result
+                        
+            [{_, s}] ->      s + acc
+        end        
+        
+    end
+
+end
+--------------------
+
+
+== Conclusiones
+
+Con la +memoización+ reducimos el tiempo a la mitad.
+
+Con la +paralelización+, reducimos el tiempo a la tercera parte en una máquina con 4 cores (lógicamente, cuantos más cores menos tiempo)
+
+Con las dos mejoras, 6 veces menos tiempo de ejecución en una máquina con 4 cores.
+
+Está muy bien para ver conceptos base de Elixir/Erlang, pero... hay algunos errores y no es la forma de hacer las cosas en este ecosistema.
+
+[source,ruby]
+--------------------
+    def biggest_till   n  do
+        cache = :ets.new(:cache, [:set, :public, {:write_concurrency, true}])
+        
+        ...
+        
+        :ets.delete(cache)
+    end
+--------------------
+
+
+¿Qué pasa si no se ejecuta el delete? Memory leak. Inadmisible para un sistema que pretente funcionar ininterrumpidamente.
+
+No es elegante ni correcto, que creemos la tabla +ets+ desde el proceso invocante, es intrusivo y peligroso.
+
+
+En este caso sencillo, podemos mejorar haciendo un +spawn_link+, pero no es la solución completa.
+
+Sería más elegante y un diseño más correcto, planteando los procesos como elementos con los que podemos interactuar con un interfaz claro bien definido.
+Más seguro y más fácil de verificar que con envío de mensajes. Para ello podemos recurrir al +gen_server+, que por cierto, nos da otro montón de cosas interesantes.
+
+Por otro lado, conviene utilizar la generación de documentación, pruebas unitarias, el sistema (+mix+) de construcción y gestión de dependencias, supervisores...
+
+
+Próximamente...

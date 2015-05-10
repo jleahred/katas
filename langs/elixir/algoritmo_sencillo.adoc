@@ -1,0 +1,140 @@
+= Más ejemplos sencillos Elixir
+
+// compile: asciidoctor -a source-highlighter=highlightjs  -o __builds/elixir.html 
+
+
+
+Recientemente un compañero de trabajo me propuso calcular el menor número triangular que tenga más de 500 factores. (Ejercicio que apareció en _project Euler_)
+
+Después de hacerlo en C++, quise probar en Elixir para ver que tal podría quedar y si sería tan divertido como esperaba.
+
+El algoritmo es trivial, pero trataba de buscar una solución elegante en un lenguaje tan expresivo.
+
+
+Esta es la solución.
+
+[source, ruby]
+--------------------
+defmodule Triangle_factors   do
+
+    def find_triangle_more_n_f  nfactors do
+        [result] = 
+            Stream.unfold({1, 1}, fn {t, n} -> {t, {t+n+1, n+1}} end) 
+            |> (Stream.drop_while &(num_factors(&1) <= nfactors))  
+            |>  Enum.take 1
+    end
+
+    defp num_factors  n  do
+        r2 = :erlang.trunc :math.sqrt n
+        (1..r2 |> Enum.count fn(x) -> rem(n, x) === 0 end)
+            * 2 - (if n===r2*r2, do: 1, else: 0)
+    end
+
+end
+--------------------
+
+[NOTE]
+Repito este programa para utilizarlo como excusa para comentar cosas que me gustan y destacan incluso en un programa tan trivial y corto.
+
+
+Lo primero que me sorprendió es lo eficiente que es, teniendo en cuenta que no es código nativo y que la máquina virtual no ha recibido tantos dólares como la de Java (JVM) o las de JavaScript (V8 y los monkeys)
+
+
+La solución es muy elegante (mérito del lenguaje).
+
+. Calculamos la lista de infinitos números triangulares.
+. Pasamos los infinitos elementos +|>+  al filtro para quitar los infinitos términos que tienen menos de _nfactors_
+. Cogemos el primer elemento
+
+La evaluación perezosa y listas infinitas, son fantásticas. Haskell está más avanzado en estos temas, pero hay otras cuestiones que me atraen más de Elixir/Erlang
+
+En un ejemplo tan sencillo, podemos apreciar algunas cosas que me encantan:
+
+* “Inferencia de paréntesis” (aunque lo llaman _paréntesis opcionales_, yo creo que casa mejor este término). Influenciado por Ruby
+* Evaluación perezosa (no automática ni en todos los contextos, pero esto es potentísimo)
+* Escritura de funciones lamda super reducida (nada de ruido)
+* Rangos, que no son listas, o son listas perezosas
+* Todo son expresiones
+* Pattern matching
+* Tuplas
+* Pipes
+* Funciones de primer orden
+
+
+¿Cómo se puede vivir sin que _todo sean expresiones_ +
+¿Sin _pattern matching_? +
+¿Sin _tuplas_ nativas? +
+¿Sin +string interpolation+? (aparece en los siguientes) +
+
+
+Una vez que pruebas estas cosas… ya no puedes dejar de pensar en ellas.
+[quote, obi wan kenobi]
+____
+Luke, el lado tenebroso es el camino fácil, es seductor y no se puede salir…
+A mi ya me trincaron.
+____
+
+
+
+
+
+La siguiente implementación es tan sencilla y clara, que no es necesario saber programar para entenderlo y leerlo, con poquísima ayuda.
+
+[source,ruby]
+--------------------
+defmodule Train   do
+
+
+    def (dA h),  do:  47*(h+1)
+
+    def (dB h),  do:  60*h
+    
+    
+    def  (calculate_distance  h),  do:   (dA h) - (dB h)
+    
+    
+    def  try_with  min,  max  do
+        middle = (max-min)/2+min
+        d =  calculate_distance  middle
+        IO.puts "trying with middle (#{middle}) distance between trains is... #{d}"
+        
+        case d  do
+            _ when  d<0   ->    (IO.puts "I have to try   #{min}, #{middle}"
+                                try_with  min, middle)
+            _ when  d>0   ->    (IO.puts "I have to try   #{middle}, #{max}"
+                                try_with  middle, max)
+            _             ->    IO.puts "EUREKA!!!!!!!!!"
+        end
+        
+    end
+    
+    
+end
+--------------------
+
+
+Para cronometrar, podríamos escribir...
+
+[source,ruby]
+--------------------
+defmodule  Chrono do
+
+    def  chrono  f  do
+        start = :erlang.now
+
+        f()
+
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"
+    end
+    
+end
+--------------------
+
+Ahora lo podríamos utilizar...
+
+  Chrono.chrono(fn-> (IO.puts "lkjlkjlk") end)
+
+
+Pero esto es mejorable. Se puede hacer más elegante y expresivo. En breve.
+  
