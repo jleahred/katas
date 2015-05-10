@@ -1,0 +1,281 @@
+= Ejemplo Elixir. Gestión de login + OTP
+ 
+
+
+En este ejemplo veremos un gestor de login parcialmente desarrollado.
+
+Es un problema sencillo de gestión de estado...
+
+["graphviz", "sample2.png"]
+---------------------------------------------------------------------
+digraph automata_0 {
+  size ="8.5, 11";
+  node [shape = circle, width=1];
+  w_rq_key    [ style = filled, color=lightgrey, label="w_rq\nkey"];
+  w_rq_login  [ label="w_rq\nlogin"];
+  login_ok [ shape = doublecircle ];
+  
+  
+  w_rq_key -> w_rq_login [ label = "rq key" ];
+  
+  w_rq_login ->  login_ok  [ label = "rq login\ncode ok" ];
+  w_rq_login ->  w_rq_key  [ label = "rq login\nwrong code" ];
+  
+
+  
+  "Login manager (partial)" [ shape = plaintext ];
+}
+---------------------------------------------------------------------
+
+
+El interfaz del actor estará compuesto por dos métodos +rq_key+ y +rq_login+
+
+
+== Solución manual
+[source, ruby]
+--------------------
+defmodule LoginManager do
+
+    def  start,  do: ...
+
+    def  (rq_key   door),  do:  ...
+
+    def  (rq_login  door, user_name, codded_pass),  do:  ...
+    
+end
+--------------------
+
+
+
+En Elixir podemos modelarlo...
+
+[source, ruby]
+--------------------
+defmodule LoginManager do
+    def start  do
+        from_pid = self
+        spawn(fn -> loging_manager_loop :w_rq_key, from_pid  end)
+    end
+
+    defp loging_manager_loop :w_rq_key, from_pid  do
+        ...
+    end
+    
+    
+    defp loging_manager_loop :w_rq_login, key, from_pid  do
+        ...
+    end
+end
+--------------------
+
+
+La implementación del estado +:w_rq_login+...
+
+[source, ruby]
+--------------------
+    defp loging_manager_loop :w_rq_login, key, from_pid  do   <1>
+        receive do
+            {:rq_login, user_name, codded_pass}  ->           <2>
+                          if login_rq_info_ok { user_name, key, codded_pass } do
+                              send(from_pid, :login_ok)       <3>
+                          else
+                              loging_manager_loop  :w_rq_key, from_pid
+                          end
+                          
+            ignoring ->   IO.puts "Ignoring message #{inspect ignoring}"   <4>
+                          loging_manager_loop  :w_rq_login, key, from_pid
+                          
+            after 5000 -> IO.puts "exiting by timeout"                     <5>
+        end
+    end
+--------------------
+
+<1> Punto de entrada para el estado +w_rq_login+
+<2> El mensaje esperado es +rq_login+ con nombre de usuario y la contraseña codificada
+<3> Si es ok, respondemos con +login_ok+ y terminamos
+<4> Si recibimos cualquier otro mensaje, lo trazamos pero no cambiamos el estado
+<5> Si no recibimos la petición de login, _buy_
+
+El punto +4+ es importante. Si recibimos un mensaje no esperado, en caso de que no lo recojamos, se quedará indefinidamente en la cola del proceso.
+Si esta cola creciese demasiado... *peligro*
+
+El +5+ también es interesante. Si nadie nos pide el login, nos vamos liberando la memoria y recursos.
+
+Dejando de lado los dos últimos puntos, el resultado es muy elegante.
+
+
+
+Y para probarlo...
+
+.Test
+[source, ruby]
+--------------------
+defmodule  LoginManagerTest do
+  use ExUnit.Case
+
+  test "request login" do
+    rec = fn -> receive do  msg -> msg; after 1000 -> IO.puts "time out" end end
+    d = LoginManager.start
+    LoginManager.rq_key d
+    key = rec.()
+    coded_password = to_string :erlang.crc32(to_string(:erlang.crc32("joseluis"<>"1111"))<>key)
+    LoginManager.rq_login  d, "joseluis", coded_password
+    :login_ok = rec.()
+  end
+
+end
+--------------------
+
+Aquí tenemos otros detalles poco elegantes. La recepción de la respueta es un poco incómoda.
+Estamos simulando una llamada síncrona con esteroides en un sistema asíncrono.
+
+Estos patrones y dificultades son frecuentes. Para no gestionarlos manualmente siempre, debemos utilizar +otp+.
+No sólo evitaremos reescribir el mismo código, además utilizaremos un código de gran calidad, estabilidad
+y con patrones adecuados.
+
+
+.código completo solución manual
+[source, ruby]
+--------------------
+defmodule LoginManager do
+
+    @moduledoc """
+    This is a small Elixir example working with process as actor
+    A partial implementation of a login manager.
+    
+    In order to login, it's necessary to call **rq_key** and 
+    compose the **rq_login** with the user name, the key and password
+    using a non reversible (crc32) function
+    """
+    def start  do
+        from_pid = self
+        spawn(fn -> loging_manager_loop :w_rq_key, from_pid  end)
+    end
+
+    
+    def  (rq_key   door),  do:   send(door, :rq_key)
+
+    def  (rq_login  door, user_name, codded_pass),  do:   send(door, {:rq_login, user_name, codded_pass})
+
+    
+    
+    defp loging_manager_loop :w_rq_key, from_pid  do
+        :random.seed(:erlang.now)
+
+        receive do
+            :rq_key  ->   key = to_string(:random.uniform 100000)
+                          send(from_pid, key)
+                          loging_manager_loop  :w_rq_login, key, from_pid
+                          
+            ignoring ->   IO.puts "Ignoring message #{inspect ignoring}"
+                          loging_manager_loop  :w_rq_key, from_pid
+                          
+            after 5000 -> IO.puts "exiting by timeout   defp loging_manager_loop :w_rq_key, from_pid  do"
+        end
+    end
+    
+    
+    defp loging_manager_loop :w_rq_login, key, from_pid  do
+        receive do
+            {:rq_login, user_name, codded_pass}  ->  
+                          if login_rq_info_ok { user_name, key, codded_pass } do
+                              send(from_pid, :login_ok)
+                          else
+                              loging_manager_loop  :w_rq_key, from_pid
+                          end
+                          
+            ignoring ->   IO.puts "Ignoring message #{inspect ignoring}"
+                          loging_manager_loop  :w_rq_login, key, from_pid
+                          
+            after 5000 -> IO.puts "exiting by timeout   defp loging_manager_loop :w_rq_login, key, from_pid  do"
+        end
+    end
+    
+    
+    defp login_rq_info_ok  { _user_name, key, codded_pass }  do
+        if(codded_pass == to_string :erlang.crc32(to_string(:erlang.crc32("joseluis"<>"1111"))<>key)) do
+             :true
+        else
+             :false
+        end
+    end
+
+end
+--------------------
+
+
+== Solución OTP
+
+Utilizando https://github.com/sasa1977/exactor[exactor]. Un conjunto de macros para hacer más
+cómodo y legible el trabajo con +GenServer+ y otros elementos de +OTP+
+
+[source, ruby]
+--------------------
+defmodule LoginManager  do
+  use ExActor.GenServer
+
+
+    definit  do
+        :random.seed(:erlang.now)
+        initial_state(:w_rq_key)
+    end
+
+
+    defcall  rq_key,      state: :w_rq_key            do
+
+        key = to_string(:random.uniform 100000)
+        set_and_reply({:w_rq_login, key}, {:key, key})
+                
+    end
+
+    defcall  (rq_login   user_name, codded_pass),    state: {:w_rq_login, key}   do
+
+        if login_rq_info_ok { user_name, key, codded_pass }   do
+            set_and_reply(:login_ok,  :login_ok)
+        else
+            set_and_reply(:rq_key,    :login_rejected)
+        end
+        
+    end
+  
+  
+    defp login_rq_info_ok  { _user_name, key, codded_pass }  do
+        if(codded_pass == to_string :erlang.crc32(
+               to_string(:erlang.crc32("joseluis"<>"1111"))<>key)) do
+                :true
+        else
+                :false
+        end
+    end
+  
+  
+end
+--------------------
+
+El código se ha contraido tanto y es tan legible, que pongo directamente el programa completo.
+
+Y esto no es todo, el programa de test, ahora también es mucho más sencillo, elegante y claro.
+
+[source, ruby]
+--------------------
+defmodule LoginManager2Test do
+  use ExUnit.Case
+
+    test "login ok" do
+        {:ok, lm}   = LoginManager.start
+        {:key, key} = LoginManager.rq_key lm
+        codded_password = to_string :erlang.crc32(to_string(:erlang.crc32("joseluis"<>"1111"))<>key)
+        :login_ok = LoginManager.rq_login lm, "joseluis", codded_password
+    end
+    
+    test "login failed" do
+        {:ok, lm}   = LoginManager.start
+        {:key, key} = LoginManager.rq_key lm
+        codded_password = to_string :erlang.crc32(to_string(:erlang.crc32("joseluis"<>"2222"))<>key)
+        :login_rejected = LoginManager.rq_login lm, "joseluis", codded_password
+    end
+end
+--------------------
+
+No todo es una maravilla con +OTP+. Algunos modelos sencillos _manuales_ no son tan evidentes con +OTP+.
+Pero esto es sólo el principio.

@@ -1,0 +1,401 @@
+= Ejemplos básicos con Elixir
+
+// compile: asciidoctor -a source-highlighter=highlightjs  -o __builds/elixir.html 
+
+.Hello world
+[source,ruby]
+--------------------
+IO.puts "Hello world!"
+--------------------
+
+Nada de _clases_ con cosas _estáticas_, sencillo sencillo
+
+También valdría...
+[source,ruby]
+--------------------
+IO.puts("Hello world!")
+--------------------
+
++IO.puts+ es una función incluso cuando no tiene paréntesis.
+
+Los paréntesis son opcionales, como en +ruby+
+
+[WARNING]
+No olvides no dejar espacio entre el nombre de la función y +(+
+
+Ahora lo ponemos en un módulo
+
+.Hello world2
+[source,ruby]
+--------------------
+defmodule Hello_world  do
+
+    def hello  do
+        IO.puts "Hello world!"
+    end
+
+end
+--------------------
+
+Y ahora un poquito más elaborado
+
+.Hello
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    def say_hello  name do
+        IO.puts "Hello #{name}"
+    end
+
+end
+--------------------
+
+Sí señor, +string interpolation+, esto mola
+
+¿Cómo pueden vivir algunos sin esto (C++, Java, python...)?
+
+
+Para probar, ejecutar desde +iex+
+----------
+c"basic.ex"
+Basic.say_hello  "Jose"
+----------
+
+
+Y ahora un _pequeño_ cambio
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    IO.puts  "I say hello you"
+
+    def say_hello  name do
+        IO.puts "Hello #{name}"
+    end
+
+end
+--------------------
+
+
+Y *¡¡¡sorpresa!!!*.
+
+A diferencia de +Python+   
+
+  IO.puts  "I say hello you"
+
+No se ejecutará al cargar el módulo la primera vez.
+
+**Se ejecutará al COMPILAR**
+
+Eso mola.
+
+Además de las decisiones en tiempo de compilación que permitirían aumentar el rendimiento de la aplicación... se pueden hacer cosas como versionado auotmático al compilar.
+
+
+Lenguaje declarativo, no tenemos bucles. Un ejemplo típico, cálculo del factorial.
+
+.Factorial non tail recursive
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    def factorial  0    do
+        1
+    end
+
+    def factorial  num  do
+        num * factorial  num-1
+    end
+
+end
+--------------------
+
+
+No tiene recursión de cola, pero sí tiene +pattern matching+ 
+¿Cómo se puede vivir sin el +pattern matching+?
+
+Y... todo son expresiones. ¿Cómo se puede programar sin que todo sean expresiones?
+
+
+Un poco más compactado...
+
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    def (factorial  0),    do:   1
+    def (factorial  num),  do:   num * factorial  num-1
+
+end
+--------------------
+
+No está bien abusar de la recursividad sin +recursión de cola+
+
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    def (factorial  num),       do:   (factorial 1, num)
+    
+    defp (factorial  acc, 1),   do:   acc
+    defp (factorial  acc, num), do:   (factorial  acc*num, num-1)
+
+end
+--------------------
+
+La recursión de cola permitirá al copilador hacer un +jump+ y generar un código sin llamadas recursivas a funciones.
+
+Esto significa que utilizará menos memoria y menos tiempo de CPU.
+
+Pero... si cronometramos la versión recursiva y la no recursiva... no hay una diferencia significativa.
+¿Cómo es posible?
+
+Supongo que esto es una optimización de +Erlang+ en la que es capaz de modificar una función +no tail recursive+ a una +tail recursive+. Esto vi que empezó ha pasar hace un par de años (+Erlang 12+ o cercana)
+
+De cualquier forma, si no sabemos en que casos se producirá la magia, lo mejor es utilizar la recursividad de cola siempre.
+
+
+Pero esto no es todo lo que se puede hacer con la función factorial. Siguiendo el estilo funcional, podríamos hacerlo así.
+
+
+.Factorial de 100
+[source,ruby]
+--------------------
+1..100 |> Enum.reduce(1, fn(n, acc) -> n*acc end)
+--------------------
+
+Y si lo queremos en una función...
+
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    def factorial(num),   do:  1..num |> Enum.reduce(1, fn(n, acc) -> n*acc end)
+
+end
+--------------------
+
+Chulo, chulo, chulo
+
+
+Aquí hay miga.
+
++1..100+ es un +rango+ ¿?
+
+En realidad es un +Stream+ (añadido muy recientemente en +elixir+)
+
+Un +Stream+ es un elemento iterable y perezoso (al estilo +haskell+)
+
+
+[quote, amigo de Mafalda, Felipito]
+____
+Cartel: No dejes para mañana lo que puedas hacer hoy
+
+"Desde mañana mismo empiezo"
+____
+
+
++|>+ Este es una especie de operador _pipe_
+
+Nos evita escribir algo como...
+
+[source,ruby]
+--------------------
+Enum.reduce(1..100, 1, fn(n, acc) -> n*acc end)
+--------------------
+
+En este caso no sería un gran problema, pero sí es una gran mejora en muchos casos.
+
+Hay una forma de simplificar la escritura de funciones anónimas
+
+[source,ruby]
+--------------------
+f = fn(x1, x2) -> x1*x2 end
+
+f = &1 * &2
+--------------------
+
+Estas dos líneas son equivalentes.
+
+Así que podemos escribir:
+
+[source,ruby]
+--------------------
+defmodule  Basic  do
+
+    def factorial(num),   do:  1..num |> Enum.reduce(1, &1 * &2)
+
+end
+--------------------
+
+
+
+Programa 1 para buscar el primer número triangular que tiene más de 500 factores
+
+[source,ruby]
+--------------------
+defmodule Triangle500   do
+
+
+    def find_triangle_more500f  do
+        start = :erlang.now
+
+        try_next_triangle 1, 1
+        
+        finish = :erlang.now
+        IO.puts "#{(:timer.now_diff finish, start)/1000000}"
+    end
+
+    
+   
+
+   
+    defp try_next_triangle  current, step   do
+        nfactors =   num_factors current
+        if nfactors>500 do
+            IO.puts "located on step #{step}    triangle #{current}   factors #{nfactors}"
+        else
+            try_next_triangle  current+step+1, step+1
+        end
+    end
+   
+   
+    defp num_factors  num  do
+        stop = :math.sqrt num
+        result = 2 * num_factors  0, num, 1, stop
+        result - if num===stop*stop, do: 1, else: 0
+    end
+
+    defp num_factors  acc, num, d, stop_on  do
+        if d > stop_on do
+            acc
+        else
+            num_factors acc+ (if (rem num, d) ===0, do: 1, else: 0), num, d+1, stop_on
+        end
+    end
+    
+end
+--------------------
+
+
+No está mal.
+Recursión de cola en la generación de números triangulares y en el cálculo de los factores. Bien.
+
+Pero...
+
+Si quisiéramos parametrizar el número de triángulos, con esta solución, quedaría feo.
+
+Además... muchas líneas, mucho código. Podemos hacerlo mejor.
+
+
+
+
+
+[source,ruby]
+-----------------
+defmodule Triangle_factors   do
+
+
+    def find_triangle_more_n_f  nfactors do
+        start = :erlang.now
+
+        [result] = 
+            Stream.unfold({1, 1}, fn {t, n} -> {t, {t+n+1, n+1}} end) 
+            |> (Stream.drop_while &(num_factors(&1) < nfactors))  
+            |>  Enum.take 1
+
+        IO.puts "#{result}"
+        finish = :erlang.now
+        IO.puts "it took... #{(:timer.now_diff finish, start)/1000000} seconds"
+    end
+
+    defp num_factors  n  do
+        r2 = :erlang.trunc :math.sqrt n
+        (1..r2 |> Enum.count &(rem(n, &1) === 0))
+            * 2 - (if n===r2*r2, do: 1, else: 0)
+    end
+
+    
+end
+-----------------
+
+
+Primero _calculamos_ todos los números triangulares (sí, son infinitos, pero seguimos el consejo de Felipito)
+
+    Stream.unfold({1, 1}, fn {t, n} -> {t, {t+n+1, n+1}} end)
+
+Esta lista de infinitos números triangulares, se la pasamos a un _filtro_ que tira todos los que tengan menos de los factores qu ele indiquemos
+
+    |> (Stream.drop_while &(num_factors(&1) <= nfactors))  
+
+Ya tenemos la lista de infinitos números triangulares que tienen más de quinientos factores. Y esto lo calcula en unas milésismas de segundo (con el procedimiento de Felipito).
+
+Ya sólo queda decirle... _dame el primero_ tan sencillo como:
+
+    |>  Enum.take 1
+
+Y como ha sido perezoso, es ahora cuando se pone a hacer los cálculos, pero no de todos, sólo hasta donde es imprescindible, porque sigue siendo perezoso.
+
+Aunque esta implementación de +num_factors+ es algo menos eficiente que la anterior con más código, la diferencia no es significativa.
+
+Para terminar, una pequeña referencia sobre los paréntesis (sintáxis)
+
+
+¿El uso de los paréntesis es opcional?
+
+Yo más bien diría que +Elixir+ tiene +inferencia de paréntesis+ como otros lenguajes tienen +inferencia de tipos+.
+
+Una de las herencias de +Ruby+
+
+Cuando hay ambigüedades, hay que ponerlos. En otro caso, puedes dejar que el compilador los _deduzca_
+
+Todo empezó así...
+
+[source,ruby]
+-----------------
+defmodule(Hello, do: (
+  def(calculate(a, b, c), do: (
+    =(temp, *(a, b))
+    +(temp, c)
+  ))
+))
+-----------------
+
+Con un gran olor a +LISP+, que está muy bien. Todo son +macros+, +variables+ o llamadas a +funciones+ con una sintáxis muy sencilla
+
+Pero la gente tiene una especial predilección por los +operadores+ (o funciones infijas), así que evolucionó a...
+
+[source,ruby]
+-----------------
+defmodule(Hello, do: (
+  def(calculate(a, b, c), do: (
+    temp = a * b
+    temp + c
+  ))
+))
+-----------------
+
+Esto sigue compilando y podemos entender mucho mejor la +inferencia de paréntesis+
+
+Queremos un +LISP+ sin tantos paréntesis
+
+
+Es impresionante como un lenguaje que está en desarrollo, para una máquina virtual nada popular, avanza tan rápido y con la atención de tanta gente.
+
+La primera vez que quise poner una referencia de este lenguaje, la palabra elixir estaba vetada. Ahora, en las primeras entradas de google...
+
+
+
+Esto es *divertido* y sólo es el principio
+
+
+http://elixir-lang.org/
+
+http://elixir-lang.org/blog/2013/08/08/elixir-design-goals/
+
+http://pragprog.com/book/elixir/programming-elixir
+
+http://shop.oreilly.com/product/0636920030584.do
+
+http://lmgtfy.com/?q=elixir
