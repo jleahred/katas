@@ -5,6 +5,24 @@ use config::SIZE as SIZE;
 pub struct Stickers(pub [[u8; SIZE]; SIZE]);
 
 
+impl Stickers {
+    pub fn row(&self, row: usize) -> [u8; SIZE] {
+        let Stickers(stickers) = *self;
+        stickers[row]
+    }
+}
+impl Stickers {
+    pub fn col(&self, col: usize) -> [u8; SIZE] {
+        let Stickers(stickers) = *self;
+        let mut result = [0; SIZE];
+        for i in 0..SIZE {
+            result[i] = stickers[i][col];
+        }
+        result
+    }
+}
+
+
 impl fmt::Display for Stickers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Stickers(stickers) = *self;
@@ -45,7 +63,7 @@ pub mod for_cube {
 
     pub enum Direction { Clock, InvClock}
 
-    pub fn rotate(stickers :&super::Stickers, dir : Direction) -> super::Stickers {
+    pub fn rotation(stickers :&super::Stickers, dir : Direction) -> super::Stickers {
         let super::Stickers(ref orig_stickers) = *stickers;
         let super::Stickers(mut new_stickers) = *stickers;
         match dir {
@@ -271,7 +289,7 @@ fn test_merge_col() {
 
 
 #[test]
-fn test_rotate() {
+fn test_rotation() {
     {
         let side = Stickers(
             [
@@ -281,7 +299,7 @@ fn test_rotate() {
                 [4,5,6,4]
             ]
             );
-        let rotated_clock = Stickers(
+        let rotationd_clock = Stickers(
             [
                 [4,1,8,1],
                 [5,2,2,5],
@@ -289,7 +307,7 @@ fn test_rotate() {
                 [4,3,0,7]
             ]
             );
-        assert!(for_cube::rotate(&side, for_cube::Direction::Clock) == rotated_clock);
-        assert!(for_cube::rotate(&rotated_clock, for_cube::Direction::InvClock) == side);
+        assert!(for_cube::rotation(&side, for_cube::Direction::Clock) == rotationd_clock);
+        assert!(for_cube::rotation(&rotationd_clock, for_cube::Direction::InvClock) == side);
     }
 }
