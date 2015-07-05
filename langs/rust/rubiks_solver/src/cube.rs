@@ -65,6 +65,19 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
             (result.$sdest  = side::for_cube::merge_row(&sides.$sdest,  level, get_row!($ssource, level));)
     }
 
+    macro_rules! rotate_edge {
+        ( $side:ident, ($dir1:expr =>  $side_rotation1:ident), ($dir2:expr =>  $side_rotation2:ident) )  => (
+            result.$side =
+                match (dir) {
+                    rotation::Direction($dir1)  =>
+                            side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation1),
+                    rotation::Direction($dir2)  =>
+                            side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation2),
+                };
+        )
+    }
+
+
     match dir {
         rotation::Direction(true)  => {
             switch_rows!(back,  left);
@@ -79,7 +92,28 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
             switch_rows!(left,  back);
         }
     };
-
+    match level+1 {
+        1               =>     rotate_edge!(top,    (true => InvClock), (false => Clock)),
+        config::SIZE    =>     rotate_edge!(bottom, (true => Clock),    (false => InvClock)),
+        _ => ()
+    }
+    /*
+    result.top =
+        match (level+1, dir) {
+            (1, rotation::Direction(true))  =>
+                    side::for_cube::rotation(&sides.top,  side::for_cube::Direction::InvClock),
+            (1, rotation::Direction(false))  =>
+                    side::for_cube::rotation(&sides.top,  side::for_cube::Direction::Clock),
+            (_,_) => result.top
+        };
+    result.bottom =
+        match (level+1, dir) {
+            (config::SIZE, rotation::Direction(true))  =>
+                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::Clock),
+            (config::SIZE, rotation::Direction(false))  =>
+                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::InvClock),
+            (_,_) => result.bottom
+        };*/
     return result;
 }
 
@@ -111,6 +145,22 @@ pub fn rotation_vertical(sides: &Sides, dir: rotation::Direction, level: usize) 
         }
     };
 
+    result.left =
+        match (level+1, dir) {
+            (1, rotation::Direction(true))  =>
+                    side::for_cube::rotation(&sides.left,  side::for_cube::Direction::Clock),
+            (1, rotation::Direction(false))  =>
+                    side::for_cube::rotation(&sides.left,  side::for_cube::Direction::InvClock),
+            (_,_) => result.left
+        };
+    result.bottom =
+        match (level+1, dir) {
+            (config::SIZE, rotation::Direction(true))  =>
+                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::Clock),
+            (config::SIZE, rotation::Direction(false))  =>
+                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::InvClock),
+            (_,_) => result.top
+        };
     return result;
 }
 
