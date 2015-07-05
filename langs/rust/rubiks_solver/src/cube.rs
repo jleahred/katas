@@ -27,7 +27,7 @@ pub mod rotation {
     }
 
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub struct Direction(pub bool);
+    pub enum Direction { Plus, Minus }
 
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     pub struct Item(pub Orientation, pub Direction, pub usize);     //  ups!!! (usize)
@@ -66,12 +66,12 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
     }
 
     macro_rules! rotate_edge {
-        ( $side:ident, ($dir1:expr =>  $side_rotation1:ident), ($dir2:expr =>  $side_rotation2:ident) )  => (
+        ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  => (
             result.$side =
-                match (dir) {
-                    rotation::Direction($dir1)  =>
+                match dir {
+                    rotation::Direction::$dir1  =>
                             side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation1),
-                    rotation::Direction($dir2)  =>
+                    rotation::Direction::$dir2  =>
                             side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation2),
                 };
         )
@@ -79,13 +79,13 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
 
 
     match dir {
-        rotation::Direction(true)  => {
+        rotation::Direction::Plus  => {
             switch_rows!(back,  left);
             switch_rows!(left,  front);
             switch_rows!(front, right);
             switch_rows!(right, back);
         },
-        rotation::Direction(false) => {
+        rotation::Direction::Minus => {
             switch_rows!(front, left);
             switch_rows!(back,  right);
             switch_rows!(right, front);
@@ -93,27 +93,10 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
         }
     };
     match level+1 {
-        1               =>     rotate_edge!(top,    (true => InvClock), (false => Clock)),
-        config::SIZE    =>     rotate_edge!(bottom, (true => Clock),    (false => InvClock)),
+        1               =>     rotate_edge!(top,    (rotation::Direction::Plus => InvClock), (rotation::Direction::Minus => Clock)),
+        config::SIZE    =>     rotate_edge!(bottom, (rotation::Direction::Plus => Clock),    (rotation::Direction::Minus => InvClock)),
         _ => ()
     }
-    /*
-    result.top =
-        match (level+1, dir) {
-            (1, rotation::Direction(true))  =>
-                    side::for_cube::rotation(&sides.top,  side::for_cube::Direction::InvClock),
-            (1, rotation::Direction(false))  =>
-                    side::for_cube::rotation(&sides.top,  side::for_cube::Direction::Clock),
-            (_,_) => result.top
-        };
-    result.bottom =
-        match (level+1, dir) {
-            (config::SIZE, rotation::Direction(true))  =>
-                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::Clock),
-            (config::SIZE, rotation::Direction(false))  =>
-                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::InvClock),
-            (_,_) => result.bottom
-        };*/
     return result;
 }
 
@@ -131,13 +114,13 @@ pub fn rotation_vertical(sides: &Sides, dir: rotation::Direction, level: usize) 
     }
 
     match dir {
-        rotation::Direction(true)  => {
+        rotation::Direction::Plus  => {
             switch_cols!(top,    front);
             switch_cols!(front,  bottom);
             switch_cols!(bottom, back);
             switch_cols!(back,   top);
         },
-        rotation::Direction(false) => {
+        rotation::Direction::Minus => {
             switch_cols!(top,    back);
             switch_cols!(back,   bottom);
             switch_cols!(bottom, front);
@@ -147,17 +130,17 @@ pub fn rotation_vertical(sides: &Sides, dir: rotation::Direction, level: usize) 
 
     result.left =
         match (level+1, dir) {
-            (1, rotation::Direction(true))  =>
+            (1, rotation::Direction::Plus)  =>
                     side::for_cube::rotation(&sides.left,  side::for_cube::Direction::Clock),
-            (1, rotation::Direction(false))  =>
+            (1, rotation::Direction::Minus)  =>
                     side::for_cube::rotation(&sides.left,  side::for_cube::Direction::InvClock),
             (_,_) => result.left
         };
     result.bottom =
         match (level+1, dir) {
-            (config::SIZE, rotation::Direction(true))  =>
+            (config::SIZE, rotation::Direction::Plus)  =>
                     side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::Clock),
-            (config::SIZE, rotation::Direction(false))  =>
+            (config::SIZE, rotation::Direction::Minus)  =>
                     side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::InvClock),
             (_,_) => result.top
         };
@@ -179,8 +162,8 @@ impl fmt::Display for rotation::Orientation {
 impl fmt::Display for rotation::Direction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let sdir = match *self {
-            rotation::Direction(true)  => "+",
-            rotation::Direction(false) => "-"
+            rotation::Direction::Plus  => "+",
+            rotation::Direction::Minus => "-"
         };
         write!(f, "{}", sdir)
     }
@@ -279,15 +262,15 @@ fn test_display_rotation()
     use cube::rotation::*;
 
     {
-        let mv = rotation::Item(Orientation::Horizontal, Direction(true), 0);
+        let mv = rotation::Item(Orientation::Horizontal, Direction::Plus, 0);
         assert_eq!(format!("{}", mv), "H+0");
     }
     {
-        let mv = rotation::Item(Orientation::Front, Direction(false), 2);
+        let mv = rotation::Item(Orientation::Front, Direction::Minus, 2);
         assert_eq!(format!("{}", mv), "F-2");
     }
     {
-        let mv = rotation::Item(Orientation::Vertical, Direction(true), 4);
+        let mv = rotation::Item(Orientation::Vertical, Direction::Plus, 4);
         assert_eq!(format!("{}", mv), "V+4");
     }
 }
