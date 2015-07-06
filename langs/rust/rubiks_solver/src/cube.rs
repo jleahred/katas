@@ -68,11 +68,11 @@ macro_rules! rotate_edge {
 
 pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize) -> Sides
 {
+    let mut result = *sides;
+
     macro_rules! get_row {
         ($side:ident, $level:expr)  =>  (sides.$side.row($level))
     }
-
-    let mut result = *sides;
 
     macro_rules! switch_rows {
         ($ssource:ident, $sdest:ident)  =>
@@ -83,18 +83,6 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
             ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
                 (rotate_edge!(result, sides, dir, $side, (rotation::Direction::$dir1 => $side_rotation1), (rotation::Direction::$dir2 => $side_rotation2)))
     }
-/*    macro_rules! rotate_edge {
-        ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  => (
-            result.$side =
-                match dir {
-                    rotation::Direction::$dir1  =>
-                            side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation1),
-                    rotation::Direction::$dir2  =>
-                            side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation2),
-                };
-        )
-    }*/
-
 
     match dir {
         rotation::Direction::Plus  => {
@@ -120,11 +108,16 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
 
 pub fn rotation_vertical(sides: &Sides, dir: rotation::Direction, level: usize) -> Sides
 {
+    let mut result = *sides;
+
     macro_rules! get_col {
         ($side:ident, $level:expr)  =>  (sides.$side.col($level))
     }
 
-    let mut result = *sides;
+    macro_rules! rotate_edge_local {
+            ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
+                (rotate_edge!(result, sides, dir, $side, (rotation::Direction::$dir1 => $side_rotation1), (rotation::Direction::$dir2 => $side_rotation2)))
+    }
 
     macro_rules! switch_cols {
         ($ssource:ident, $sdest:ident)  =>
@@ -145,23 +138,11 @@ pub fn rotation_vertical(sides: &Sides, dir: rotation::Direction, level: usize) 
             switch_cols!(front,  top);
         }
     };
-
-    result.left =
-        match (level+1, dir) {
-            (1, rotation::Direction::Plus)  =>
-                    side::for_cube::rotation(&sides.left,  side::for_cube::Direction::Clock),
-            (1, rotation::Direction::Minus)  =>
-                    side::for_cube::rotation(&sides.left,  side::for_cube::Direction::InvClock),
-            (_,_) => result.left
-        };
-    result.bottom =
-        match (level+1, dir) {
-            (config::SIZE, rotation::Direction::Plus)  =>
-                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::Clock),
-            (config::SIZE, rotation::Direction::Minus)  =>
-                    side::for_cube::rotation(&sides.bottom,  side::for_cube::Direction::InvClock),
-            (_,_) => result.top
-        };
+    match level+1 {
+        1               =>     rotate_edge_local!(left,    (rotation::Direction::Plus => Clock),    (rotation::Direction::Minus => InvClock)),
+        config::SIZE    =>     rotate_edge_local!(right,   (rotation::Direction::Plus => InvClock), (rotation::Direction::Minus => Clock)),
+        _ => ()
+    }
     return result;
 }
 
@@ -291,4 +272,39 @@ fn test_display_rotation()
         let mv = rotation::Item(Orientation::Vertical, Direction::Plus, 4);
         assert_eq!(format!("{}", mv), "V+4");
     }
+}
+
+
+#[test]
+fn test_rotation() {
+    let cube = create(
+                                &side::color(0),
+            &side::color(1),    &side::color(2),    &side::color(3),
+                                &side::color(4),
+                                &side::color(5),
+        );
+
+    let str_cube = concat!(
+            "      0000  \n",
+            "      0000  \n",
+            "      0000  \n",
+            "      5555  \n",
+            "\n",
+            "4555  1111  0222  \n",
+            "1111  0222  3333  \n",
+            "1111  0222  3333  \n",
+            "1111  0222  3333  \n",
+            "\n",
+            "      4444  \n",
+            "      4444  \n",
+            "      4444  \n",
+            "      4444  \n",
+            "\n",
+            "      5555  \n",
+            "      5555  \n",
+            "      5555  \n",
+            "      5555  \n",
+            "\n");
+
+    assert_eq!(str_cube, format!("{}", cube));
 }
