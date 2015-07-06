@@ -52,6 +52,20 @@ pub fn create(
 }
 
 
+
+macro_rules! rotate_edge {
+    ( $result:expr, $sides:expr, $dir:expr, $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  => (
+        $result.$side =
+            match $dir {
+                rotation::Direction::$dir1  =>
+                        side::for_cube::rotation(&$sides.$side,  side::for_cube::Direction::$side_rotation1),
+                rotation::Direction::$dir2  =>
+                        side::for_cube::rotation(&$sides.$side,  side::for_cube::Direction::$side_rotation2),
+            };
+    )
+}
+
+
 pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize) -> Sides
 {
     macro_rules! get_row {
@@ -65,7 +79,11 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
             (result.$sdest  = side::for_cube::merge_row(&sides.$sdest,  level, get_row!($ssource, level));)
     }
 
-    macro_rules! rotate_edge {
+    macro_rules! rotate_edge_local {
+            ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
+                (rotate_edge!(result, sides, dir, $side, (rotation::Direction::$dir1 => $side_rotation1), (rotation::Direction::$dir2 => $side_rotation2)))
+    }
+/*    macro_rules! rotate_edge {
         ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  => (
             result.$side =
                 match dir {
@@ -75,7 +93,7 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
                             side::for_cube::rotation(&sides.$side,  side::for_cube::Direction::$side_rotation2),
                 };
         )
-    }
+    }*/
 
 
     match dir {
@@ -93,8 +111,8 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
         }
     };
     match level+1 {
-        1               =>     rotate_edge!(top,    (rotation::Direction::Plus => InvClock), (rotation::Direction::Minus => Clock)),
-        config::SIZE    =>     rotate_edge!(bottom, (rotation::Direction::Plus => Clock),    (rotation::Direction::Minus => InvClock)),
+        1               =>     rotate_edge_local!(top,    (rotation::Direction::Plus => InvClock), (rotation::Direction::Minus => Clock)),
+        config::SIZE    =>     rotate_edge_local!(bottom, (rotation::Direction::Plus => Clock),    (rotation::Direction::Minus => InvClock)),
         _ => ()
     }
     return result;
