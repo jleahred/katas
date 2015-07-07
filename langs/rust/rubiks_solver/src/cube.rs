@@ -64,6 +64,15 @@ macro_rules! rotate_edge {
             };
     )
 }
+/*
+macro_rules!  define_rotate_edge_local {
+    () => (
+        macro_rules! rotate_edge_local {
+                ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
+                    (rotate_edge!(result, sides, dir, $side, (rotation::Direction::$dir1 => $side_rotation1), (rotation::Direction::$dir2 => $side_rotation2)))
+        }
+    )
+}*/
 
 
 pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize) -> Sides
@@ -78,6 +87,8 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
         ($ssource:ident, $sdest:ident)  =>
             (result.$sdest  = side::for_cube::merge_row(&sides.$sdest,  level, get_row!($ssource, level));)
     }
+
+    //define_rotate_edge_local!();
 
     macro_rules! rotate_edge_local {
             ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
@@ -277,6 +288,8 @@ fn test_display_rotation()
 
 #[test]
 fn test_rotation() {
+    use cube::rotation::*;
+
     let cube = create(
                                 &side::color(0),
             &side::color(1),    &side::color(2),    &side::color(3),
@@ -295,16 +308,19 @@ fn test_rotation() {
             "1111  0222  3333  \n",
             "1111  0222  3333  \n",
             "\n",
-            "      4444  \n",
-            "      4444  \n",
-            "      4444  \n",
-            "      4444  \n",
+            "      2444  \n",
+            "      2444  \n",
+            "      2444  \n",
+            "      2444  \n",
             "\n",
-            "      5555  \n",
-            "      5555  \n",
-            "      5555  \n",
-            "      5555  \n",
+            "      3333  \n",
+            "      4555  \n",
+            "      4555  \n",
+            "      4555  \n",
             "\n");
 
-    assert_eq!(str_cube, format!("{}", cube));
+    let rotation1 = rotation_vertical(&cube, Direction::Plus, 0);
+    let rotation2 = rotation_horizontal(&rotation1, Direction::Plus, 0);
+
+    assert_eq!(str_cube, format!("{}", rotation2));
 }
