@@ -46,4 +46,23 @@ fn main() {
         let rotation2 = cube::rotation_horizontal(&rotation1, Direction::Plus, 0);
         println!("{}", rotation2);
     }
+    {
+        use cube::rotation::*;
+
+        let rotation1 = cube::rotation_front(&cube, Direction::Plus, 0);
+        println!("{}", rotation1);
+    }
+    {
+        use cube::rotation::*;
+
+        let rotation1 = cube::rotation_front(&cube, Direction::Minus, 2);
+        println!("{}", rotation1);
+    }
+    {
+        use cube::rotation::*;
+
+        let rotation1 = cube::rotation_vertical(&cube, Direction::Plus, 0);
+        let rotation2 = cube::rotation_front(&rotation1, Direction::Plus, 0);
+        println!("{}", rotation2);
+    }
 }

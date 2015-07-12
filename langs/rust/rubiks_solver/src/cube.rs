@@ -64,15 +64,6 @@ macro_rules! rotate_edge {
             };
     )
 }
-/*
-macro_rules!  define_rotate_edge_local {
-    () => (
-        macro_rules! rotate_edge_local {
-                ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
-                    (rotate_edge!(result, sides, dir, $side, (rotation::Direction::$dir1 => $side_rotation1), (rotation::Direction::$dir2 => $side_rotation2)))
-        }
-    )
-}*/
 
 
 pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize) -> Sides
@@ -87,8 +78,6 @@ pub fn rotation_horizontal(sides: &Sides, dir: rotation::Direction, level: usize
         ($ssource:ident, $sdest:ident)  =>
             (result.$sdest  = side::for_cube::merge_row(&sides.$sdest,  level, get_row!($ssource, level));)
     }
-
-    //define_rotate_edge_local!();
 
     macro_rules! rotate_edge_local {
             ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
@@ -152,6 +141,53 @@ pub fn rotation_vertical(sides: &Sides, dir: rotation::Direction, level: usize) 
     match level+1 {
         1               =>     rotate_edge_local!(left,    (rotation::Direction::Plus => Clock),    (rotation::Direction::Minus => InvClock)),
         config::SIZE    =>     rotate_edge_local!(right,   (rotation::Direction::Plus => InvClock), (rotation::Direction::Minus => Clock)),
+        _ => ()
+    }
+    return result;
+}
+
+pub fn rotation_front(sides: &Sides, dir: rotation::Direction, level: usize) -> Sides
+{
+    let mut result = *sides;
+
+    macro_rules! get_col {
+        ($side:ident, $level:expr)  =>  (sides.$side.col($level))
+    }
+    macro_rules! get_row {
+        ($side:ident, $level:expr)  =>  (sides.$side.row($level))
+    }
+
+    macro_rules! rotate_edge_local {
+            ( $side:ident, (rotation::Direction::$dir1:ident =>  $side_rotation1:ident), (rotation::Direction::$dir2:ident =>  $side_rotation2:ident) )  =>
+                (rotate_edge!(result, sides, dir, $side, (rotation::Direction::$dir1 => $side_rotation1), (rotation::Direction::$dir2 => $side_rotation2)))
+    }
+
+    macro_rules! switch_col2row {
+        (($ssource:ident, $slevel:expr) =>  ($sdest:ident, $dlevel:expr))  =>
+            (result.$sdest  = side::for_cube::merge_row(&sides.$sdest,  $dlevel, get_col!($ssource, $slevel));)
+    }
+    macro_rules! switch_row2col {
+        (($ssource:ident, $slevel:expr)  =>  ($sdest:ident, $dlevel:expr))  =>
+            (result.$sdest  = side::for_cube::merge_col(&sides.$sdest,  $dlevel, get_row!($ssource, $slevel));)
+    }
+
+    match dir {
+        rotation::Direction::Plus  => {
+            switch_row2col! ((top,    config::SIZE - level-1)     =>      (right, level) );
+            switch_col2row! ((right,  level)     =>      (bottom, level));
+            switch_row2col! ((bottom, level)     =>      (left, config::SIZE - level-1));
+            switch_col2row! ((left, config::SIZE - level-1)  =>  (top, config::SIZE - level-1));
+        },
+        rotation::Direction::Minus => {
+            switch_row2col! ((top, config::SIZE - level-1)     =>      (left, config::SIZE - level-1));
+            switch_col2row! ((left, config::SIZE - level-1)     =>      (bottom, level));
+            switch_row2col! ((bottom, level)     =>      (right, level));
+            switch_col2row! ((right, level)     =>      (top, config::SIZE - level-1));
+        }
+    };
+    match level+1 {
+        1               =>     rotate_edge_local!(front,   (rotation::Direction::Plus => Clock),    (rotation::Direction::Minus => InvClock)),
+        config::SIZE    =>     rotate_edge_local!(back,    (rotation::Direction::Plus => InvClock), (rotation::Direction::Minus => Clock)),
         _ => ()
     }
     return result;
@@ -323,4 +359,93 @@ fn test_rotation() {
     let rotation2 = rotation_horizontal(&rotation1, Direction::Plus, 0);
 
     assert_eq!(str_cube, format!("{}", rotation2));
+}
+
+#[test]
+fn test_front() {
+    use cube::rotation::*;
+
+    let cube = create(
+                                &side::color(0),
+            &side::color(1),    &side::color(2),    &side::color(3),
+                                &side::color(4),
+                                &side::color(5),
+        );
+
+    {
+        let str_cube = concat!(
+                "      0000  \n",
+                "      0000  \n",
+                "      0000  \n",
+                "      1111  \n",
+                "\n",
+                "1114  2222  0333  \n",
+                "1114  2222  0333  \n",
+                "1114  2222  0333  \n",
+                "1114  2222  0333  \n",
+                "\n",
+                "      3333  \n",
+                "      4444  \n",
+                "      4444  \n",
+                "      4444  \n",
+                "\n",
+                "      5555  \n",
+                "      5555  \n",
+                "      5555  \n",
+                "      5555  \n",
+                "\n");
+        let rotation1 = rotation_front(&cube, Direction::Plus, 0);
+        assert_eq!(str_cube, format!("{}", rotation1));
+    }
+    {
+        let str_cube = concat!(
+                "      0000  \n",
+                "      3333  \n",
+                "      0000  \n",
+                "      0000  \n",
+                "\n",
+                "1011  2222  3343  \n",
+                "1011  2222  3343  \n",
+                "1011  2222  3343  \n",
+                "1011  2222  3343  \n",
+                "\n",
+                "      4444  \n",
+                "      4444  \n",
+                "      1111  \n",
+                "      4444  \n",
+                "\n",
+                "      5555  \n",
+                "      5555  \n",
+                "      5555  \n",
+                "      5555  \n",
+                "\n");
+        let rotation1 = rotation_front(&cube, Direction::Minus, 2);
+        assert_eq!(str_cube, format!("{}", rotation1));
+    }
+    {
+        let str_cube = concat!(
+                "      5000  \n",
+                "      5000  \n",
+                "      5000  \n",
+                "      1111  \n",
+                "\n",
+                "1112  0000  5333  \n",
+                "1114  2222  0333  \n",
+                "1114  2222  0333  \n",
+                "1114  2222  0333  \n",
+                "\n",
+                "      3333  \n",
+                "      2444  \n",
+                "      2444  \n",
+                "      2444  \n",
+                "\n",
+                "      4555  \n",
+                "      4555  \n",
+                "      4555  \n",
+                "      4555  \n",
+                "\n");
+        let rotation1 = rotation_vertical(&cube, Direction::Plus, 0);
+        let rotation2 = rotation_front(&rotation1, Direction::Plus, 0);
+        assert_eq!(str_cube, format!("{}", rotation2));
+    }
 }
