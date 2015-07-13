@@ -5,6 +5,9 @@ use std::fmt;
 use config;
 use side;
 
+pub mod rotation;
+
+
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Sides {
@@ -17,21 +20,6 @@ pub struct Sides {
                                     pub back  : side::Stickers
 }
 
-
-pub mod rotation {
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum Orientation {
-        Horizontal,
-        Vertical,
-        Front
-    }
-
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub enum Direction { Plus, Minus }
-
-    #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-    pub struct Item(pub Orientation, pub Direction, pub usize);     //  ups!!! (usize)
-}
 
 pub fn create(
             top     :   &side::Stickers,
@@ -173,16 +161,16 @@ pub fn rotation_front(sides: &Sides, dir: rotation::Direction, level: usize) -> 
 
     match dir {
         rotation::Direction::Plus  => {
-            switch_row2col! ((top,    config::SIZE - level-1)     =>      (right, level) );
-            switch_col2row! ((right,  level)     =>      (bottom, level));
-            switch_row2col! ((bottom, level)     =>      (left, config::SIZE - level-1));
-            switch_col2row! ((left, config::SIZE - level-1)  =>  (top, config::SIZE - level-1));
+            switch_row2col! ((top,    config::SIZE - level-1)   =>      (right, level) );
+            switch_col2row! ((right,  level)                    =>      (bottom, level));
+            switch_row2col! ((bottom, level)                    =>      (left, config::SIZE - level-1));
+            switch_col2row! ((left, config::SIZE - level-1)     =>      (top, config::SIZE - level-1));
         },
         rotation::Direction::Minus => {
-            switch_row2col! ((top, config::SIZE - level-1)     =>      (left, config::SIZE - level-1));
+            switch_row2col! ((top, config::SIZE - level-1)      =>      (left, config::SIZE - level-1));
             switch_col2row! ((left, config::SIZE - level-1)     =>      (bottom, level));
-            switch_row2col! ((bottom, level)     =>      (right, level));
-            switch_col2row! ((right, level)     =>      (top, config::SIZE - level-1));
+            switch_row2col! ((bottom, level)                    =>      (right, level));
+            switch_col2row! ((right, level)                     =>      (top, config::SIZE - level-1));
         }
     };
     match level+1 {
