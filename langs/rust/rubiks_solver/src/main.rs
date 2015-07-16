@@ -6,6 +6,33 @@ mod cube;
 
 #[cfg_attr(test, allow(dead_code))]
 fn main() {
+
+    println!("Heyyyy {}", ('0' as u8) - ('0' as u8));
+
+
+    let cube_a = cube::create_from_strings(
+                     ["0000",
+                      "0000",
+                      "0000",
+                      "0000",
+                 "1111 2222 3333",
+                 "1111 2222 3333",
+                 "1111 2222 3333",
+                 "1111 2222 3333",
+                      "4444",
+                      "4444",
+                      "4444",
+                      "4444",
+
+                      "5555",
+                      "5555",
+                      "5555",
+                      "5555"]
+        );
+
+    println!("{}", cube_a);
+
+    /*
     let cube = cube::create(
                                 &side::color(0),
             &side::color(1),    &side::color(2),    &side::color(3),
@@ -26,6 +53,16 @@ fn main() {
         println!("{}", rotation2);
     }
 
+    {
+        use cube::rotation;
+        use cube::rotation::{Orientation, Direction};
+
+        println!("{}",
+            &cube.get_rotation(&rotation::Item(Orientation::Horizontal, Direction::Plus, 0))
+                 .get_rotation(&rotation::Item(Orientation::Vertical, Direction::Minus, 2))
+        );
+    }
+*/
 /*
     {
         use cube::rotation::*;
