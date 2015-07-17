@@ -1,11 +1,8 @@
-/*
-*/
-
 use std::fmt;
 use config;
 use side;
 
-pub mod rotation;
+pub mod rot;
 
 
 
@@ -80,7 +77,7 @@ pub fn create_from_strings (lines : [&str;config::SIZE*config::SIZE])  -> Sides
     let fill_single_side = |init_index: usize| -> side::Stickers {
         let mut side = side::color(0);
         for i in init_index .. init_index + config::SIZE {
-            side = side::for_cube::merge_row(&side, i-init_index, get_row_from_string(lines[i]));
+            side = side::for_cube::merge_row(&side, i-init_index, &get_row_from_string(lines[i]));
         }
         side
     };
@@ -90,9 +87,9 @@ pub fn create_from_strings (lines : [&str;config::SIZE*config::SIZE])  -> Sides
         let mut right = side::color(0);
         for i in 4 .. 8 {
             let (left_row, front_row, right_row) = get_rows_from_long_string(lines[i]);
-            left  = side::for_cube::merge_row(&left, i-4, left_row);
-            front = side::for_cube::merge_row(&front, i-4, front_row);
-            right = side::for_cube::merge_row(&right, i-4, right_row);
+            left  = side::for_cube::merge_row(&left, i-4,  &left_row);
+            front = side::for_cube::merge_row(&front, i-4, &front_row);
+            right = side::for_cube::merge_row(&right, i-4, &right_row);
         }
         (left, front, right)
     };
@@ -109,8 +106,8 @@ pub fn create_from_strings (lines : [&str;config::SIZE*config::SIZE])  -> Sides
 
 
 impl Sides {
-    pub fn get_rotation(&self, item : &rotation::Item) -> Sides {
-        rotation::process(self, item)
+    pub fn get_rotation(&self, item : &rot::Item) -> Sides {
+        rot::process(self, item)
     }
 }
 
@@ -238,8 +235,8 @@ fn test_rotation() {
 
     assert_eq!(str_cube, format!("{}",
             &cube
-                .get_rotation(&rotation::Item(rotation::Orientation::Vertical, rotation::Direction::Plus, 0))
-                .get_rotation(&rotation::Item(rotation::Orientation::Front,rotation::Direction::Plus, 0))
+                .get_rotation(&rot::Item(rot::Orient::Vertical, rot::Dir::Plus, 0))
+                .get_rotation(&rot::Item(rot::Orient::Front,rot::Dir::Plus, 0))
         ));
 }
 

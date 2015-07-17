@@ -45,7 +45,7 @@ pub fn color(color : u8) -> Stickers {
 pub mod for_cube {
     use config;
 
-    pub fn merge_row(stickers :&super::Stickers, row :usize, rstickers : [u8;config::SIZE]) -> super::Stickers {
+    pub fn merge_row(stickers :&super::Stickers, row :usize, rstickers : &[u8;config::SIZE]) -> super::Stickers {
         let super::Stickers(mut new_stickers) = *stickers;
         for i in 0..config::SIZE {
             new_stickers[row][i] = rstickers[i];
@@ -53,7 +53,7 @@ pub mod for_cube {
         super::Stickers(new_stickers)
     }
 
-    pub fn merge_col(stickers :&super::Stickers, col :usize, cstickers : [u8;config::SIZE]) -> super::Stickers {
+    pub fn merge_col(stickers :&super::Stickers, col :usize, cstickers : &[u8;config::SIZE]) -> super::Stickers {
         let super::Stickers(mut new_stickers) = *stickers;
         for i in 0..config::SIZE {
             new_stickers[i][col] = cstickers[i];
@@ -61,19 +61,19 @@ pub mod for_cube {
         super::Stickers(new_stickers)
     }
 
-    pub enum Direction { Clock, InvClock}
+    pub enum Dir { Clock, InvClock}
 
-    pub fn rotation(stickers :&super::Stickers, dir : Direction) -> super::Stickers {
+    pub fn rotation(stickers :&super::Stickers, dir : Dir) -> super::Stickers {
         let super::Stickers(ref orig_stickers) = *stickers;
         let super::Stickers(mut new_stickers) = *stickers;
         match dir {
-            Direction::Clock    =>
+            Dir::Clock    =>
                     for c in 0..config::SIZE {
                         for r in 0..config::SIZE {
                             new_stickers[c][config::SIZE-r-1] = orig_stickers[r][c];
                         }
                     },
-            Direction::InvClock =>
+            Dir::InvClock =>
                     for c in 0..config::SIZE {
                         for r in 0..config::SIZE {
                             new_stickers[config::SIZE-c-1][r] = orig_stickers[r][c];
@@ -90,9 +90,8 @@ pub mod for_cube {
             for j in 0..config::SIZE {
                 let super::Stickers(stickers1) = *l;
                 let super::Stickers(stickers2) = *r;
-                let sticker1 = stickers1[i][j];
                 let sticker2 = stickers2[i][j];
-                if sticker1!=0  &&  sticker2!=0 {
+                if sticker2!=0 {
                     if stickers1[i][j] != stickers2[i][j] {
                         return false;
                     }
@@ -221,7 +220,7 @@ fn test_check_equivalent_end() {
             ]
             );
         assert!(for_cube::equivalent_end(&side1, &side2));
-        assert!(for_cube::equivalent_end(&side2, &side1));
+        assert!(for_cube::equivalent_end(&side2, &side1)==false);
     }
 }
 
@@ -229,7 +228,7 @@ fn test_check_equivalent_end() {
 #[test]
 fn test_merge_row() {
     {
-        let new_side = for_cube::merge_row(&color(1), 2, [2,3,4,5]);
+        let new_side = for_cube::merge_row(&color(1), 2, &[2,3,4,5]);
         let result = Stickers(
             [
                 [1,1,1,1],
@@ -242,7 +241,7 @@ fn test_merge_row() {
         assert!(&result == &new_side);
     }
     {
-        let new_side = for_cube::merge_row(&color(1), 3, [2,3,4,5]);
+        let new_side = for_cube::merge_row(&color(1), 3, &[2,3,4,5]);
         let result = Stickers(
             [
                 [1,1,1,1],
@@ -260,7 +259,7 @@ fn test_merge_row() {
 #[test]
 fn test_merge_col() {
     {
-        let new_side = for_cube::merge_col(&color(1), 2, [2,3,4,5]);
+        let new_side = for_cube::merge_col(&color(1), 2, &[2,3,4,5]);
         let result = Stickers(
             [
                 [1,1,2,1],
@@ -273,7 +272,7 @@ fn test_merge_col() {
         assert!(&result == &new_side);
     }
     {
-        let new_side = for_cube::merge_col(&color(1), 3, [2,3,4,5]);
+        let new_side = for_cube::merge_col(&color(1), 3, &[2,3,4,5]);
         let result = Stickers(
             [
                 [1,1,1,2],
@@ -307,7 +306,7 @@ fn test_rotation() {
                 [4,3,0,7]
             ]
             );
-        assert!(for_cube::rotation(&side, for_cube::Direction::Clock) == rotationd_clock);
-        assert!(for_cube::rotation(&rotationd_clock, for_cube::Direction::InvClock) == side);
+        assert!(for_cube::rotation(&side, for_cube::Dir::Clock) == rotationd_clock);
+        assert!(for_cube::rotation(&rotationd_clock, for_cube::Dir::InvClock) == side);
     }
 }

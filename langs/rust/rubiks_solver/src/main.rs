@@ -1,12 +1,105 @@
 mod config;
 mod side;
 mod cube;
+mod tree;
 
 
 
 #[cfg_attr(test, allow(dead_code))]
 fn main() {
 
+    {
+        let init : cube::Sides = cube::create_from_strings(
+                         ["0000",
+                          "0000",
+                          "0000",
+                          "0000",
+                     "0001 0000 0000",
+                     "0002 0000 0000",
+                     "0003 0000 0000",
+                     "0004 0000 0000",
+                          "0000",
+                          "0000",
+                          "0000",
+                          "0000",
+
+                          "0000",
+                          "0000",
+                          "0000",
+                          "0000"]
+            );
+
+        let end : cube::Sides = cube::create_from_strings(
+                        ["0000",
+                         "0000",
+                         "0000",
+                         "4321",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                         "0000",
+                         "0000",
+                         "0000",
+                         "0000",
+
+                         "0000",
+                         "0000",
+                         "0000",
+                         "0000"]
+                    );
+
+        let result = tree::explore(&init, &end, 2);
+        println!("{}", result);
+    }
+
+    {
+        let init : cube::Sides = cube::create_from_strings(
+                         ["0000",
+                          "0000",
+                          "0000",
+                          "0000",
+                     "0001 0000 0000",
+                     "0002 0000 0000",
+                     "0003 0000 0000",
+                     "0004 0000 0000",
+                          "0000",
+                          "0000",
+                          "0000",
+                          "0000",
+
+                          "0000",
+                          "0000",
+                          "0000",
+                          "0000"]
+            );
+
+        let end : cube::Sides = cube::create_from_strings(
+                        ["0000",
+                         "0000",
+                         "0000",
+                         "0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                         "0000",
+                         "0000",
+                         "0000",
+                         "0000",
+
+                         "0000",
+                         "0000",
+                         "0000",
+                         "0000"]
+                    );
+
+        let result = tree::explore(&init, &end, 4);
+        println!("{}", result);
+    }
+
+
+/*
     println!("Heyyyy {}", ('0' as u8) - ('0' as u8));
 
 
@@ -31,7 +124,7 @@ fn main() {
         );
 
     println!("{}", cube_a);
-
+*/
     /*
     let cube = cube::create(
                                 &side::color(0),
@@ -45,72 +138,72 @@ fn main() {
 
 
     {
-        use cube::rotation;
-        use cube::rotation::{Orientation, Direction};
+        use cube::rot;
+        use cube::rot::{Orient, Dir};
 
-        let rotation1 = rotation::process(&cube, &rotation::Item(Orientation::Horizontal, Direction::Plus, 0));
-        let rotation2 = rotation::process(&rotation1, &rotation::Item(Orientation::Vertical, Direction::Minus, 2));
+        let rotation1 = rot::process(&cube, &rot::Item(Orient::Horizontal, Dir::Plus, 0));
+        let rotation2 = rot::process(&rotation1, &rot::Item(Orient::Vertical, Dir::Minus, 2));
         println!("{}", rotation2);
     }
 
     {
         use cube::rotation;
-        use cube::rotation::{Orientation, Direction};
+        use cube::rot::{Orient, Dir};
 
         println!("{}",
-            &cube.get_rotation(&rotation::Item(Orientation::Horizontal, Direction::Plus, 0))
-                 .get_rotation(&rotation::Item(Orientation::Vertical, Direction::Minus, 2))
+            &cube.get_rotation(&rot::Item(Orient::Horizontal, Dir::Plus, 0))
+                 .get_rotation(&rot::Item(Orient::Vertical, Dir::Minus, 2))
         );
     }
 */
 /*
     {
-        use cube::rotation::*;
+        use cube::rot::*;
 
-        let mv = cube::rotation::Item(Orientation::Horizontal, Direction::Plus, 0);
+        let mv = cube::rot::Item(Orient::Horizontal, Dir::Plus, 0);
         println!("{}", mv);
 
-        let rotationd1 = cube::rotation::horizontal(&cube, Direction::Plus, 0);
+        let rotationd1 = cube::rot::horizontal(&cube, Dir::Plus, 0);
         println!("{}", rotationd1);
 
-        //let rotationd2 = cube::rotation::horizontal(&rotationd1, Direction(false), 0);
+        //let rotationd2 = cube::rot::horizontal(&rotationd1, Dir(false), 0);
         //println!("{}", rotationd2);
-        let rotationd2 = cube::rotation::horizontal(&rotationd1, Direction::Plus, 1);
+        let rotationd2 = cube::rot::horizontal(&rotationd1, Dir::Plus, 1);
         println!("{}", rotationd2);
 
-        let rotationd3 = cube::rotation::vertical(&cube, Direction::Plus, 1);
+        let rotationd3 = cube::rot::vertical(&cube, Dir::Plus, 1);
         println!("{}", rotationd3);
 
-        let rotationd4 = cube::rotation::horizontal(&rotationd3, Direction::Plus, 1);
+        let rotationd4 = cube::rot::horizontal(&rotationd3, Dir::Plus, 1);
         println!("{}", rotationd4);
     }
 
     {
-        use cube::rotation::*;
+        use cube::rot::*;
 
-        let rotation1 = cube::rotation::vertical(&cube, Direction::Plus, 0);
+        let rotation1 = cube::rot::vertical(&cube, Dir::Plus, 0);
         println!("{}", rotation1);
 
-        let rotation2 = cube::rotation::horizontal(&rotation1, Direction::Plus, 0);
+        let rotation2 = cube::rot::horizontal(&rotation1, Dir::Plus, 0);
         println!("{}", rotation2);
     }
     {
-        use cube::rotation::*;
+        use cube::rot::*;
 
-        let rotation1 = cube::rotation::front(&cube, Direction::Plus, 0);
+        let rotation1 = cube::rot::front(&cube, Dir::Plus, 0);
         println!("{}", rotation1);
     }
     {
-        use cube::rotation::*;
+        use cube::rot::*;
 
-        let rotation1 = cube::rotation::front(&cube, Direction::Minus, 2);
+        let rotation1 = cube::rot::front(&cube, Dir::Minus, 2);
         println!("{}", rotation1);
     }
     {
-        use cube::rotation::*;
+        use cube::rot::*;
 
-        let rotation1 = cube::rotation::vertical(&cube, Direction::Plus, 0);
-        let rotation2 = cube::rotation::front(&rotation1, Direction::Plus, 0);
+        let rotation1 = cube::rot::vertical(&cube, Dir::Plus, 0);
+        let rotation2 = cube::rot::front(&rotation1, Dir::Plus, 0);
         println!("{}", rotation2);
     }
     */
