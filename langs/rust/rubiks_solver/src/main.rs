@@ -33,6 +33,52 @@ fn main() {
                         ["0000",
                          "0000",
                          "0000",
+                         "0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                    "0000 0000 0000",
+                         "1234",
+                         "0004",
+                         "0000",
+                         "0000",
+
+                         "0000",
+                         "0000",
+                         "0000",
+                         "0000"]
+                    );
+
+        let result = tree::explore(&init, &end, 3);
+        println!("{}", result);
+    }
+
+/*
+    {
+        let init : cube::Sides = cube::create_from_strings(
+                         ["0000",
+                          "0000",
+                          "0000",
+                          "0000",
+                     "0001 0000 0000",
+                     "0002 0000 0000",
+                     "0003 0000 0000",
+                     "0004 0000 0000",
+                          "0000",
+                          "0000",
+                          "0000",
+                          "1234",
+
+                          "0000",
+                          "0000",
+                          "0000",
+                          "0000"]
+            );
+
+        let end : cube::Sides = cube::create_from_strings(
+                        ["4321",
+                         "0000",
+                         "0000",
                          "4321",
                     "0000 0000 0000",
                     "0000 0000 0000",
@@ -49,10 +95,11 @@ fn main() {
                          "0000"]
                     );
 
-        let result = tree::explore(&init, &end, 2);
+        let result = tree::explore(&init, &end, 3);
         println!("{}", result);
     }
-
+    */
+    /*
     {
         let init : cube::Sides = cube::create_from_strings(
                          ["0000",
@@ -97,7 +144,7 @@ fn main() {
         let result = tree::explore(&init, &end, 4);
         println!("{}", result);
     }
-
+    */
 
 /*
     println!("Heyyyy {}", ('0' as u8) - ('0' as u8));

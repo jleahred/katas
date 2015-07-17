@@ -1,84 +1,131 @@
 use std::fmt;
 use cube;
 use side;
+use config;
 
 
 #[derive(Debug, Clone, Copy)]
-pub struct ResultFound {
+pub struct Found {
     depth       : u8,
     iterations  : u64,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Result {
-    iterations  : u64,
-    found       : Option<ResultFound>,
+fn get_better(l : &Option<Found>, r : &Found) -> Option<Found> {
+    match *l {
+        Some(found_l) => {
+            if found_l.iterations < r.iterations { Some(found_l) }
+            else { Some(*r) }
+        },
+        None        => Some(*r)
+    }
 }
 
 
-
-impl fmt::Display for ResultFound {
+impl fmt::Display for Found {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "found.depth:  {}\n", self.depth));
-        try!(write!(f, "found.iter:   {}\n", self.iterations));
-        write!(f, "")
-    }
-}
-
-impl fmt::Display for Result {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "iterations:  {}\n", self.iterations));
-        match self.found {
-            Some(found) =>  try!(write!(f, "{}\n", found)),
-            None        =>  try!(write!(f, "not found\n")),
-        }
+        try!(write!(f, "found.iter:   {}", self.iterations));
         write!(f, "")
     }
 }
 
 
-struct ExploringStatus {
+#[derive(Debug, Clone, Copy)]
+pub struct Status {
     depth       : u8,
     max_depth   : u8,
     iterations  : u64,
+
+    best_found  : Option<Found>,
+}
+
+impl Status {
+    fn next_iteration(&self) -> Status {
+        let mut result = *self;
+        result.iterations += 1;
+        result.depth += 1;
+        result
+    }
+
+    fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
+        let mut result = *self;
+        result.best_found = *best_found;
+        result.iterations += iterations;
+        result
+    }
+}
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.best_found {
+            Some(best_found)    =>  try!(write!(f, "---------\nbest_found:  {}\n------------\n", best_found)),
+            None                =>  try!(write!(f, "NOT FOUND\n")),
+        }
+        try!(write!(f, "depth:       {}\n", self.depth));
+        try!(write!(f, "iterations:  {}\n", self.iterations));
+        try!(write!(f, "max_depth:   {}\n", self.max_depth));
+        write!(f, "")
+    }
 }
 
 
-pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Result
+
+
+pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Status
 {
-    internal_explore(origin, end, ExploringStatus{  depth:      0,
-                                                    max_depth:  max_depth,
-                                                    iterations: 1})
+    internal_explore(origin, end, Status{   depth:      0,
+                                            max_depth:  max_depth,
+                                            iterations: 0,
+                                            best_found: None
+                                            })
 }
 
-fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : ExploringStatus) -> Result
+fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : Status) -> Status
 {
     //println!("depth: {}", status.depth);
     //println!("depth: {}", origin);
 
+    let mut acc_iterations = 0;
+    let mut local_best_found = status.best_found;
     if cube::equivalent_end(origin, end) {
-        let result = Result{ iterations: status.iterations,
-                found: Some(ResultFound{depth: status.depth, iterations: status.iterations}) };
-        println!("Found...... {}", &result);
+        let mut result = status;
+        result.best_found = Some(Found{depth: status.depth, iterations: status.iterations});
+
+        println!("Found...... {}\n", result);
+        println!("{}\n", &origin);
         result
     } else {
         if status.depth < status.max_depth {
             //  TODO:  continue here
 
-            use cube::rot::{Orient, Dir};
-            let next =
-                origin.get_rotation(&cube::rot::Item(
-                        Orient::Front,
-                        Dir::Plus,
-                        0));
-            internal_explore(&next, end, ExploringStatus{  depth:      status.depth+1,
-                                                            max_depth:  status.max_depth,
-                                                            iterations: status.iterations+1})
+            let mut iterate_orient_dir = |orientation : cube::rot::Orient, direction : cube::rot::Dir| -> () {
+                for i in 0.. config::SIZE {
+                    let next =
+                        origin.get_rotation(&cube::rot::Item(
+                                orientation,
+                                direction,
+                                i));
+                    let result = internal_explore(&next, end, status.next_iteration());
+                    match result.best_found {
+                        Some(located_best_found)    => local_best_found = get_better(&local_best_found, &located_best_found),
+                        None                        => acc_iterations += result.iterations,
+                    }
+                }
+            };
+
+            {
+                use cube::rot::{Orient, Dir};
+                iterate_orient_dir(Orient::Horizontal,  Dir::Plus);
+                iterate_orient_dir(Orient::Horizontal,  Dir::Minus);
+
+                iterate_orient_dir(Orient::Vertical,    Dir::Plus);
+                iterate_orient_dir(Orient::Vertical,    Dir::Minus);
+
+                iterate_orient_dir(Orient::Front,       Dir::Plus);
+                iterate_orient_dir(Orient::Front,       Dir::Minus);
+            }
         }
-        else {
-            Result{ iterations: status.iterations,
-                    found: None }
-        }
+        status.new_update(&local_best_found, acc_iterations)
     }
 }
 
