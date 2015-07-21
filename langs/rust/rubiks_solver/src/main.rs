@@ -49,8 +49,21 @@ fn main() {
                          "0000"]
                     );
 
-        let result = tree::explore(&init, &end, 3);
+        let result = tree::explore(&init, &end, 4);
         println!("{}", result);
+
+
+        {
+            for depth  in 1..16 {
+                let mut iterations = 1f64+24f64;
+                for j in 0..depth - 1 {
+                    iterations *= 24f64;
+                    iterations += 1f64;
+                };
+                iterations *= 24f64;
+                println!("depth: {} -> moves: {}", depth+1, iterations);
+            }
+        }
     }
 
 /*

@@ -4,6 +4,27 @@ use side;
 use config;
 
 
+/* brutal force cost...
+
+    for cubes 4x4x4
+
+    bfc(depth) = moves
+
+    bfc(1) = 24
+    bfc(2) = 24 + 24^2
+    bfc(3) = bfc(3-1) + 24^3
+    ...
+    bfc(n) = bfc(n-1) + 24^n
+
+    bfc(n) = bfc(n-2) + 24^(n-1) + 24^n
+    bfc(n) = bfc(n-3) + 24^(n-2) + 24^(n-1) + 24^(n-0)
+
+    bfc(n) = 24(1+24*(1+24*(1+24*...)))
+
+*/
+
+
+
 #[derive(Debug, Clone, Copy)]
 pub struct Found {
     depth       : u8,
@@ -108,7 +129,7 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : Status) 
                     let result = internal_explore(&next, end, status.next_iteration());
                     match result.best_found {
                         Some(located_best_found)    => local_best_found = get_better(&local_best_found, &located_best_found),
-                        None                        => acc_iterations += result.iterations,
+                        None                        => acc_iterations += result.iterations - status.iterations,
                     }
                 }
             };
