@@ -1,6 +1,5 @@
 use std::fmt;
 use cube;
-use side;
 use config;
 
 
@@ -53,11 +52,11 @@ impl fmt::Display for Found {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Status {
-    depth       : u8,
-    max_depth   : u8,
-    iterations  : u64,
+    pub depth       : u8,
+    pub max_depth   : u8,
+    pub iterations  : u64,
 
-    best_found  : Option<Found>,
+    pub best_found  : Option<Found>,
 }
 
 impl Status {

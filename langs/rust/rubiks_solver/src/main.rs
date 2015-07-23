@@ -3,6 +3,7 @@ mod side;
 mod cube;
 mod tree;
 
+extern crate time;
 
 
 #[cfg_attr(test, allow(dead_code))]
@@ -49,14 +50,21 @@ fn main() {
                          "0000"]
                     );
 
+
+        let start = time::PreciseTime::now();
         let result = tree::explore(&init, &end, 4);
+        let end = time::PreciseTime::now();
+
         println!("{}", result);
+        println!("required time: {}", start.to(end));
+        println!("iterations/sec: {}", result.iterations as f32 / start.to(end).num_milliseconds() as f32*1000.0);
+
 
 
         {
             for depth  in 1..16 {
                 let mut iterations = 1f64+24f64;
-                for j in 0..depth - 1 {
+                for _ in 0..depth - 1 {
                     iterations *= 24f64;
                     iterations += 1f64;
                 };

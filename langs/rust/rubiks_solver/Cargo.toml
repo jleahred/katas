@@ -2,3 +2,7 @@
 name = "rubiks_solver"
 version = "0.1.0"
 authors = ["jleahred <jleahred@gmail.com>"]
+
+
+[dependencies]
+time = "*"

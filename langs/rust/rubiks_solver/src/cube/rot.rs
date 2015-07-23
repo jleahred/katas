@@ -2,7 +2,6 @@ use std::fmt;
 use side;
 use config;
 use super::Sides;
-use cube;
 
 
 
@@ -22,9 +21,9 @@ pub struct Item(pub Orient, pub Dir, pub usize);     //  ups!!! (usize)
 
 pub fn process(sides: &Sides, item : &Item) -> Sides {
     match *item {
-        Item(Orient::Horizontal, Dir, level) =>    horizontal(sides, Dir, level),
-        Item(Orient::Vertical, Dir, level)   =>    vertical  (sides, Dir, level),
-        Item(Orient::Front, Dir, level)      =>    front     (sides, Dir, level),
+        Item(Orient::Horizontal, dir, level) =>    horizontal(sides, dir, level),
+        Item(Orient::Vertical, dir, level)   =>    vertical  (sides, dir, level),
+        Item(Orient::Front, dir, level)      =>    front     (sides, dir, level),
     }
 }
 
@@ -32,20 +31,20 @@ pub fn process(sides: &Sides, item : &Item) -> Sides {
 
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let Item(Orient, Dir, pos) = *self;
-        write!(f, "{}{}{}", Orient, Dir, pos)
+        let Item(orient, dir, pos) = *self;
+        write!(f, "{}{}{}", orient, dir, pos)
     }
 }
 
 
 impl fmt::Display for Orient {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let sOrient = match *self {
+        let s_orient = match *self {
             Orient::Front        => "F",
             Orient::Horizontal   => "H",
             Orient::Vertical     => "V"
         };
-        write!(f, "{}", sOrient)
+        write!(f, "{}", s_orient)
     }
 }
 
