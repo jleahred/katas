@@ -118,13 +118,13 @@ As you could imagine...
 
 ## Dessign
 
-```cube::Sides``` contains  ```side::Stickers```
+* ```cube::Sides``` contains  ```side::Stickers```
 
-```side::Stickers``` is ```[[u8; SIZE]; SIZE]```
+* ```side::Stickers``` is ```[[u8; SIZE]; SIZE]```
 
-```cube::rot.rs``` has the rotation logic
+* ```cube::rot.rs``` has the rotation logic
 
-```tree``` has the tree explorer code
+* ```tree``` has the tree explorer code
 
 ### Rotations
 
@@ -227,11 +227,120 @@ Estimations brute force:
     8 moves -> 5 h
     9 moves ->  5 days
     10 moves -> 4 months
+    11 moves -> 8 years
+    12 moves -> 200 years
+    13 moves -> 4.800 years
+    14 moves -> 116.000 years
+    15 moves -> 2.8 million years
+    16 moves -> 67 million years
+    17 moves -> 1.600 mill years
+    18 moves -> 38.488 mill years (too much time)
+    19 ...
+
+
+## Adding
+
+### Save path
+
+Checking performance with depth 4
+
+| Strategy        | moves/sec  | perf |
+| -------------   |-----------:|-----:|
+| No save copy      | 164621 | 104 |
+| No save clone      | 158000 | 100 |
+| Sharing      | 150260 | 95 |
+| Clone         | 125799 | 79 |
+
+The Clone solution is quite simple and elegant, but it has a logical
+performance cost compared with Sharing and manual stack path managing
+
+Working with Clone...
+
+```
+#[derive(Debug, Clone)]
+pub struct Status {
+    pub depth           : u8,
+    pub max_depth       : u8,
+    pub iterations      : u64,
+
+    pub best_found      : Option<Found>,
+
+    current_path_ref    : LinkedList<cube::rot::Item>,  //  <<----
+}
+
+impl Status {
+    fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
+        let mut result = self.clone();
+        result.iterations += 1;
+        result.depth += 1;
+        result.current_path_ref.push_back(*rot);    //  <<----
+        result
+    }
+
+    fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
+        let mut result = self.clone();
+        result.best_found = *best_found;
+        result.iterations += iterations;
+        result
+    }
+
+```
+
+
+Working with sharing and manage manually...
+
+```
+#[derive(Debug, Clone)]
+pub struct Status {
+    pub depth           : u8,
+    pub max_depth       : u8,
+    pub iterations      : u64,
+
+    pub best_found      : Option<Found>,
+
+    current_path_ref    : Rc<RefCell<LinkedList<cube::rot::Item>>>,  <<------
+}
+
+impl Status {
+    fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
+        let mut result = self.clone();
+        result.iterations += 1;
+        result.depth += 1;
+        result.current_path_ref.borrow_mut().push_back(*rot);   //  <<----
+        result
+    }
+
+    fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
+        let mut result = self.clone();
+        result.best_found = *best_found;
+        result.iterations += iterations;
+        result.current_path_ref.borrow_mut().pop_back();  //  <<----
+        result
+    }
+
+```
+
+
 
 
 ## Optimizations
 
 * Depth will be adjusted as a solution is found
 * Tree punning with different strategies
+    * Avoid repeating a move tree times
+    * Avoid repeat position on current path
+    * If a movement is at same orientation that previous one, it has to bee on a higher level
 * Back to front positions generation in memory.
   This will let us to increase depth search in some steps (estimation 4-6) using calculations in memory
+
+
+
+  ## TODO
+
+  * Keep the path
+  * Keep all solutions found
+  * Init optimizations
+  * Performance with optimizations
+    * Moves per seconds table
+    * Number of iterations for a problem without solution
+* Code documentation

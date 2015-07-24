@@ -1,4 +1,7 @@
 use std::fmt;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::collections::LinkedList;
 use cube;
 use config;
 
@@ -50,27 +53,32 @@ impl fmt::Display for Found {
 }
 
 
-#[derive(Debug, Clone, Copy)]
+//#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Status {
-    pub depth       : u8,
-    pub max_depth   : u8,
-    pub iterations  : u64,
+    pub depth           : u8,
+    pub max_depth       : u8,
+    pub iterations      : u64,
 
-    pub best_found  : Option<Found>,
+    pub best_found      : Option<Found>,
+
+    current_path_ref    : Rc<RefCell<LinkedList<cube::rot::Item>>>,     //  this is an optimization
 }
 
 impl Status {
-    fn next_iteration(&self) -> Status {
-        let mut result = *self;
+    fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
+        let mut result = self.clone();
         result.iterations += 1;
         result.depth += 1;
+        result.current_path_ref.borrow_mut().push_back(*rot);
         result
     }
 
     fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
-        let mut result = *self;
+        let mut result = self.clone();
         result.best_found = *best_found;
         result.iterations += iterations;
+        result.current_path_ref.borrow_mut().pop_back();
         result
     }
 }
@@ -93,10 +101,11 @@ impl fmt::Display for Status {
 
 pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Status
 {
-    internal_explore(origin, end, Status{   depth:      0,
-                                            max_depth:  max_depth,
-                                            iterations: 0,
-                                            best_found: None
+    internal_explore(origin, end, Status{   depth:              0,
+                                            max_depth:          max_depth,
+                                            iterations:         0,
+                                            best_found:         None,
+                                            current_path_ref:   Rc::new(RefCell::new(LinkedList::new()))
                                             })
 }
 
@@ -104,12 +113,15 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : Status) 
 {
     //println!("depth: {}", status.depth);
     //println!("depth: {}", origin);
+    //println!("current_path: {:?}\n", status.current_path_ref);
 
     let mut acc_iterations = 0;
     let mut local_best_found = status.best_found;
     if cube::equivalent_end(origin, end) {
-        let mut result = status;
-        result.best_found = Some(Found{depth: status.depth, iterations: status.iterations});
+        let mut result = status.clone();
+        result.best_found = Some(Found{ depth:          status.depth,
+                                        iterations:     status.iterations,
+                                    });
 
         println!("Found...... {}\n", result);
         println!("{}\n", &origin);
@@ -120,12 +132,12 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : Status) 
 
             let mut iterate_orient_dir = |orientation : cube::rot::Orient, direction : cube::rot::Dir| -> () {
                 for i in 0.. config::SIZE {
-                    let next =
-                        origin.get_rotation(&cube::rot::Item(
-                                orientation,
-                                direction,
-                                i));
-                    let result = internal_explore(&next, end, status.next_iteration());
+                    let next_move = &cube::rot::Item(
+                            orientation,
+                            direction,
+                            i);
+                    let next = origin.get_rotation(next_move);
+                    let result = internal_explore(&next, end, status.next_iteration(next_move));
                     match result.best_found {
                         Some(located_best_found)    => local_best_found = get_better(&local_best_found, &located_best_found),
                         None                        => acc_iterations += result.iterations - status.iterations,
