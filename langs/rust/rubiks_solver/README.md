@@ -249,10 +249,10 @@ Checking performance with depth 4
 | No save copy      | 164621 | 104 |
 | No save clone      | 158000 | 100 |
 | Sharing      | 150260 | 95 |
-| Clone         | 125799 | 79 |
+| Full copy         | 125799 | 79 |
 
-The Clone solution is quite simple and elegant, but it has a logical
-performance cost compared with Sharing and manual stack path managing
+The clone path full copy solution is quite simple and elegant, but it has a logical
+performance cost compared with Sharing and manual path stack managing
 
 Working with Clone...
 
@@ -317,8 +317,20 @@ impl Status {
         result.current_path_ref.borrow_mut().pop_back();  //  <<----
         result
     }
-
 ```
+
+In this case we could try to use borrowed pointers managing the scope manually.
+
+We could also try with Boxing, very close to raw pointer performance.
+
+But I will use Rc pointers because the solution is simpler and the performance
+is good enougth.
+
+> .clone() on Rc will produce two pointers at same object, but .clone()
+on Box, will will copy the value and we will have two pointers.
+
+And remember, the compiler will remove the counter when it can detect that
+it's not necessary (same as Swift).
 
 
 
@@ -337,7 +349,7 @@ impl Status {
 
   ## TODO
 
-  * Keep the path
+  * Keep the path (move and position)
   * Keep all solutions found
   * Init optimizations
   * Performance with optimizations

@@ -62,7 +62,7 @@ pub struct Status {
 
     pub best_found      : Option<Found>,
 
-    current_path_ref    : Rc<RefCell<LinkedList<cube::rot::Item>>>,     //  this is an optimization
+    shared_current_path    : Rc<RefCell<LinkedList<cube::rot::Item>>>,     //  this is an optimization
 }
 
 impl Status {
@@ -70,7 +70,7 @@ impl Status {
         let mut result = self.clone();
         result.iterations += 1;
         result.depth += 1;
-        result.current_path_ref.borrow_mut().push_back(*rot);
+        result.shared_current_path.borrow_mut().push_back(*rot);
         result
     }
 
@@ -78,7 +78,7 @@ impl Status {
         let mut result = self.clone();
         result.best_found = *best_found;
         result.iterations += iterations;
-        result.current_path_ref.borrow_mut().pop_back();
+        result.shared_current_path.borrow_mut().pop_back();
         result
     }
 }
@@ -105,7 +105,7 @@ pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Sta
                                             max_depth:          max_depth,
                                             iterations:         0,
                                             best_found:         None,
-                                            current_path_ref:   Rc::new(RefCell::new(LinkedList::new()))
+                                            shared_current_path:   Rc::new(RefCell::new(LinkedList::new()))
                                             })
 }
 
@@ -113,7 +113,7 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : Status) 
 {
     //println!("depth: {}", status.depth);
     //println!("depth: {}", origin);
-    //println!("current_path: {:?}\n", status.current_path_ref);
+    //println!("current_path: {:?}\n", status.shared_current_path);
 
     let mut acc_iterations = 0;
     let mut local_best_found = status.best_found;
