@@ -62,7 +62,7 @@ pub struct Status {
 
     pub best_found      : Option<Found>,
 
-    current_path_ref    : Rc<RefCell<LinkedList<cube::rot::Item>>>,     //  this is an optimization
+    current_path_ref    : LinkedList<cube::rot::Item>,     //  this is an optimization
 }
 
 impl Status {
@@ -81,7 +81,8 @@ impl Status {
         let mut result = self.clone();
         result.iterations += 1;
         result.depth += 1;
-        result.current_path_ref.borrow_mut().push_back(*rot);
+        result.current_path_ref.push_back(*rot);
+        //result.current_path_ref.
         result
     }
 
@@ -100,7 +101,7 @@ impl Status {
         let mut result = self.clone();
         result.best_found = *best_found;
         result.iterations += iterations;
-        result.current_path_ref.borrow_mut().pop_back();
+        //result.current_path_ref.borrow_mut().pop_back();
         result
     }
 }
@@ -127,7 +128,7 @@ pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Sta
                                             max_depth:          max_depth,
                                             iterations:         0,
                                             best_found:         None,
-                                            current_path_ref:   Rc::new(RefCell::new(LinkedList::new()))
+                                            current_path_ref:   LinkedList::new()
                                             })
 }
 
