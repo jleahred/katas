@@ -240,7 +240,13 @@ Estimations brute force:
 
 ## Save path
 
-aaa
+| Strategy        | moves/sec  | perf |
+| -------------   |-----------:|--__-:|
+| No save      | 164621 | 100 |
+| Clone        | 150260 | 91 |
+| Copy         | ??? | ??? |
+
+
 
 
 ## Optimizations
