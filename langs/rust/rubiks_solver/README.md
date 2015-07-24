@@ -227,11 +227,40 @@ Estimations brute force:
     8 moves -> 5 h
     9 moves ->  5 days
     10 moves -> 4 months
+    11 moves -> 8 years
+    12 moves -> 200 years
+    13 moves -> 4.800 years
+    14 moves -> 116.000 years
+    15 moves -> 2.8 million years
+    16 moves -> 67 million years
+    17 moves -> 1.600 mill years
+    18 moves -> 38.488 mill years (too much time)
+    19 ...
+
+
+## Save path
+
+aaa
 
 
 ## Optimizations
 
 * Depth will be adjusted as a solution is found
 * Tree punning with different strategies
+    * Avoid repeating a move tree times
+    * Avoid repeat position on current path
+    * If a movement is at same orientation that previous one, it has to bee on a higher level
 * Back to front positions generation in memory.
   This will let us to increase depth search in some steps (estimation 4-6) using calculations in memory
+
+
+
+  ## TODO
+
+  * Keep the path
+  * Keep all solutions found
+  * Init optimizations
+  * Performance with optimizations
+    * Moves per seconds table
+    * Number of iterations for a problem without solution
+* Code documentation
