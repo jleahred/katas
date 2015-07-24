@@ -53,6 +53,15 @@ impl fmt::Display for Found {
 }
 
 
+#[derive(Debug, Clone, Copy)]
+pub struct RotationPosition {
+    rot     :   cube::rot::Item,
+    position:   cube::Sides,
+}
+
+
+
+
 //#[derive(Debug, Clone, Copy)]
 #[derive(Debug, Clone)]
 pub struct Status {
@@ -62,15 +71,16 @@ pub struct Status {
 
     pub best_found      : Option<Found>,
 
-    shared_current_path    : Rc<RefCell<LinkedList<cube::rot::Item>>>,     //  this is an optimization
+    shared_current_path    : Rc<RefCell<LinkedList<RotationPosition>>>,     //  this is an optimization
 }
 
+
 impl Status {
-    fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
+    fn next_iteration(&self, rot_pos: &RotationPosition) -> Status {
         let mut result = self.clone();
         result.iterations += 1;
         result.depth += 1;
-        result.shared_current_path.borrow_mut().push_back(*rot);
+        result.shared_current_path.borrow_mut().push_back(*rot_pos);
         result
     }
 
@@ -137,7 +147,8 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : Status) 
                             direction,
                             i);
                     let next = origin.get_rotation(next_move);
-                    let result = internal_explore(&next, end, status.next_iteration(next_move));
+                    let rot_pos = RotationPosition{ rot: *next_move, position: next };
+                    let result = internal_explore(&next, end, status.next_iteration(&rot_pos));
                     match result.best_found {
                         Some(located_best_found)    => local_best_found = get_better(&local_best_found, &located_best_found),
                         None                        => acc_iterations += result.iterations - status.iterations,
