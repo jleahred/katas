@@ -67,17 +67,6 @@ pub struct Status {
 
 impl Status {
     fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
-        /*let mut result = *self;
-        result.iterations += 1;
-        result.depth += 1;
-        result*/
-        /*Status {
-            depth: self.depth +1,
-            max_depth: self.max_depth,
-            iterations: self.iterations +1,
-            best_found: self.best_found,
-            current_path_ref: self.current_path_ref.clone(),
-        }*/
         let mut result = self.clone();
         result.iterations += 1;
         result.depth += 1;
@@ -86,17 +75,6 @@ impl Status {
     }
 
     fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
-        /*let mut result = *self;
-        result.best_found = *best_found;
-        result.iterations += iterations;
-        result*/
-        /*Status {
-            depth: self.depth,
-            max_depth: self.max_depth,
-            iterations: self.iterations + 1,
-            best_found: *best_found,
-            current_path_ref: self.current_path_ref.clone(),
-        }*/
         let mut result = self.clone();
         result.best_found = *best_found;
         result.iterations += iterations;

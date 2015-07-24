@@ -238,15 +238,18 @@ Estimations brute force:
     19 ...
 
 
-## Save path
+## Adding
+
+### Save path
 
 Checking performance with depth 4
 
 | Strategy        | moves/sec  | perf |
 | -------------   |-----------:|-----:|
-| No save      | 164621 | 100 |
-| Sharing      | 150260 | 91 |
-| Clone         | 125799 | 76 |
+| No save copy      | 164621 | 104 |
+| No save clone      | 158000 | 100 |
+| Sharing      | 150260 | 95 |
+| Clone         | 125799 | 79 |
 
 The Clone solution is quite simple and elegant, but it has a logical
 performance cost compared with Sharing and manual stack path managing
