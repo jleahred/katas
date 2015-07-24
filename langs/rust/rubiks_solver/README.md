@@ -118,13 +118,13 @@ As you could imagine...
 
 ## Dessign
 
-```cube::Sides``` contains  ```side::Stickers```
+* ```cube::Sides``` contains  ```side::Stickers```
 
-```side::Stickers``` is ```[[u8; SIZE]; SIZE]```
+* ```side::Stickers``` is ```[[u8; SIZE]; SIZE]```
 
-```cube::rot.rs``` has the rotation logic
+* ```cube::rot.rs``` has the rotation logic
 
-```tree``` has the tree explorer code
+* ```tree``` has the tree explorer code
 
 ### Rotations
 
@@ -240,11 +240,82 @@ Estimations brute force:
 
 ## Save path
 
+Checking performance with depth 4
+
 | Strategy        | moves/sec  | perf |
-| -------------   |-----------:|--__-:|
+| -------------   |-----------:|-----:|
 | No save      | 164621 | 100 |
-| Clone        | 150260 | 91 |
-| Copy         | ??? | ??? |
+| Sharing      | 150260 | 91 |
+| Clone         | 125799 | 76 |
+
+The Clone solution is quite simple and elegant, but it has a logical
+performance cost compared with Sharing and manual stack path managing
+
+Working with Clone...
+
+```
+#[derive(Debug, Clone)]
+pub struct Status {
+    pub depth           : u8,
+    pub max_depth       : u8,
+    pub iterations      : u64,
+
+    pub best_found      : Option<Found>,
+
+    current_path_ref    : LinkedList<cube::rot::Item>,  //  <<----
+}
+
+impl Status {
+    fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
+        let mut result = self.clone();
+        result.iterations += 1;
+        result.depth += 1;
+        result.current_path_ref.push_back(*rot);    //  <<----
+        result
+    }
+
+    fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
+        let mut result = self.clone();
+        result.best_found = *best_found;
+        result.iterations += iterations;
+        result
+    }
+
+```
+
+
+Working with sharing and manage manually...
+
+```
+#[derive(Debug, Clone)]
+pub struct Status {
+    pub depth           : u8,
+    pub max_depth       : u8,
+    pub iterations      : u64,
+
+    pub best_found      : Option<Found>,
+
+    current_path_ref    : Rc<RefCell<LinkedList<cube::rot::Item>>>,  <<------
+}
+
+impl Status {
+    fn next_iteration(&self, rot: &cube::rot::Item) -> Status {
+        let mut result = self.clone();
+        result.iterations += 1;
+        result.depth += 1;
+        result.current_path_ref.borrow_mut().push_back(*rot);   //  <<----
+        result
+    }
+
+    fn new_update(&self, best_found : &Option<Found>,  iterations : u64) -> Status {
+        let mut result = self.clone();
+        result.best_found = *best_found;
+        result.iterations += iterations;
+        result.current_path_ref.borrow_mut().pop_back();  //  <<----
+        result
+    }
+
+```
 
 
 
