@@ -40,7 +40,7 @@ fn main() {
                     "0000 0000 0000",
                     "0000 0000 0000",
                          "1234",
-                         "0004",
+                         "0000",
                          "0000",
                          "0000",
 
@@ -52,12 +52,18 @@ fn main() {
 
 
         let start = time::PreciseTime::now();
-        let result = tree::explore(&init, &end, 4);
+        let result = tree::explore(&init, &end, 2);
         let end = time::PreciseTime::now();
 
         println!("{}", result);
         println!("required time: {}", start.to(end));
         println!("iterations/sec: {}", result.iterations as f32 / start.to(end).num_milliseconds() as f32*1000.0);
+
+        print!("moves \n");
+        for rot_pos in result.best_solution.iter() {
+            print!("{}  ", rot_pos.rot);
+        }
+        print!("\n");
 
 
 

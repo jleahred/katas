@@ -349,7 +349,6 @@ it's not necessary (same as Swift).
 
   ## TODO
 
-  * Keep the path (move and position)
   * Keep all solutions found
   * Init optimizations
   * Performance with optimizations
