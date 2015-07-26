@@ -240,7 +240,7 @@ Estimations brute force:
 
 ## Adding
 
-### Save path
+### Save path try
 
 Checking performance with depth 4
 
@@ -332,17 +332,32 @@ on Box, will will copy the value and we will have two pointers.
 And remember, the compiler will remove the counter when it can detect that
 it's not necessary (same as Swift).
 
+### Save path finally
+
+Letting the language to manage the stack is elegant, but not always good
+for performance.
+
+In this case, there are some fields on status that has to be updated and
+saved on backward direction.
+
+One option, is to configure these fields as ```Rc<RefCell<```.
+
+The other option, better on performance, is to manage the status manually.
+
+Making the push and pop and modifying the values when entering and leaving
+a branch
 
 
 
-## Optimizations
 
-* Depth will be adjusted as a solution is found
-* Tree punning with different strategies
-    * Avoid repeating a move tree times
-    * Avoid repeat position on current path
-    * If a movement is at same orientation that previous one, it has to bee on a higher level
-* Back to front positions generation in memory.
+## Optimizations (opt)
+
+1. Depth will be adjusted as a solution is found
+- Tree punning with different strategies
+    1. Avoid repeating a move tree times
+    - Avoid repeat position on current path (checking from end to begin)
+    - If a movement is at same orientation that previous one, it has to bee on a higher level
+- Back to front positions generation in memory.
   This will let us to increase depth search in some steps (estimation 4-6) using calculations in memory
 
 

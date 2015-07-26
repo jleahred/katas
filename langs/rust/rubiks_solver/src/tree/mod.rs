@@ -69,7 +69,7 @@ pub struct Status {
 
     pub best_found      : Option<Found>,
 
-    current_path        : LinkedList<RotationPosition>,     //  this is an optimization
+    current_path        : LinkedList<RotationPosition>,
     pub best_solution   : LinkedList<RotationPosition>,
 }
 
@@ -118,7 +118,8 @@ pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Box
     status
 }
 
-fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a mut Status) -> &'a mut Status
+//fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a mut Status) -> &'a mut Status
+fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Status) -> ()
 {
     //println!("depth: {}", status.depth);
     //println!("depth: {}", origin);
@@ -132,7 +133,7 @@ fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a 
                 status.best_found = Some(
                                                 Found{ depth:   status.depth,
                                                 iterations:     status.iterations, });
-                status.max_depth = status.depth;
+                status.max_depth = status.depth;    //  opt(1)
                 status.best_solution.clear();
                 for path in status.current_path.iter() {
                     status.best_solution.push_back(*path);
@@ -148,15 +149,12 @@ fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a 
                 None            => update_best_solution(status),
             }
         }
-        status
         //println!("Found...... {}\n", result);
         //println!("Found moves {}\n", result.shared_best_solution.borrow().len());
         //println!("Found moves {}\n", result.shared_current_path.borrow().len());
         //println!("{}\n", &origin);
     } else {
         if status.depth < status.max_depth {
-            //  TODO:  continue here
-
             let mut iterate_orient_dir = |  orientation : cube::rot::Orient,
                                             direction : cube::rot::Dir| -> () {
                 for i in 0.. config::SIZE {
@@ -166,7 +164,7 @@ fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a 
                             i);
                     let next = origin.get_rotation(next_move);
                     let rot_pos = RotationPosition{ rot: *next_move, position: next };
-                    let status = internal_explore(&next, end, status.push(&rot_pos));
+                    internal_explore(&next, end, status.push(&rot_pos));
                     match status.best_found {
                         Some(located_best_found)    => status.best_found = get_better(status.best_found, &located_best_found),
                         None                        => (),
@@ -187,8 +185,6 @@ fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a 
                 iterate_orient_dir(Orient::Front,       Dir::Minus);
             }
         }
-        //status.pop();
-        status
     }
 }
 
