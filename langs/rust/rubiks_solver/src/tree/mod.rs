@@ -1,7 +1,10 @@
 use std::fmt;
 use std::collections::LinkedList;
+use std::cell::RefCell;
 use cube;
 use config;
+
+mod opts;
 
 
 /* brutal force cost...
@@ -59,6 +62,23 @@ pub struct RotationPosition {
 
 
 
+#[derive(Debug, Clone)]
+pub struct PunningStats {
+    pub depth_less_found        : u64,
+    pub punning_3_consecutives  : u64,
+    pub repeated_in_path        : u64,
+    pub direction_higher_level  : u64,
+}
+
+fn empty_punning_stats () -> PunningStats {
+    PunningStats {
+                            depth_less_found: 0,
+                            punning_3_consecutives: 0,
+                            repeated_in_path: 0,
+                            direction_higher_level:0,
+                        }
+}
+
 
 //#[derive(Debug, Clone, Copy)]
 #[derive(Debug, Clone)]
@@ -71,6 +91,8 @@ pub struct Status {
 
     current_path        : LinkedList<RotationPosition>,
     pub best_solution   : LinkedList<RotationPosition>,
+
+    pub punning_stats   : RefCell<PunningStats>,
 }
 
 
@@ -113,6 +135,7 @@ pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Box
                                             best_found:         None,
                                             current_path:       LinkedList::new(),
                                             best_solution:      LinkedList::new(),
+                                            punning_stats:      RefCell::new(empty_punning_stats()),
                                         });
     internal_explore(origin, end, &mut status);
     status
@@ -126,14 +149,13 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Sta
     //println!("current_path: {:?}\n", status.shared_current_path);
 
     if cube::equivalent_end(origin, end) {
-        println!("current best solution {}", status.best_solution.len());
-        println!("new best solution {}  {}", status.current_path.len(), status.depth);
+        //println!("current best solution {}", status.best_solution.len());
+        //println!("new best solution {}  {}", status.current_path.len(), status.depth);
         {
             let update_best_solution =  |status: &mut Status|  -> () {
                 status.best_found = Some(
                                                 Found{ depth:   status.depth,
                                                 iterations:     status.iterations, });
-                status.max_depth = status.depth;    //  opt(1)
                 status.best_solution.clear();
                 for path in status.current_path.iter() {
                     status.best_solution.push_back(*path);
@@ -162,8 +184,24 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Sta
                             orientation,
                             direction,
                             i);
+
+                    if opts::before_move::depth_bigger_or_equal_best_sol(status, &mut status.punning_stats.borrow_mut()) {
+                        break;
+                    }
+                    if opts::before_move::three_consecutive_moves(&next_move, status, &mut status.punning_stats.borrow_mut()) {
+                        continue;
+                    }
+                    if opts::before_move::same_direction_higher_level(&next_move, status, &mut status.punning_stats.borrow_mut()) {
+                        continue;
+                    }
+
                     let next = origin.get_rotation(next_move);
                     let rot_pos = RotationPosition{ rot: *next_move, position: next };
+
+                    if opts::after_move::pos_equal2current_path(&next, status, &mut status.punning_stats.borrow_mut()) {
+                        continue;
+                    }
+
                     internal_explore(&next, end, status.push(&rot_pos));
                     match status.best_found {
                         Some(located_best_found)    => status.best_found = get_better(status.best_found, &located_best_found),

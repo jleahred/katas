@@ -10,6 +10,7 @@ extern crate time;
 fn main() {
 
     {
+        /*
         let init : cube::Sides = cube::create_from_strings(
                          ["0000",
                           "0000",
@@ -40,7 +41,7 @@ fn main() {
                     "0000 0000 0000",
                     "0000 0000 0000",
                          "1234",
-                         "0000",
+                         "0004",
                          "0000",
                          "0000",
 
@@ -49,10 +50,49 @@ fn main() {
                          "0000",
                          "0000"]
                     );
+        */
+        let init : cube::Sides = cube::create_from_strings(
+                         ["1111",
+                          "1111",
+                          "1111",
+                          "1111",
+                     "2222 3333 4444",
+                     "2222 3333 4444",
+                     "2222 3333 4444",
+                     "2222 3333 4444",
+                          "5555",
+                          "5555",
+                          "5555",
+                          "5555",
 
+                          "6666",
+                          "6666",
+                          "6666",
+                          "6666"]
+            );
+
+        let end : cube::Sides = cube::create_from_strings(
+                        ["1111",
+                         "1111",
+                         "1111",
+                         "1111",
+                    "2222 3333 4444",
+                    "2222 3333 4444",
+                    "2222 3333 4444",
+                    "2222 3553 4444",
+                         "5335",
+                         "5555",
+                         "5555",
+                         "5555",
+
+                         "6666",
+                         "6666",
+                         "6666",
+                         "6666"]
+                    );
 
         let start = time::PreciseTime::now();
-        let result = tree::explore(&init, &end, 2);
+        let result = tree::explore(&init, &end, 6);
         let end = time::PreciseTime::now();
 
         println!("{}", result);
@@ -66,6 +106,9 @@ fn main() {
         print!("\n");
 
 
+        print!("\n{:?}\n", result.punning_stats);
+
+
 
         {
             for depth  in 1..16 {
@@ -75,7 +118,7 @@ fn main() {
                     iterations += 1f64;
                 };
                 iterations *= 24f64;
-                println!("depth: {} -> moves: {}", depth+1, iterations);
+                println!("depth: {} -> moves: {}\n", depth+1, iterations);
             }
         }
     }
