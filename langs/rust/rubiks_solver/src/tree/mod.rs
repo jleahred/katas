@@ -68,6 +68,7 @@ pub struct PunningStats {
     pub punning_3_consecutives  : u64,
     pub repeated_in_path        : u64,
     pub direction_higher_level  : u64,
+    pub inverse_move            : u64,
 }
 
 fn empty_punning_stats () -> PunningStats {
@@ -76,6 +77,7 @@ fn empty_punning_stats () -> PunningStats {
                             punning_3_consecutives: 0,
                             repeated_in_path: 0,
                             direction_higher_level:0,
+                            inverse_move: 0,
                         }
 }
 
@@ -188,6 +190,9 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Sta
                     if opts::before_move::depth_bigger_or_equal_best_sol(status, &mut status.punning_stats.borrow_mut()) {
                         break;
                     }
+                    if opts::before_move::inverse_move(&next_move, status, &mut status.punning_stats.borrow_mut()) {
+                        continue;
+                    }
                     if opts::before_move::three_consecutive_moves(&next_move, status, &mut status.punning_stats.borrow_mut()) {
                         continue;
                     }
@@ -198,9 +203,9 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Sta
                     let next = origin.get_rotation(next_move);
                     let rot_pos = RotationPosition{ rot: *next_move, position: next };
 
-                    if opts::after_move::pos_equal2current_path(&next, status, &mut status.punning_stats.borrow_mut()) {
+                    /*if opts::after_move::pos_equal2current_path(&next, status, &mut status.punning_stats.borrow_mut()) {
                         continue;
-                    }
+                    }*/
 
                     internal_explore(&next, end, status.push(&rot_pos));
                     match status.best_found {

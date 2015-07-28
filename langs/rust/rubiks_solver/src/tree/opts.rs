@@ -43,6 +43,21 @@ pub mod before_move {
         }
     }
 
+    pub fn inverse_move(next_move: &rot::Item, status: &Status, punning_stats : &mut PunningStats) -> bool {
+        match status.current_path.back() {
+            Some(rot_position) => {
+                let rot::Item(last_orient, last_dir, last_level) = rot_position.rot;
+                let rot::Item(next_orient, next_dir, next_level) = *next_move;
+                if next_orient == last_orient
+                &&  next_level == last_level
+                &&  next_dir != last_dir {
+                    punning_stats.inverse_move += 1;
+                    true
+                } else { false }
+            },
+            None => false
+        }
+    }
 }
 
 
