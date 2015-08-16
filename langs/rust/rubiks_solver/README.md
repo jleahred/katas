@@ -1,3 +1,23 @@
+# Prelude
+
+## Aim
+
+A non trivial problem to learn, practice and to known Rust
+
+
+## NOT Aim
+
+A great rubik's cube solver.
+
+I'm worried about Rust in this kata, not in fantastic algorithms to solve
+the rubik's cube
+
+## Practical
+
+This program will be practical to find good rubik's sequences for cubes
+of any size (not to fully solve the cube from any position)
+
+
 # Rubik cubes solver
 
 This is a small program to solve and look for combinations on rubiks cubes.
@@ -242,7 +262,7 @@ Estimations brute force:
 
 ## Adding
 
-### Save path try
+### Save working try
 
 Checking performance with depth 4
 
@@ -362,13 +382,37 @@ a branch
 - Back to front positions generation in memory (last moves caché).
   This will let us to increase depth search in some steps (estimation 4-6) using calculations in memory
 
+### Last moves cache
+
+This is a great optimization.
+
+Starting by end, the program will run with depth 5 memorizing the positions.
+
+When running the tree, on each movement, it will look in this cache.
+
+This let to add 5 in tree search depth.
+
+Therefore, we can run 12 or 13 with no problems at all.
+
+Remember, 12 cost is 200 years, and 13 cost is thousands of years
 
 
-  ## TODO
 
-  * Keep all solutions found
-  * Init optimizations
-  * Performance with optimizations
-    * Moves per seconds table
-    * Number of iterations for a problem without solution
+## Conclusions
+
+This exercise has been great to practice and test Rust.
+
+I've used borrowing, Box, Rc, modules, cargo, unsafe...
+
+Now, I also know some WTF about this language and the future about them.
+I will write some ideas about it soon.
+
+This program is practical to find sequences directly or indirectly.
+You could look for symmetrical sequences (very common), doubling the potential
+depth of the program.
+
+
+
+## TODO
+
 * Code documentation
