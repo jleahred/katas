@@ -83,24 +83,40 @@ fn empty_punning_stats () -> PunningStats {
 
 
 //#[derive(Debug, Clone, Copy)]
-#[derive(Debug, Clone)]
-pub struct Status {
-    pub depth           : u8,
-    pub max_depth       : u8,
+
+#[derive(Clone)]
+pub struct  Stats {
     pub iterations      : u64,
+    pub punning         : RefCell<PunningStats>,
+}
+
+#[derive(Clone)]
+pub struct Config {
+    pub max_depth       : u8,
+    pub generate_cache  : bool,
+}
+
+
+#[derive(Clone)]
+pub struct Status {
+    pub stats           : Stats,
+    pub config          : Config,
+
+    pub depth           : u8,
 
     pub best_found      : Option<Found>,
 
     current_path        : LinkedList<RotationPosition>,
     pub best_solution   : LinkedList<RotationPosition>,
 
-    pub punning_stats   : RefCell<PunningStats>,
+    pub last_moves      : RefCell<opts::cache_last_moves::PosMoves>
 }
+
 
 
 impl Status {
     fn push(&mut self, rot_pos: &RotationPosition) -> &mut Status {
-        self.iterations += 1;
+        self.stats.iterations += 1;
         self.depth += 1;
         self.current_path.push_back(*rot_pos);
         self
@@ -120,8 +136,8 @@ impl fmt::Display for Status {
             None                =>  try!(write!(f, "NOT FOUND\n")),
         }
         try!(write!(f, "current depth:  {}\n", self.depth));
-        try!(write!(f, "iterations:     {}\n", self.iterations));
-        try!(write!(f, "max_depth:      {}\n", self.max_depth));
+        try!(write!(f, "iterations:     {}\n", self.stats.iterations));
+        try!(write!(f, "max_depth:      {}\n", self.config.max_depth));
         write!(f, "")
     }
 }
@@ -131,54 +147,96 @@ impl fmt::Display for Status {
 
 pub fn explore(origin : &cube::Sides, end : &cube::Sides, max_depth : u8) -> Box<Status>
 {
-    let mut status  = Box::new(Status{      depth:              0,
-                                            max_depth:          max_depth,
-                                            iterations:         0,
-                                            best_found:         None,
-                                            current_path:       LinkedList::new(),
-                                            best_solution:      LinkedList::new(),
-                                            punning_stats:      RefCell::new(empty_punning_stats()),
-                                        });
+    let mut status  = Box::new(Status{
+                                    stats: Stats {
+                                        iterations      : 0u64,
+                                        punning         : RefCell::new(empty_punning_stats()),
+                                    },
+                                    config: Config {
+                                        max_depth:          max_depth,
+                                        generate_cache:     false,
+                                    },
+                                    depth:              0,
+                                    best_found:         None,
+                                    current_path:       LinkedList::new(),
+                                    best_solution:      LinkedList::new(),
+                                    last_moves:         RefCell::new(opts::cache_last_moves::PosMoves::new()),
+                                });
+
+    println!("Generating cache last moves...");
+    status.config.generate_cache = true;
+    status.config.max_depth = 5;
+    internal_explore(end, origin, &mut status);
+    println!("Cache last moves generated. size: {}", status.last_moves.borrow_mut().len());
+
+    println!("Exploring...");
+    status.config.generate_cache = false;
+    status.config.max_depth = max_depth;
     internal_explore(origin, end, &mut status);
+
     status
 }
 
-//fn internal_explore<'a>(origin : &cube::Sides, end : &cube::Sides, status : &'a mut Status) -> &'a mut Status
 fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Status) -> ()
 {
-    //println!("depth: {}", status.depth);
-    //println!("depth: {}", origin);
-    //println!("current_path: {:?}\n", status.shared_current_path);
-
-    if cube::equivalent_end(origin, end) {
-        //println!("current best solution {}", status.best_solution.len());
-        //println!("new best solution {}  {}", status.current_path.len(), status.depth);
-        {
-            let update_best_solution =  |status: &mut Status|  -> () {
-                status.best_found = Some(
-                                                Found{ depth:   status.depth,
-                                                iterations:     status.iterations, });
-                status.best_solution.clear();
-                for path in status.current_path.iter() {
-                    status.best_solution.push_back(*path);
-                }
-            };
-
-            match status.best_found {
-                Some(prev_best_found)     => {
-                    if status.depth < prev_best_found.depth  {
-                        update_best_solution(status);
-                    }
-                }
-                None            => update_best_solution(status),
-            }
+    let update_best_solution =  |   status: &mut Status,
+                                    cache_last_moves: &Option<LinkedList<RotationPosition>>|  -> () {
+        print!("FOUND!!!!!!!!!!!!!!!!!!!!!!!!!! {}", status.depth);
+        status.best_found = Some(
+                                        Found{ depth:   status.depth,
+                                        iterations:     status.stats.iterations, });
+        status.best_solution.clear();
+        for path in status.current_path.iter() {
+            status.best_solution.push_back(*path);
         }
-        //println!("Found...... {}\n", result);
-        //println!("Found moves {}\n", result.shared_best_solution.borrow().len());
-        //println!("Found moves {}\n", result.shared_current_path.borrow().len());
-        //println!("{}\n", &origin);
+        match *cache_last_moves {
+            Some(ref last_moves)    => {
+                print!("+{}", last_moves.len());
+                for it in last_moves.iter().rev() {
+                    status.best_solution.push_back(RotationPosition {
+                        rot:        it.rot.get_reverse(),
+                        position:   it.position,
+                    });
+                }
+            },
+            None                => (),
+        };
+        for mv in status.best_solution.iter() {
+            print!(" {}", mv.rot);
+        }
+        println!("");
+    };
+    let update_best_found = |   status: &mut Status,
+                                cache_last_moves: &Option<LinkedList<RotationPosition>>| {
+        match status.best_found {
+            Some(prev_best_found)     => {
+                if status.depth < prev_best_found.depth  {
+                    update_best_solution(status, cache_last_moves);
+                }
+            }
+            None            => update_best_solution(status, cache_last_moves),
+        }
+    };
+    if status.config.generate_cache==false && cube::equivalent_end(origin, end) {
+        update_best_found(status, &None);
+        return;
     } else {
-        if status.depth < status.max_depth {
+        //if status.depth >= status.config.max_depth  {
+            if  status.config.generate_cache {
+                if status.depth >= status.config.max_depth {
+                    status.last_moves.borrow_mut().add(origin, &status.current_path);
+                }
+            } else {
+                //  last moves optimization
+                let ofound = status.last_moves.borrow().find(origin);
+                if ofound.is_none() == false {
+                    update_best_found(status, &ofound);
+                    return;
+                }
+            }
+        //}
+        //else {
+        if status.depth < status.config.max_depth {
             let mut iterate_orient_dir = |  orientation : cube::rot::Orient,
                                             direction : cube::rot::Dir| -> () {
                 for i in 0.. config::SIZE {
@@ -187,16 +245,16 @@ fn internal_explore(origin : &cube::Sides, end : &cube::Sides, status : &mut Sta
                             direction,
                             i);
 
-                    if opts::before_move::depth_bigger_or_equal_best_sol(status, &mut status.punning_stats.borrow_mut()) {
+                    if opts::before_move::depth_bigger_or_equal_best_sol(status, &mut status.stats.punning.borrow_mut()) {
                         break;
                     }
-                    if opts::before_move::inverse_move(&next_move, status, &mut status.punning_stats.borrow_mut()) {
+                    if opts::before_move::inverse_move(&next_move, status, &mut status.stats.punning.borrow_mut()) {
                         continue;
                     }
-                    if opts::before_move::three_consecutive_moves(&next_move, status, &mut status.punning_stats.borrow_mut()) {
+                    if opts::before_move::three_consecutive_moves(&next_move, status, &mut status.stats.punning.borrow_mut()) {
                         continue;
                     }
-                    if opts::before_move::same_direction_higher_level(&next_move, status, &mut status.punning_stats.borrow_mut()) {
+                    if opts::before_move::same_direction_higher_level(&next_move, status, &mut status.stats.punning.borrow_mut()) {
                         continue;
                     }
 

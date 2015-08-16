@@ -1,12 +1,11 @@
 use std::fmt;
 use config;
 use side;
-
 pub mod rot;
 
 
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Sides {
                                     pub top   : side::Stickers,
 
@@ -36,7 +35,7 @@ pub fn create(
         }
 }
 
-pub fn create_from_strings (lines : [&str;config::SIZE*config::SIZE])  -> Sides
+pub fn create_from_strings (lines : [&str;config::SIZE*4])  -> Sides
 {
     let get_row_from_string = |s:&str| -> [u8; config::SIZE] {
         if s.len() != config::SIZE {
@@ -62,7 +61,7 @@ pub fn create_from_strings (lines : [&str;config::SIZE*config::SIZE])  -> Sides
         let mut front = [0u8; config::SIZE];
         let mut right = [0u8; config::SIZE];
         if s.len() != config::SIZE*3 + 2 {
-            panic!(format!("invalid length {} expected 14", s));
+            panic!(format!("invalid length {} expected {}", s, config::SIZE*3 + 2));
         }
 
         for i in 0..config::SIZE {
@@ -85,18 +84,18 @@ pub fn create_from_strings (lines : [&str;config::SIZE*config::SIZE])  -> Sides
         let mut left  = side::color(0);
         let mut front = side::color(0);
         let mut right = side::color(0);
-        for i in 4 .. 8 {
+        for i in config::SIZE .. config::SIZE*2 {
             let (left_row, front_row, right_row) = get_rows_from_long_string(lines[i]);
-            left  = side::for_cube::merge_row(&left, i-4,  &left_row);
-            front = side::for_cube::merge_row(&front, i-4, &front_row);
-            right = side::for_cube::merge_row(&right, i-4, &right_row);
+            left  = side::for_cube::merge_row(&left, i-config::SIZE,  &left_row);
+            front = side::for_cube::merge_row(&front, i-config::SIZE, &front_row);
+            right = side::for_cube::merge_row(&right, i-config::SIZE, &right_row);
         }
         (left, front, right)
     };
 
     let top = fill_single_side(0);
-    let bottom = fill_single_side(8);
-    let back = fill_single_side(12);
+    let bottom = fill_single_side(config::SIZE*2);
+    let back = fill_single_side(config::SIZE*3);
     let (left, front, right) = fill3side();
 
     create(&top, &left, &front, &right, &bottom, &back)

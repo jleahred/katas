@@ -28,11 +28,24 @@ pub fn process(sides: &Sides, item : &Item) -> Sides {
 }
 
 
+impl Item {
+    pub fn get_reverse(&self) -> Item {
+        let Item(orientation, dir, pos) = *self;
+        Item(
+            orientation,
+            match dir {
+                Dir::Plus => Dir::Minus,
+                Dir::Minus => Dir::Plus,
+            },
+            pos,
+        )
+    }
+}
 
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Item(orient, dir, pos) = *self;
-        write!(f, "{}{}{}", orient, dir, pos)
+        write!(f, "{}{}{}", orient, pos, dir,)
     }
 }
 
@@ -236,7 +249,7 @@ fn test_display_rotation()
 
 #[test]
 fn test_rotation() {
-    let cube = cube::create(
+    let cube = super::create(
                                 &side::color(0),
             &side::color(1),    &side::color(2),    &side::color(3),
                                 &side::color(4),
@@ -273,7 +286,7 @@ fn test_rotation() {
 
 #[test]
 fn test_front() {
-    let cube = cube::create(
+    let cube = super::create(
                                 &side::color(0),
             &side::color(1),    &side::color(2),    &side::color(3),
                                 &side::color(4),
@@ -361,7 +374,7 @@ fn test_front() {
 
 #[test]
 fn test_rotation_front2() {
-    let init : cube::Sides = cube::create_from_strings(
+    let init : super::Sides = super::create_from_strings(
                      ["0000",
                       "0000",
                       "0000",
@@ -381,7 +394,7 @@ fn test_rotation_front2() {
                       "0000"]
         );
 
-    let end : cube::Sides = cube::create_from_strings(
+    let end : super::Sides = super::create_from_strings(
                     ["0000",
                      "0000",
                      "0000",
@@ -407,8 +420,8 @@ fn test_rotation_front2() {
     }
 
     {
-        use cube::rot;
-        use cube::rot::{Orient, Dir};
+        use super::rot;
+        use super::rot::{Orient, Dir};
 
         assert_eq!(init
                     .get_rotation(&rot::Item(Orient::Front, Dir::Plus, 0))

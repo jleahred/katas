@@ -1,7 +1,7 @@
 use std::fmt;
 use config::SIZE as SIZE;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Stickers(pub [[u8; SIZE]; SIZE]);
 
 

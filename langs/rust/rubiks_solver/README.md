@@ -126,6 +126,8 @@ As you could imagine...
 
 * ```tree``` has the tree explorer code
 
+* ```tree/opts``` has the optimizations applied on tree search
+
 ### Rotations
 
 On ```cube::rot```
@@ -357,7 +359,7 @@ a branch
     1. Avoid repeating a move tree times
     - Avoid repeat position on current path (checking from end to begin)
     - If a movement is at same orientation that previous one, it has to bee on a higher level
-- Back to front positions generation in memory.
+- Back to front positions generation in memory (last moves caché).
   This will let us to increase depth search in some steps (estimation 4-6) using calculations in memory
 
 

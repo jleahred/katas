@@ -62,10 +62,10 @@ pub mod before_move {
 
 
 pub mod after_move {
+    /*
     use super::super::Status;
     use super::super::PunningStats;
     use super::super::super::cube;
-
     pub fn pos_equal2current_path(sides: &cube::Sides, status: &Status, punning_stats : &mut PunningStats) -> bool {
         for it in status.current_path.iter().rev() {
             if it.position == *sides {
@@ -75,5 +75,110 @@ pub mod after_move {
         }
         false
     }
+*/
+}
 
+
+pub mod cache_last_moves {
+    use cube;
+    use std::collections::LinkedList;
+    use std::collections::HashMap;
+    use tree::RotationPosition;
+
+
+    #[derive(Clone)]
+    pub struct PosMoves {
+        pos_movs : HashMap<
+                    cube::Sides,                    //  position
+                    LinkedList<RotationPosition>,
+                    //LinkedList<cube::rot::Item>,
+                >,    //  rotations to end
+    }
+
+    impl PosMoves {
+        pub fn new() -> PosMoves{
+            PosMoves {
+                pos_movs : HashMap::new(),
+            }
+        }
+
+        pub fn add(&mut self, pos: &cube::Sides, path:  &LinkedList<RotationPosition>) {
+            let ref_found = self.pos_movs.entry(*pos).or_insert(path.clone());
+            if ref_found.len() > path.len() {
+                *ref_found = path.clone();
+            }
+        }
+
+        pub fn len(&self) -> usize {
+            self.pos_movs.len()
+        }
+
+        pub fn find(&self, pos : &cube::Sides) -> Option<LinkedList<RotationPosition>> {
+            match self.pos_movs.get(pos) {
+                Some(rot_pos)   =>   Some(rot_pos.clone()),
+                None            =>  None
+            }
+        }
+    }
+}
+
+
+#[test]
+fn test_insert_cache() {
+    use super::super::cube;
+    use std::collections::LinkedList;
+
+    let posa : cube::Sides = cube::create_from_strings(
+                     ["0000",
+                      "0000",
+                      "0000",
+                      "0000",
+                 "0001 0000 0000",
+                 "0002 0000 0000",
+                 "0003 0000 0000",
+                 "0004 0000 0000",
+                      "0000",
+                      "0000",
+                      "0000",
+                      "0000",
+
+                      "0000",
+                      "0000",
+                      "0000",
+                      "0000"]
+        );
+    let posb : cube::Sides = cube::create_from_strings(
+                     ["1111",
+                      "1111",
+                      "1111",
+                      "1111",
+                 "0001 0000 0000",
+                 "0002 0000 0000",
+                 "0003 0000 0000",
+                 "0004 0000 0000",
+                      "0000",
+                      "0000",
+                      "0000",
+                      "0000",
+
+                      "0000",
+                      "0000",
+                      "0000",
+                      "0000"]
+        );
+
+    let mut pos_moves = cache_last_moves::PosMoves::new();
+    let moves = LinkedList::<cube::rot::Item>::new();
+
+    pos_moves.add(posa, &moves);
+    assert_eq!(pos_moves.len(), 1);
+
+    pos_moves.add(posa, &moves);
+    assert_eq!(pos_moves.len(), 1);
+
+    pos_moves.add(posb, &moves);
+    assert_eq!(pos_moves.len(), 2);
+
+    pos_moves.add(posa, &moves);
+    assert_eq!(pos_moves.len(), 2);
 }

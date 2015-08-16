@@ -51,16 +51,17 @@ fn main() {
                          "0000"]
                     );
         */
+        /*
         let init : cube::Sides = cube::create_from_strings(
                          ["1111",
                           "1111",
                           "1111",
-                          "1111",
+                          "1551",
                      "2222 3333 4444",
                      "2222 3333 4444",
                      "2222 3333 4444",
                      "2222 3333 4444",
-                          "5555",
+                          "5115",
                           "5555",
                           "5555",
                           "5555",
@@ -79,8 +80,8 @@ fn main() {
                     "2222 3333 4444",
                     "2222 3333 4444",
                     "2222 3333 4444",
-                    "2222 3553 4444",
-                         "5335",
+                    "2222 3333 4444",
+                         "5555",
                          "5555",
                          "5555",
                          "5555",
@@ -89,27 +90,63 @@ fn main() {
                          "6666",
                          "6666",
                          "6666"]
-                    );
+                    );*/
 
+        let init : cube::Sides = cube::create_from_strings(
+                         ["000",
+                          "111",
+                          "111",
+                      "022 333 440",
+                      "022 333 440",
+                      "002 333 440",
+                          "555",
+                          "055",
+                          "050",
+
+                          "020",
+                          "000",
+                          "000",
+                          ]
+            );
+
+        let end : cube::Sides = cube::create_from_strings(
+                        ["000",
+                         "111",
+                         "111",
+                     "022 333 440",
+                     "022 333 440",
+                     "022 333 440",
+                         "555",
+                         "555",
+                         "000",
+
+                         "000",
+                         "000",
+                         "000",
+                         ]
+                    );
         let start = time::PreciseTime::now();
-        let result = tree::explore(&init, &end, 6);
+        let result = tree::explore(&init, &end, 7);
         let end = time::PreciseTime::now();
 
         println!("{}", result);
         println!("required time: {}", start.to(end));
-        println!("iterations/sec: {}", result.iterations as f32 / start.to(end).num_milliseconds() as f32*1000.0);
+        println!("iterations/sec: {}", result.stats.iterations as f32 / start.to(end).num_milliseconds() as f32*1000.0);
 
-        print!("moves \n");
+        print!("moves best solution:\n");
         for rot_pos in result.best_solution.iter() {
             print!("{}  ", rot_pos.rot);
         }
         print!("\n");
 
 
-        print!("\n{:?}\n", result.punning_stats);
+        print!("\npunning: {:?}\n", result.stats.punning);
+
+        print!("\ncache last moves size: {:?}\n", result.last_moves.borrow_mut().len());
 
 
 
+/*
         {
             for depth  in 1..16 {
                 let mut iterations = 1f64+24f64;
@@ -121,6 +158,7 @@ fn main() {
                 println!("depth: {} -> moves: {}\n", depth+1, iterations);
             }
         }
+        */
     }
 
 /*
