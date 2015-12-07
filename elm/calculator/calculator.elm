@@ -21,20 +21,20 @@ model =
 
 type alias Model =
     { display:          Display
-    , lastOperation:    LastOperation
+    --, lastOperation:    LastOperation
     , result:           Float
     }
 
 initModel: Model
 initModel =
     { display       = DispInput initInput
-    , lastOperation = Full (0.0, Sum)
+    --, lastOperation = Full (0.0, Sum)
     , result        = 0.0
     }
 
 type Display
     = DispInput     Input
-    | DispResult
+    | DispResult    LastOperation
 
 type alias Input =
     { text:     String
@@ -42,12 +42,11 @@ type alias Input =
     , dot:      Bool
     , digits:   Int
     , pow10Dec: Float
+    , op:       Operator
     }
 
 
-type LastOperation
-    = Partial Operator
-    | Full   (Float, Operator)
+type alias LastOperation = (Operator, Float)
 
 
 type Operator
