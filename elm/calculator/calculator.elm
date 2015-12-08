@@ -21,14 +21,14 @@ model =
 
 type alias Model =
     { display:          Display
-    --, lastOperation:    LastOperation
+    , lastOperation:    LastOperation
     , result:           Float
     }
 
 initModel: Model
 initModel =
     { display       = DispInput initInput
-    --, lastOperation = Full (0.0, Sum)
+    , lastOperation = None
     , result        = 0.0
     }
 
@@ -42,11 +42,13 @@ type alias Input =
     , dot:      Bool
     , digits:   Int
     , pow10Dec: Float
-    , op:       Operator
     }
 
 
-type alias LastOperation = (Operator, Float)
+type LastOperation
+    = None
+    | Partial Operator
+    | Full (Operator, Float)
 
 
 type Operator
@@ -181,7 +183,7 @@ addDot model =
                 , text  = input.text ++ "."
                 }
             }
-        DispResult              ->
+        DispResult  lastOp ->
             { model
             | display =
                 DispInput { initInput
@@ -193,10 +195,15 @@ addDot model =
 
 addOperator: Model -> Operator -> Model
 addOperator model op =
-    { model
-    | display       = DispInput initInput
-    , lastOperation = Partial op
-    }
+    case model.display of
+        DispInput   input   ->
+            { model
+            | display =  DispInput initInput
+            }
+        DispResult    lastOp   ->
+            { model
+            | display = DispInput initInput
+            }
 
 clear: Model -> Model
 clear model =
@@ -205,14 +212,6 @@ clear model =
 addDigit: Model -> Digit -> Model
 addDigit model digit =
     case model.display of
-        DispResult          ->
-            { model
-            | display =
-                DispInput { initInput
-                | dot   = False
-                , text  = digitToString digit
-                }
-            }
         DispInput   input   ->
             if input.digits < 10 then
                 { model
@@ -220,6 +219,16 @@ addDigit model digit =
                 }
             else
                 model
+        DispResult   lastOp       ->
+            { model
+            | display =
+                DispInput { initInput
+                | dot   = False
+                , text  = digitToString digit
+                }
+            }
+
+
 addDigitInput: Digit -> Input -> Input
 addDigitInput digit input =
     if input.digits < 10 then
@@ -253,11 +262,15 @@ addDigitInput digit input =
         input
 
 resolve: Model -> Model
-resolve model =
+resolve model = model
+
+
+
+    {--
     let
         dispValue model =
             case model.display of
-                DispResult          -> 0.0
+                DispResult  _       -> 0.0
                 DispInput   input   -> input.value
     in
         case model.lastOperation of
@@ -269,6 +282,7 @@ resolve model =
                 { model
                 | result = model.result + (dispValue model)
                 }
+--}
 
 getDisplay: Model -> Element
 getDisplay model =
@@ -276,8 +290,8 @@ getDisplay model =
         dispTxt: Model -> String
         dispTxt model =
             case model.display of
-                DispResult      ->  toString model.result
-                DispInput input ->  input.text
+                DispResult  _     ->  toString model.result
+                DispInput   input ->  input.text
     in
         Text.fromString (dispTxt model)
             |> rightAligned
