@@ -1,4 +1,4 @@
-module Calculator2 where
+module Calculator where
 
 
 import Graphics.Input exposing (..)
