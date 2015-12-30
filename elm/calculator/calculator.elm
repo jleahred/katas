@@ -21,7 +21,7 @@ model =
 
 type alias Model =
     { display:          Display
-    , lastOperation:    (Operator, Float)
+    , lastOperation:    LastOperation
     }
 
 
@@ -46,10 +46,19 @@ type Operator
     | Mult
     | Div
 
+
+type LastOperation
+    = PartialOper OperationFirstOperator
+    | FullOper    OperationSecondOperator
+
+type alias OperationFirstOperator  = (Float, Operator)
+type alias OperationSecondOperator = (Operator, Float)
+
+
 initModel: Model
 initModel =
     { display       = DispResult 0.0
-    , lastOperation = (Sum, 0.0)
+    , lastOperation = FullOper (Sum, 0.0)
     }
 
 
@@ -177,7 +186,7 @@ addDot model =
             , text  = "0."
             , digits = 1
             }
-        , lastOperation = (Sum, 0.0)
+        , lastOperation = FullOper (Sum, 0.0)
         }
     in
     case model.display of
@@ -204,22 +213,22 @@ addOperator model op =
         DispInput   input   ->
             { model
             | display =  DispInput initInput
-            , lastOperation = ( op
-                              , operate
-                                    (fst model.lastOperation)
-                                    input.value
-                                    (snd model.lastOperation)
-                              )
+            , lastOperation = FullOper( op
+                                      , operate
+                                            (fst model.lastOperation)
+                                            input.value
+                                            (snd model.lastOperation)
+                                      )
             }
         DispResult result  ->
             { model
             | display = DispInput initInput
-            , lastOperation = ( op
-                              , operate
-                                (fst model.lastOperation)
-                                result
-                                (snd model.lastOperation)
-                              )
+            , lastOperation = FullOper( op
+                                      , operate
+                                        (fst model.lastOperation)
+                                        result
+                                        (snd model.lastOperation)
+                                      )
             }
 
 operate: Operator -> Float -> Float -> Float
@@ -254,7 +263,7 @@ addDigit model digit =
                 , value = digitToInt digit |> toFloat
                 , digits = 1
                 }
-            , lastOperation = (Sum, 0.0)
+            , lastOperation = FullOper(Sum, 0.0)
             }
 
 
@@ -311,9 +320,9 @@ resolve model =
                 | display = DispResult <| calcResult
                                                 model.lastOperation
                                                 input.value
-                , lastOperation = ( fst model.lastOperation
-                                  , input.value
-                                  )
+                , lastOperation = FullOper( fst model.lastOperation
+                                          , input.value
+                                          )
                 }
 
 
