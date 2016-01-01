@@ -16,26 +16,26 @@ import Signal exposing (..)
 
 model : Signal Model
 model =
-    foldp update initModel keysMailBox.signal
+    foldp update (ModelInput initInput) keysMailBox.signal
 
 
-type alias Model =
-    { display:          Display
-    , lastOperation:    LastOperation
-    }
-
-
-type Display
-    = DispInput     Input
-    | DispResult    Float
+type Model
+    = ModelInput  Input
+    | ModelResult Result
 
 
 type alias Input =
-    { text:     String
-    , value:    Float
-    , dot:      Bool
-    , digits:   Int
-    , pow10Dec: Float
+    { text:             String
+    , value:            Float
+    , dot:              Bool
+    , digits:           Int
+    , pow10Dec:         Float
+    , currentOperation: CurrentOperation
+    }
+
+type alias Result =
+    { value:         Float
+    , lastOperation: LastOperation
     }
 
 
@@ -47,39 +47,31 @@ type Operator
     | Div
 
 
-type LastOperation
-    = PartialOper OperationFirstOperator
-    | FullOper    OperationSecondOperator
-
-type alias OperationFirstOperator  = (Float, Operator)
-type alias OperationSecondOperator = (Operator, Float)
-
-
-initModel: Model
-initModel =
-    { display       = DispResult 0.0
-    , lastOperation = FullOper (Sum, 0.0)
-    }
+type alias CurrentOperation  = (Float, Operator)
+type alias LastOperation     = (Operator, Float)
 
 
 
 initInput: Input
 initInput =
-    { text      = "0"
-    , value     = 0.0
-    , dot       = False
-    , digits    = 0
-    , pow10Dec  = 1.0
+    { text              = "0"
+    , value             = 0.0
+    , dot               = False
+    , digits            = 0
+    , pow10Dec          = 1.0
+    , currentOperation  = (0.0, Sum)
     }
 
 
-resetInput: Model -> Model
-resetInput model =
-    { model
-    | display  = DispInput initInput
-    }
-
-
+clearInput: Model -> Model
+clearInput model =
+    case model of
+        ModelInput input ->
+            ModelInput  { initInput
+                        | currentOperation = input.currentOperation
+                        }
+        ModelResult _ ->
+            model
 
 
 
@@ -102,9 +94,9 @@ update keyEvent model =
         PressDigit d    -> addDigit     model d
         Dot             -> addDot       model
         Clear           -> clear        model
-        Reset           -> initModel
+        Reset           -> ModelInput   initInput
         Operation  op   -> addOperator  model op
-        Equal           -> resolve      model
+        Equal           -> calculate    model
 
 
 keysMailBox : Signal.Mailbox Action
@@ -178,61 +170,59 @@ digitToInt d
 
 addDot: Model -> Model
 addDot model =
-    let dispZeroDot =
-        { model
-        | display =
-            DispInput { initInput
-            | dot   = True
-            , text  = "0."
-            , digits = 1
-            }
-        , lastOperation = FullOper (Sum, 0.0)
-        }
-    in
-    case model.display of
-        DispResult _        ->   dispZeroDot
-        DispInput  input    ->
+    case model of
+        ModelResult result       ->
+            ModelInput  { text              = "0."
+                        , value             = 0.0
+                        , dot               = True
+                        , digits            = 1
+                        , pow10Dec          = 10.0
+                        , currentOperation  = (0.0, Sum)
+                        }
+        ModelInput  input    ->
             if input.dot == False then
                 if input.digits == 0 then
-                    dispZeroDot
+                    ModelInput { input
+                               | dot   = True
+                               , text  = "0."
+                               , digits = 1
+                               }
                 else
-                    { model
-                    | display =
-                        DispInput{ input
-                        | dot   = True
-                        , text  = input.text ++ "."
-                        }
-                    }
+                    ModelInput { input
+                               | dot   = True
+                               , text  = input.text ++ "."
+                               }
             else
                 model
 
 
 addOperator: Model -> Operator -> Model
 addOperator model op =
-    case model.display of
-        DispInput   input   ->
-            { model
-            | display =  DispInput initInput
-            , lastOperation = FullOper( op
-                                      , operate
-                                            (fst model.lastOperation)
-                                            input.value
-                                            (snd model.lastOperation)
-                                      )
+    let
+        addCurrentOperation: Input -> Operator -> Float -> Input
+        addCurrentOperation input operator operand =
+            { input
+            | currentOperation = (operand, operator)
             }
-        DispResult result  ->
-            { model
-            | display = DispInput initInput
-            , lastOperation = FullOper( op
-                                      , operate
-                                        (fst model.lastOperation)
-                                        result
-                                        (snd model.lastOperation)
-                                      )
+        setValueInText: Input -> Float -> Input
+        setValueInText input value =
+            { input
+            | text = toString value
             }
+    in
+    case model of
+        ModelResult result       ->
+            ModelInput  <| setValueInText
+                           (addCurrentOperation initInput op result.value)
+                           result.value
+        ModelInput  input    ->
+            ModelInput <| addCurrentOperation initInput op <| operate
+                                                    (fst input.currentOperation)
+                                                    (snd input.currentOperation)
+                                                    input.value
 
-operate: Operator -> Float -> Float -> Float
-operate operator op1 op2 =
+operate: Float -> Operator -> Float -> Float
+operate op1 operator op2 =
     case operator of
         Sum   -> op1 + op2
         Subs  -> op1 - op2
@@ -242,32 +232,28 @@ operate operator op1 op2 =
 
 clear: Model -> Model
 clear model =
-    resetInput model
+    clearInput model
 
 addDigit: Model -> Digit -> Model
 addDigit model digit =
-     case model.display of
-        DispInput   input   ->
+     case model of
+        ModelInput   input   ->
             if input.digits < 10 then
-                { model
-                | display = DispInput (addDigitInput digit input)
-                }
+                addDigitInput digit input
             else
                 model
-        DispResult _    ->
-            { model
-            | display =
-                DispInput { initInput
-                | dot   = False
-                , text  = digitToString digit
-                , value = digitToInt digit |> toFloat
-                , digits = 1
-                }
-            , lastOperation = FullOper(Sum, 0.0)
-            }
+        ModelResult  result    ->
+            ModelInput  { text  = digitToString digit
+                        , value = digitToInt digit |> toFloat
+                        , dot               = False
+                        , digits            = 1
+                        , pow10Dec          = 1.0
+                        , currentOperation  = (0.0, Sum)
+                        }
 
 
-addDigitInput: Digit -> Input -> Input
+
+addDigitInput: Digit -> Input -> Model
 addDigitInput digit input =
     if input.digits < 10 then
       let
@@ -281,49 +267,39 @@ addDigitInput digit input =
                 , input.pow10Dec / 10
                 )
       in
-          if input.text == "0" then
-            { input
-            | text   = digitToString digit
-            , digits = 1
-            , value  = toFloat <| digitToInt digit
-            }
+          if input.digits == 0 then
+            ModelInput  { input
+                        | text   = digitToString digit
+                        , digits = 1
+                        , value  = toFloat <| digitToInt digit
+                        }
           else
               let (val, pow10Dec) = newValueDeinputmals digit input
               in
-                { input
-                | text      = input.text ++ digitToString digit
-                , digits    = input.digits + 1
-                , value     = val
-                , pow10Dec  = pow10Dec
-                }
+                ModelInput  { input
+                            | text      = input.text ++ digitToString digit
+                            , digits    = input.digits + 1
+                            , value     = val
+                            , pow10Dec  = pow10Dec
+                            }
     else
-        input
+        ModelInput input
 
-resolve: Model -> Model
-resolve model =
-    let
-        -- calcResult: DispInput -> Float
-        calcResult lastOper val =
-            operate (fst lastOper)
-                    val
-                    (snd lastOper)
-    in
-        case model.display of
-            DispResult  result   ->
-                { model
-                | display = DispResult <| calcResult
-                                                model.lastOperation
-                                                result
-                }
-            DispInput   input    ->
-                { model
-                | display = DispResult <| calcResult
-                                                model.lastOperation
-                                                input.value
-                , lastOperation = FullOper( fst model.lastOperation
-                                          , input.value
-                                          )
-                }
+calculate: Model -> Model
+calculate model =
+    case model of
+        ModelResult  result   ->
+            ModelResult { result
+                        | value = operate   result.value
+                                            (fst result.lastOperation)
+                                            (snd result.lastOperation)
+                        }
+        ModelInput   input    ->
+            ModelResult { value= operate    (fst input.currentOperation)
+                                (snd input.currentOperation)
+                                input.value
+                        , lastOperation= (snd input.currentOperation, input.value)
+                        }
 
 
 
@@ -334,9 +310,9 @@ getDisplay model =
     let
         dispTxt: Model -> String
         dispTxt model =
-            case model.display of
-                DispResult  result  ->  toString result
-                DispInput   input   ->  input.text
+            case model of
+                ModelResult result  ->  toString result.value
+                ModelInput  input   ->  input.text
     in
         Text.fromString (dispTxt model)
             |> rightAligned
