@@ -18,10 +18,10 @@ model : Signal Model
 model =
     foldp update (ModelInput initInput) keysMailBox.signal
 
-
 type Model
-    = ModelInput  Input
-    | ModelResult Result
+    = ModelInput                Input
+    | ModelResultInOperation    CurrentOperation
+    | ModelResult               Result
 
 
 type alias Input =
@@ -47,8 +47,11 @@ type Operator
     | Div
 
 
-type alias CurrentOperation  = (Float, Operator)
-type alias LastOperation     = (Operator, Float)
+type alias CurrentOperation  =
+    (Float, Operator) -- result or first operand and Operator
+
+type alias LastOperation     =
+    (Operator, Float)
 
 
 
@@ -71,6 +74,8 @@ clearInput model =
                         | currentOperation = input.currentOperation
                         }
         ModelResult _ ->
+            model
+        ModelResultInOperation _ ->
             model
 
 
@@ -97,7 +102,6 @@ update keyEvent model =
         Reset           -> ModelInput   initInput
         Operation  op   -> addOperator  model op
         Equal           -> calculate    model
-
 
 keysMailBox : Signal.Mailbox Action
 keysMailBox =
@@ -170,15 +174,25 @@ digitToInt d
 
 addDot: Model -> Model
 addDot model =
-    case model of
-        ModelResult result       ->
-            ModelInput  { text              = "0."
+    let
+        modelZeroDot =
+                        { text              = "0."
                         , value             = 0.0
                         , dot               = True
                         , digits            = 1
                         , pow10Dec          = 10.0
                         , currentOperation  = (0.0, Sum)
                         }
+        setCurrentOperation currOper input =
+            { input
+            | currentOperation = currOper
+            }
+    in
+    case model of
+        ModelResult result       ->
+            ModelInput modelZeroDot
+        ModelResultInOperation result       ->
+            ModelInput <| (modelZeroDot |> setCurrentOperation result)
         ModelInput  input    ->
             if input.dot == False then
                 if input.digits == 0 then
@@ -204,17 +218,12 @@ addOperator model op =
             { input
             | currentOperation = (operand, operator)
             }
-        setValueInText: Input -> Float -> Input
-        setValueInText input value =
-            { input
-            | text = toString value
-            }
     in
     case model of
         ModelResult result       ->
-            ModelInput  <| setValueInText
-                           (addCurrentOperation initInput op result.value)
-                           result.value
+            ModelResultInOperation  (result.value, op)
+        ModelResultInOperation  result   ->
+            ModelResultInOperation  (fst result, op)
         ModelInput  input    ->
             ModelInput <| addCurrentOperation initInput op <| operate
                                                     (fst input.currentOperation)
@@ -249,6 +258,14 @@ addDigit model digit =
                         , digits            = 1
                         , pow10Dec          = 1.0
                         , currentOperation  = (0.0, Sum)
+                        }
+        ModelResultInOperation  result    ->
+            ModelInput  { text  = digitToString digit
+                        , value = digitToInt digit |> toFloat
+                        , dot               = False
+                        , digits            = 1
+                        , pow10Dec          = 1.0
+                        , currentOperation  = (fst result, snd result)
                         }
 
 
@@ -294,6 +311,10 @@ calculate model =
                                             (fst result.lastOperation)
                                             (snd result.lastOperation)
                         }
+        ModelResultInOperation  result   ->
+            ModelResult { value = (fst result)
+                        , lastOperation = (Sum, 0)
+                        }
         ModelInput   input    ->
             ModelResult { value= operate    (fst input.currentOperation)
                                 (snd input.currentOperation)
@@ -311,8 +332,9 @@ getDisplay model =
         dispTxt: Model -> String
         dispTxt model =
             case model of
-                ModelResult result  ->  toString result.value
-                ModelInput  input   ->  input.text
+                ModelResult             result  ->  toString result.value
+                ModelResultInOperation  result  ->  fst result |> toString
+                ModelInput              input   ->  input.text
     in
         Text.fromString (dispTxt model)
             |> rightAligned
