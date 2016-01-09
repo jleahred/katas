@@ -1,0 +1,13 @@
+digraph finite_state_machine {
+	rankdir=LR;
+	size="8,5"
+	node [shape = circle];
+
+  input -> input [ label = "digit" ];
+	input -> resOp [ label = "operator" ];
+	resOp -> input [ label = "digit" ];
+	input -> result [ label = "=" ];
+	result -> result [ label = "=" ];
+	input -> input [ label = "ce\nreset" color=blue fontcolor=blue];
+	result -> input [ label = "digit" ];
+}

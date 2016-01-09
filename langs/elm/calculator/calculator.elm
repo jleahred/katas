@@ -141,7 +141,7 @@ This is my very first application in [elm](http://elm-lang.org/) language
 
 It has been an amazing experience.
 
-More information, source and comments [here](www.google.com)
+More information, source and comments [here](https://github.com/jleahred/katas/tree/master/langs/elm/calculator)
 """    ]
 
 
