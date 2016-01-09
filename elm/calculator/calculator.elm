@@ -3,10 +3,9 @@ module Calculator where
 
 import Graphics.Input exposing (..)
 import Graphics.Element exposing (..)
---import Graphics.Collage exposing (..)
---import Html
+import Html
+import Markdown
 import Text
---import Markdown
 import Signal exposing (..)
 
 
@@ -110,21 +109,41 @@ keysMailBox =
 
 
 -- VIEW --------------------------------------------------------
-calculatorView : a -> Model -> Element
+calculatorView : a -> Model -> Html.Html
 calculatorView address model =
-    -- collage 600 600 <| [move (10, 10) <| toForm <|
-    flow down
-    [ getDisplay model
-    , flow right [ btAct "Reset" Reset, btAct "Clear" Clear]
-    , flow right [ btDigit D7, btDigit D8, btDigit D9, btAct "+" <| Operation Sum]
-    , flow right [ btDigit D4, btDigit D5, btDigit D6, btAct "-" <| Operation Subs]
-    , flow right [ btDigit D1, btDigit D2, btDigit D3, btAct "x" <| Operation Mult]
-    , flow right [ btDigit D0
-                 , btAct "." Dot
-                 , btAct "=" Equal
-                 , btAct "/" <| Operation Div ]
-    , show model
-    ]
+    let
+    calculator: Model -> Element
+    calculator model =
+        flow down
+        [ getDisplay model
+        , flow right [ btAct "Reset" Reset, btAct "Clear" Clear]
+        , flow right [ btDigit D7, btDigit D8, btDigit D9, btAct "+" <| Operation Sum]
+        , flow right [ btDigit D4, btDigit D5, btDigit D6, btAct "-" <| Operation Subs]
+        , flow right [ btDigit D1, btDigit D2, btDigit D3, btAct "x" <| Operation Mult]
+        , flow right [ btDigit D0
+                     , btAct "." Dot
+                     , btAct "=" Equal
+                     , btAct "/" <| Operation Div ]
+        --, show model
+        ]
+    in
+    Html.div[][ Markdown.toHtml """
+# Simple calculator
+
+This is my very first application in [elm](http://elm-lang.org/) language
+
+
+    """
+    , Html.br[][]     , Html.br[][]
+    , Html.fromElement  <|  calculator model
+    , Html.br[][]
+    , Markdown.toHtml """
+
+It has been an amazing experience.
+
+More information, source and comments [here](www.google.com)
+"""    ]
+
 
 btDigit: Digit -> Element
 btDigit d =
@@ -137,9 +156,16 @@ btAct txt action =
 
 
 
-main : Signal Element
+-- Let the show starts
+
+main : Signal Html.Html
 main =
     map (calculatorView  keysMailBox.signal) model
+
+
+
+
+
 
 
 -- SUPPORT ----------------------------------------------------
