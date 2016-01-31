@@ -76,7 +76,7 @@ init =
 
 type Action
     = ToggleSection String
-    | Loaded        (List Tree)
+    | Loaded        (List NodeInfo)--(List Tree)
     | ErrorJson     String
 
 update: Action -> Model -> (Model, Effects Action)
@@ -89,7 +89,8 @@ update action model =
             }
     in
         case action of
-            Loaded listTree     -> (modelFromLTree listTree, Effects.none)
+            --Loaded listTree     -> (modelFromLTree listTree, Effects.none)
+            Loaded nodeInfo -> (testModel, Effects.none)
             ToggleSection id    -> (toggleId model id, Effects.none)
             ErrorJson  error    ->
                 (ModelMessage <| "Error loading json: " ++ error, Effects.none)
@@ -138,13 +139,13 @@ port tasks: Signal (Task Never ())
 port tasks =
     app.tasks
 
-decodeTree: Json.Decoder Tree
+decodeTree: Json.Decoder NodeInfo
 decodeTree =
-    Json.object4 NodeInfo
+    Json.object3 NodeInfo
       ("text" := Json.string)
       ("status" := Json.string)
       ("id" := Json.string)
-      ("childs" := Json.list)
+      --("childs" := Json.list)
 
 
 
@@ -153,7 +154,7 @@ fetchStatus =
     let
         resquest =
             Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
-            |> Task.map (Loaded)
+            |> Task.map Loaded
     in
         resquest
             `Task.onError` (\err -> Task.succeed (ErrorJson <| toString err))
@@ -210,7 +211,6 @@ testModel : Model
 testModel
     =
     let
-        --node text status id = Node { text=text, id=id, status=status }
         node text id = Node { text=text, id=id, status="OK" }
     in
     ModelLoaded

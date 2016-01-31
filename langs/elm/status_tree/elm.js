@@ -11032,13 +11032,13 @@ Elm.Main.make = function (_elm) {
          }
    });
    var NodeInfo = F3(function (a,b,c) {    return {text: a,status: b,id: c};});
-   var decodeNode = A4($Json$Decode.object3,
+   var decodeTree = A4($Json$Decode.object3,
    NodeInfo,
    A2($Json$Decode._op[":="],"text",$Json$Decode.string),
    A2($Json$Decode._op[":="],"status",$Json$Decode.string),
    A2($Json$Decode._op[":="],"id",$Json$Decode.string));
    var fetchStatus = function () {
-      var resquest = A2($Task.map,Loaded,A2($Http.get,$Json$Decode.list(decodeNode),"http://127.0.0.1:8000/status.json"));
+      var resquest = A2($Task.map,Loaded,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
       return $Effects.task(A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}));
    }();
    var Node = F2(function (a,b) {    return {ctor: "Node",_0: a,_1: b};});
@@ -11080,6 +11080,7 @@ Elm.Main.make = function (_elm) {
                          ,expandedItems: _U.list([])});
    }();
    var update = F2(function (action,model) {
+      var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
       var _p8 = action;
       switch (_p8.ctor)
       {case "Loaded": return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};
@@ -11106,7 +11107,7 @@ Elm.Main.make = function (_elm) {
                              ,view: view
                              ,treeToHtml: treeToHtml
                              ,nodeToHtml: nodeToHtml
-                             ,decodeNode: decodeNode
+                             ,decodeTree: decodeTree
                              ,fetchStatus: fetchStatus
                              ,toggleId: toggleId
                              ,testModel: testModel};
