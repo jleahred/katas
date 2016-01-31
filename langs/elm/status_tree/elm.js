@@ -10992,8 +10992,6 @@ Elm.Main.make = function (_elm) {
    $Debug = Elm.Debug.make(_elm),
    $Effects = Elm.Effects.make(_elm),
    $Html = Elm.Html.make(_elm),
-   $Html$Attributes = Elm.Html.Attributes.make(_elm),
-   $Html$Events = Elm.Html.Events.make(_elm),
    $Http = Elm.Http.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
    $List = Elm.List.make(_elm),
@@ -11003,103 +11001,91 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
-   var Err = function (a) {    return {ctor: "Err",_0: a};};
-   var Testing = function (a) {    return {ctor: "Testing",_0: a};};
-   var ToggleSection = function (a) {    return {ctor: "ToggleSection",_0: a};};
-   var statusTreeToHtml = F2(function (address,_p0) {
+   var treeToHtml = F2(function (address,tree) {    return A2($Html.ul,_U.list([]),A2($List.map,nodeToHtml(address),tree));});
+   var nodeToHtml = F2(function (address,_p0) {
       var _p1 = _p0;
-      var _p4 = _p1._1;
-      var _p3 = _p1._0;
-      var genLeaf = F2(function (address,lefInfo) {
-         return A2($Html.li,
-         _U.list([]),
-         _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,ToggleSection(_p3.id))]),_U.list([$Html.text(_p3.text)]))]));
-      });
-      var _p2 = {ctor: "_Tuple2",_0: _p4,_1: _p3.expanded};
-      if (_p2._0.ctor === "[]") {
-            return A2(genLeaf,address,_p3);
+      var _p3 = _p1._1;
+      var nodeInfoToHtml = function (address) {    return A2($Html.li,_U.list([]),_U.list([A2($Html.button,_U.list([]),_U.list([$Html.text(_p1._0.text)]))]));};
+      var _p2 = _p3;
+      if (_p2.ctor === "[]") {
+            return nodeInfoToHtml(address);
          } else {
-            if (_p2._1 === true) {
-                  return A2($Html.span,
-                  _U.list([]),
-                  _U.list([A2(genLeaf,address,_p3),A2($Html.ul,_U.list([$Html$Attributes.$class("node")]),A2($List.map,statusTreeToHtml(address),_p4))]));
-               } else {
-                  return A2(genLeaf,address,_p3);
-               }
+            return A2($Html.ul,_U.list([]),A2($Basics._op["++"],_U.list([nodeInfoToHtml(address)]),_U.list([A2(treeToHtml,address,_p3)])));
          }
    });
-   var view = F2(function (address,model) {    return A2($Html.ul,_U.list([$Html$Attributes.$class("node")]),A2($List.map,statusTreeToHtml(address),model));});
-   var emptyModel = _U.list([]);
-   var LeafInfo = F4(function (a,b,c,d) {    return {text: a,status: b,expanded: c,id: d};});
-   var ERROR = {ctor: "ERROR"};
-   var WARNING = {ctor: "WARNING"};
-   var OK = {ctor: "OK"};
-   var Node = F2(function (a,b) {    return {ctor: "Node",_0: a,_1: b};});
-   var toggleTree = F2(function (id,tree) {
-      var toggleLeafInfo = function (li) {    return _U.update(li,{expanded: $Basics.not(li.expanded)});};
-      var toogleSubTree = F2(function (id,_p5) {
-         var _p6 = _p5;
-         var _p8 = _p6._1;
-         var _p7 = _p6._0;
-         return _U.eq(_p7.id,id) ? A2(Node,toggleLeafInfo(_p7),_p8) : A2(Node,_p7,A2(toggleTree,id,_p8));
-      });
-      return A2($List.map,toogleSubTree(id),tree);
+   var view = F2(function (address,model) {
+      var _p4 = model;
+      if (_p4.ctor === "ModelLoaded") {
+            return A2(treeToHtml,address,_p4._0.statusTree);
+         } else {
+            return $Html.text(_p4._0);
+         }
    });
-   var testModel = function () {
-      var nodeColap = F2(function (text,id) {    return Node({text: text,expanded: false,id: id,status: "OK"});});
-      var nodeExp = F2(function (text,id) {    return Node({text: text,expanded: true,id: id,status: "OK"});});
-      var node = F4(function (text,status,expanded,id) {    return Node({text: text,expanded: expanded,id: id,status: status});});
-      return _U.list([A3(nodeExp,
-                     "testing1",
-                     "1",
-                     _U.list([A3(nodeExp,"testing11","11",_U.list([]))
-                             ,A3(nodeExp,"testing12","12",_U.list([A3(nodeExp,"testing121","121",_U.list([])),A3(nodeExp,"testing122","122",_U.list([]))]))]))
-                     ,A3(nodeExp,
-                     "testing2",
-                     "2",
-                     _U.list([A3(nodeExp,"testing21","21",_U.list([])),A3(nodeExp,"testing22","22",_U.list([])),A3(nodeExp,"testing23","23",_U.list([]))]))]);
-   }();
-   var update = F2(function (action,model) {
-      var _p9 = action;
-      switch (_p9.ctor)
-      {case "ToggleSection": return {ctor: "_Tuple2",_0: A2(toggleTree,_p9._0,model),_1: $Effects.none};
-         case "Testing": return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};
-         default: return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};}
-   });
-   var addLeaf = function (maybeLeaf) {    var _p10 = maybeLeaf;if (_p10.ctor === "Just") {    return testModel;} else {    return _U.list([]);}};
-   var decodeLeaf = A5($Json$Decode.object4,
-   LeafInfo,
+   var ErrorJson = function (a) {    return {ctor: "ErrorJson",_0: a};};
+   var Loaded = function (a) {    return {ctor: "Loaded",_0: a};};
+   var ToggleSection = function (a) {    return {ctor: "ToggleSection",_0: a};};
+   var NodeInfo = F3(function (a,b,c) {    return {text: a,status: b,id: c};});
+   var decodeNode = A4($Json$Decode.object3,
+   NodeInfo,
    A2($Json$Decode._op[":="],"text",$Json$Decode.string),
    A2($Json$Decode._op[":="],"status",$Json$Decode.string),
-   A2($Json$Decode._op[":="],"expanded",$Json$Decode.bool),
    A2($Json$Decode._op[":="],"id",$Json$Decode.string));
    var fetchStatus = function () {
-      var resquest = A2($Task.map,Testing,A2($Http.get,decodeLeaf,"http://127.0.0.1:8000/status.json"));
-      return $Effects.task(A2($Task.onError,resquest,function (err) {    return $Task.succeed(Err($Basics.toString(err)));}));
+      var resquest = A2($Task.map,Loaded,A2($Http.get,$Json$Decode.list(decodeNode),"http://127.0.0.1:8000/status.json"));
+      return $Effects.task(A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}));
    }();
+   var Node = F2(function (a,b) {    return {ctor: "Node",_0: a,_1: b};});
+   var Status = F2(function (a,b) {    return {statusTree: a,expandedItems: b};});
+   var ModelError = function (a) {    return {ctor: "ModelError",_0: a};};
+   var ModelLoaded = function (a) {    return {ctor: "ModelLoaded",_0: a};};
+   var emptyModel = ModelLoaded({statusTree: _U.list([]),expandedItems: _U.list([])});
    var init = {ctor: "_Tuple2",_0: emptyModel,_1: fetchStatus};
+   var testModel = function () {
+      var node = F2(function (text,id) {    return Node({text: text,id: id,status: "OK"});});
+      return ModelLoaded({statusTree: _U.list([A3(node,
+                                              "testing1",
+                                              "1",
+                                              _U.list([A3(node,"testing11","11",_U.list([]))
+                                                      ,A3(node,
+                                                      "testing12",
+                                                      "12",
+                                                      _U.list([A3(node,"testing121","121",_U.list([])),A3(node,"testing122","122",_U.list([]))]))]))
+                                              ,A3(node,
+                                              "testing2",
+                                              "2",
+                                              _U.list([A3(node,"testing21","21",_U.list([]))
+                                                      ,A3(node,"testing22","22",_U.list([]))
+                                                      ,A3(node,"testing23","23",_U.list([]))]))])
+                         ,expandedItems: _U.list([])});
+   }();
+   var update = F2(function (action,model) {
+      var _p5 = action;
+      switch (_p5.ctor)
+      {case "Loaded": return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};
+         case "ToggleSection": return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};
+         default: return {ctor: "_Tuple2",_0: ModelError(A2($Basics._op["++"],"Error loading json: ",_p5._0)),_1: $Effects.none};}
+   });
    var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
-   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    var main = app.html;
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    return _elm.Main.values = {_op: _op
+                             ,ModelLoaded: ModelLoaded
+                             ,ModelError: ModelError
+                             ,Status: Status
+                             ,Node: Node
+                             ,NodeInfo: NodeInfo
+                             ,emptyModel: emptyModel
                              ,main: main
                              ,app: app
                              ,init: init
-                             ,decodeLeaf: decodeLeaf
-                             ,addLeaf: addLeaf
-                             ,fetchStatus: fetchStatus
-                             ,Node: Node
-                             ,OK: OK
-                             ,WARNING: WARNING
-                             ,ERROR: ERROR
-                             ,LeafInfo: LeafInfo
-                             ,emptyModel: emptyModel
                              ,ToggleSection: ToggleSection
-                             ,Testing: Testing
-                             ,Err: Err
+                             ,Loaded: Loaded
+                             ,ErrorJson: ErrorJson
                              ,update: update
                              ,view: view
-                             ,statusTreeToHtml: statusTreeToHtml
-                             ,toggleTree: toggleTree
+                             ,treeToHtml: treeToHtml
+                             ,nodeToHtml: nodeToHtml
+                             ,decodeNode: decodeNode
+                             ,fetchStatus: fetchStatus
                              ,testModel: testModel};
 };

@@ -1,6 +1,7 @@
+[
     {
         "text" : "Level1",
         "status" : "ERROR",
-        "expanded" : false,
         "id" : "id1"
     }
+]

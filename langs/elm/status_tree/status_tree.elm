@@ -11,6 +11,45 @@ import Json.Decode as Json exposing ((:=))
 
 
 
+
+-- MODEL
+
+type Model
+  = ModelLoaded  Status
+  | ModelError   String
+
+
+
+type alias  Status =
+    { statusTree    : List Tree
+    , expandedItems : List String
+    }
+
+
+type Tree
+  = Node NodeInfo (List Tree)
+
+
+--type Status = OK | WARNING | ERROR
+
+type alias NodeInfo =
+  { text : String
+  , status : String
+  , id : String
+  }
+
+
+emptyModel: Model
+emptyModel =
+    ModelLoaded
+        { statusTree      = []
+          , expandedItems   = []
+        }
+
+
+
+
+
 --  MAIN
 
 
@@ -28,134 +67,32 @@ app =
     }
 
 
-port tasks: Signal (Task Never ())
-port tasks =
-    app.tasks
 
 init: (Model, Effects Action)
 init =
     (emptyModel, fetchStatus)
 
 
-decodeLeaf: Json.Decoder LeafInfo
-decodeLeaf =
-    Json.object4 LeafInfo
-      ("text" := Json.string)
-      ("status" := Json.string)
-      ("expanded" := Json.bool)
-      ("id" := Json.string)
-
-{--
-addLeaf: Maybe LeafInfo -> Model
-addLeaf maybeLeaf =
-    case maybeLeaf of
-        Just leaf -> testModel
-        Nothing -> []
---}
-
-fetchStatus: Effects Action
-fetchStatus =
-    let
-        resquest =
-            Http.get decodeLeaf "http://127.0.0.1:8000/status.json"
-            |> Task.map Testing
-            --|> Testing
-            --|> Effects.task
-    in
-        resquest
-            `Task.onError` (\err -> Task.succeed (Err <| toString err))
-            --`Task.andThen` (\action -> Effects.task action)
-            |> Effects.task
-
-{--
-fetchStatus: Effects Action
-fetchStatus =
-  --Http.get (Json.list decodeLeaf) "http://localhost:8000/status.json"
-  (Http.get (decodeLeaf) "http://127.0.0.1:8000/status.json")
-    {--|> Task.toMaybe
-    |> Task.map (\l -> ModelLoaded (addLeaf l))
-    |> Effects.task
-    --}
-    `Task.onError` (\msg -> Err "kljlkj")
-    --|> Task.toResult
-    --`Task.onError` \msg -> Err msg
-    |> Task.map (\l -> ModelLoaded l)
-    |> Effects.task
-    --|> Task.map Ok task `Task.onError` \msg -> Task.succeed (Err msg)
 
 
-    {--
-    `Task.onError` (\msg -> Task.succeed ({ text="text", expanded=True, id="id", status="OK" }))
-    --`Task.andThen` (\msg -> Task.succeed ({ text="text", expanded=True, id="id", status="OK" }))
-    |> Task.map (\l -> ModelLoaded [])
-    |> Effects.task
-    --}
-
-    {--`Task.onError` (\msg -> Task.succeed ({ text="text", expanded=True, id="id", status="OK" }))
-    `Task.andThen` (\msg -> Task.succeed ({ text="text", expanded=True, id="id", status="OK" }))
-    |> Task.map (\l -> ModelLoaded [])
-    --`Task.andThen` \resp -> testModel
-    |> Effects.task
-    --}
---}
-
-
---port runner : Task Http.Error  (List LeafInfo)
---port runner : Task Http.Error (Signal Action)
---port runner =
---  getJsonStatus `andThen` (testModel Signal.send )
-  --(LoadedLeafInfos >> Signal.send NoOp)
-
-{--
-init =
-    (testModel, Effects.none)
---}
-
-
--- MODEL
-
-type Model
-  = StatusTree (List SubTree)
-  | Error String
-
-
-
-type alias StatusTree
-  = List SubTree
-
-
-type SubTree
-  = Node LeafInfo StatusTree
-
-
-type Status = OK | WARNING | ERROR
-
-type alias LeafInfo =
-  { text : String
-  , status : String
-  , expanded : Bool
-  , id : String
-  }
-
-
-emptyModel: Model
-emptyModel = StatusTree []
 
 
 -- UPDATE
 
 type Action
     = ToggleSection String
-    | Testing LeafInfo
-    | Err String
+    | Loaded        (List NodeInfo)
+    | ErrorJson     String
 
 update: Action -> Model -> (Model, Effects Action)
 update action model =
     case action of
-        ToggleSection id    ->  (StatusTree (toggleTree id model), Effects.none)
-        --Testing leafInfo    ->  (testModel, Effects.none)
-        Err     error       ->  (testModel, Effects.none)
-        _ -> (testModel, Effects.none)
+        Loaded nodeInfoList ->  (testModel, Effects.none)
+        ToggleSection id    ->  (testModel, Effects.none)--(StatusTree (toggleTree id model), Effects.none)
+        --Testing nodeInfo    ->  (testModel, Effects.none)
+        ErrorJson  error    ->
+            (ModelError <| "Error loading json: " ++ error, Effects.none)
+                --(testModel, Effects.none)
 
 
 
@@ -166,14 +103,41 @@ update action model =
 view : Signal.Address Action -> Model -> Html
 view address model =
     case model of
-        StatusTree  st  -> Html.text "pending to parse tree"
-        Error  error  -> Html.text error
+        ModelLoaded status  -> treeToHtml address status.statusTree
+        ModelError  error   -> Html.text error
 
+treeToHtml: Signal.Address Action -> List Tree -> Html
+treeToHtml address tree =
+    Html.ul[] (List.map (nodeToHtml address) tree)
+
+nodeToHtml: Signal.Address Action -> Tree -> Html
+nodeToHtml address (Node nodeInfo listSubtree) =
+--statusToHtml
+--statusToHtml address (Node nodeInfo listSubtree) =
+    let
+        nodeInfoToHtml address =
+            li [] [button [{--onClick address (ToggleSection nodeInfo.id)--}] [text nodeInfo.text] ]
+    in
+        case listSubtree of
+            []      ->  nodeInfoToHtml address
+            _       ->  Html.ul[] <| [nodeInfoToHtml address]
+                                        ++ [treeToHtml address listSubtree]
+            --ul [class "node"] <| List.map (statusTreeToHtml address) listStatusTree
+    --ul [class "node"] <| List.map (statusTreeToHtml address) listStatusTree
+
+{--statusLstToHtml: Signal.Address Action -> List Status -> Html
+statusLstToHtml address listStatus =
+    let
+        genNode address (Node nodeInfo list =
+            li [] [button [onClick address (ToggleSection nodeInfo.id)] [text nodeInfo.text] ]
+    in
+        List.map (genNode address)  listStatus
+--}
 {--
 view : Signal.Address Action -> Model -> Html
 view address model =
     case model of
-        (Node leafInfo listStatusTree) ->
+        (Node nodeInfo listStatusTree) ->
             ul [class "node"]  <| List.map (statusTreeToHtml address) listStatusTree
         Error  error  -> Html.text error
 --}
@@ -182,42 +146,73 @@ view address model =
 statusTreeToHtml: Signal.Address Action -> StatusTree -> Html
 statusTreeToHtml address listStatusTree =
   let
-    genLeaf address leafInfo =
-      li [] [button [onClick address (ToggleSection leafInfo.id)] [text leafInfo.text] ]
+    genNode address nodeInfo =
+      li [] [button [onClick address (ToggleSection nodeInfo.id)] [text nodeInfo.text] ]
   in
-    case (Node LeafInfo listStatusTree, leafInfo.expanded) of
-      ([], _)     -> genLeaf address leafInfo
+    case (Node NodeInfo listStatusTree, nodeInfo.expanded) of
+      ([], _)     -> genNode address nodeInfo
       (lst, True) -> Html.span[]
-        [ genLeaf address leafInfo
+        [ genNode address nodeInfo
         , ul [class "node"] <| List.map (statusTreeToHtml address) listStatusTree
         ]
-      (_, _)     -> genLeaf address leafInfo
+      (_, _)     -> genNode address nodeInfo
 --}
+
+
+-- EFFECTS
+
+port tasks: Signal (Task Never ())
+port tasks =
+    app.tasks
+
+decodeNode: Json.Decoder NodeInfo
+decodeNode =
+    Json.object3 NodeInfo
+      ("text" := Json.string)
+      ("status" := Json.string)
+      ("id" := Json.string)
+
+{--
+addNode: Maybe NodeInfo -> Model
+addNode maybeNode =
+    case maybeNode of
+        Just node -> testModel
+        Nothing -> []
+--}
+
+fetchStatus: Effects Action
+fetchStatus =
+    let
+        resquest =
+            Http.get (Json.list decodeNode) "http://127.0.0.1:8000/status.json"
+            |> Task.map Loaded
+            --|> Testing
+            --|> Effects.task
+    in
+        resquest
+            `Task.onError` (\err -> Task.succeed (ErrorJson <| toString err))
+            --`Task.andThen` (\action -> Effects.task action)
+            |> Effects.task
 
 
 
 -- SUPPORT
-
-toggleTree : String -> StatusTree -> StatusTree
+{--
+toggleTree : String -> List Tree -> List Tree
 toggleTree id tree =
   let
-    toggleLeafInfo li =
+    toggleNodeInfo li =
       { li
       | expanded = not li.expanded
       }
-    toogleSubTree id (Node li st) =
+    toogleTree id (Node li st) =
       if li.id == id then
-        Node (toggleLeafInfo li) st
+        Node (toggleNodeInfo li) st
       else
         Node li (toggleTree id st)
   in
-    List.map (toogleSubTree id) tree
-
-
-
-
-
-
+    List.map (toogleTree id) tree
+--}
 
 
 
@@ -249,23 +244,25 @@ toggleTree id tree =
 
 testModel : Model
 testModel
-  =
-  let
-    node text status expanded id = Node { text=text, expanded=expanded, id=id, status=status }
-    nodeExp text id = Node { text=text, expanded=True, id=id, status="OK" }
-    nodeColap text id = Node { text=text, expanded=False, id=id, status="OK" }
-  in
-    StatusTree
-    [ nodeExp "testing1" "1"
-      [ nodeExp "testing11" "11" []
-      , nodeExp "testing12" "12"
-        [ nodeExp "testing121" "121" []
-        , nodeExp "testing122" "122" []
+    =
+    let
+        --node text status id = Node { text=text, id=id, status=status }
+        node text id = Node { text=text, id=id, status="OK" }
+    in
+    ModelLoaded
+    { statusTree =
+        [ node "testing1" "1"
+          [ node "testing11" "11" []
+          , node "testing12" "12"
+            [ node "testing121" "121" []
+            , node "testing122" "122" []
+            ]
+          ]
+        , node "testing2" "2"
+          [ node "testing21" "21" []
+          , node "testing22" "22" []
+          , node "testing23" "23" []
+          ]
         ]
-      ]
-    , nodeExp "testing2" "2"
-      [ nodeExp "testing21" "21" []
-      , nodeExp "testing22" "22" []
-      , nodeExp "testing23" "23" []
-      ]
-    ]
+    , expandedItems = []
+    }
