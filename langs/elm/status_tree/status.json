@@ -2,6 +2,7 @@
     {
         "text" : "Level1",
         "status" : "ERROR",
-        "id" : "id1"
+        "id" : "id1",
+        "childs" : []
     }
 ]
