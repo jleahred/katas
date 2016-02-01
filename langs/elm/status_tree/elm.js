@@ -10993,6 +10993,7 @@ Elm.Main.make = function (_elm) {
    $Effects = Elm.Effects.make(_elm),
    $Graphics$Element = Elm.Graphics.Element.make(_elm),
    $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $Html$Events = Elm.Html.Events.make(_elm),
    $Http = Elm.Http.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
@@ -11003,45 +11004,55 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
+   var lazy = function (thunk) {
+      return A2($Json$Decode.customDecoder,$Json$Decode.value,function (js) {    return A2($Json$Decode.decodeValue,thunk({ctor: "_Tuple0"}),js);});
+   };
    var ErrorJson = function (a) {    return {ctor: "ErrorJson",_0: a};};
    var Loaded = function (a) {    return {ctor: "Loaded",_0: a};};
    var ToggleSection = function (a) {    return {ctor: "ToggleSection",_0: a};};
+   var nodeInfoToHtml = F2(function (address,nodeInfo) {
+      var buttonStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "border",_1: "none"},{ctor: "_Tuple2",_0: "background",_1: "none"}]));
+      var listStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "list-style",_1: "none"}]));
+      return A2($Html.li,
+      _U.list([listStyle]),
+      _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,ToggleSection(nodeInfo.id)),buttonStyle]),_U.list([$Html.text(nodeInfo.text)]))]));
+   });
    var nodeToHtml = F3(function (address,toggledIds,_p0) {
       var _p1 = _p0;
-      var _p3 = _p1._0;
-      var _p2 = _p1._1;
-      var nodeInfoToHtml = function (address) {
-         return A2($Html.li,
-         _U.list([]),
-         _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,ToggleSection(_p3.id))]),_U.list([$Html.text(_p3.text)]))]));
-      };
-      return _U.eq($List.length(_p2),0) || $Basics.not(A2($List.member,_p3.id,toggledIds)) ? nodeInfoToHtml(address) : A2($Html.span,
+      var _p2 = _p1._0;
+      return _U.eq($List.length(_p2.childs),0) || $Basics.not(A2($List.member,_p2.id,toggledIds)) ? A2(nodeInfoToHtml,address,_p2) : A2($Html.span,
       _U.list([]),
-      A2($Basics._op["++"],_U.list([nodeInfoToHtml(address)]),_U.list([A3(treeToHtml,address,toggledIds,_p2)])));
+      A2($Basics._op["++"],_U.list([A2(nodeInfoToHtml,address,_p2)]),_U.list([A3(listNodesToHtml,address,toggledIds,_p2.childs)])));
    });
-   var treeToHtml = F3(function (address,toggledIds,tree) {    return A2($Html.ul,_U.list([]),A2($List.map,A2(nodeToHtml,address,toggledIds),tree));});
+   var listNodesToHtml = F3(function (address,toggledIds,treeList) {
+      return A2($Html.ul,_U.list([]),A2($List.map,A2(nodeToHtml,address,toggledIds),treeList));
+   });
    var view = F2(function (address,model) {
-      var _p4 = model;
-      if (_p4.ctor === "ModelLoaded") {
-            var _p5 = _p4._0;
+      var _p3 = model;
+      if (_p3.ctor === "ModelLoaded") {
+            var _p4 = _p3._0;
             return A2($Html.div,
             _U.list([]),
-            _U.list([A3(treeToHtml,address,_p5.expandedItems,_p5.statusTree),$Html.fromElement($Graphics$Element.show(model))]));
+            _U.list([A3(listNodesToHtml,address,_p4.expandedItems,_p4.statusTree),$Html.fromElement($Graphics$Element.show(model))]));
          } else {
-            return $Html.text(_p4._0);
+            return $Html.text(_p3._0);
          }
    });
-   var NodeInfo = F3(function (a,b,c) {    return {text: a,status: b,id: c};});
-   var decodeTree = A4($Json$Decode.object3,
-   NodeInfo,
+   var ERROR = {ctor: "ERROR"};
+   var stringToNodeStatus = function (d) {    return A2($Json$Decode.customDecoder,d,function (s) {    return $Result.Ok(ERROR);});};
+   var WARNING = {ctor: "WARNING"};
+   var OK = {ctor: "OK"};
+   var NodeInfo = function (a) {    return {ctor: "NodeInfo",_0: a};};
+   var decodeTree = A5($Json$Decode.object4,
+   F4(function (t,s,i,c) {    return NodeInfo({text: t,status: s,id: i,childs: c});}),
    A2($Json$Decode._op[":="],"text",$Json$Decode.string),
-   A2($Json$Decode._op[":="],"status",$Json$Decode.string),
-   A2($Json$Decode._op[":="],"id",$Json$Decode.string));
+   stringToNodeStatus(A2($Json$Decode._op[":="],"status",$Json$Decode.string)),
+   A2($Json$Decode._op[":="],"id",$Json$Decode.string),
+   A2($Json$Decode._op[":="],"childs",$Json$Decode.list(lazy(function (_p5) {    return decodeTree;}))));
    var fetchStatus = function () {
       var resquest = A2($Task.map,Loaded,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
       return $Effects.task(A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}));
    }();
-   var Node = F2(function (a,b) {    return {ctor: "Node",_0: a,_1: b};});
    var Status = F2(function (a,b) {    return {statusTree: a,expandedItems: b};});
    var ModelMessage = function (a) {    return {ctor: "ModelMessage",_0: a};};
    var initModel = ModelMessage("Initializing...");
@@ -11061,8 +11072,19 @@ Elm.Main.make = function (_elm) {
             return ModelMessage("Error, received toggle with invalid status tree");
          }
    });
+   var update = F2(function (action,model) {
+      var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
+      var _p8 = action;
+      switch (_p8.ctor)
+      {case "Loaded": return {ctor: "_Tuple2",_0: modelFromLTree(_p8._0),_1: $Effects.none};
+         case "ToggleSection": return {ctor: "_Tuple2",_0: A2(toggleId,model,_p8._0),_1: $Effects.none};
+         default: return {ctor: "_Tuple2",_0: ModelMessage(A2($Basics._op["++"],"Error loading json: ",_p8._0)),_1: $Effects.none};}
+   });
+   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
+   var main = app.html;
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    var testModel = function () {
-      var node = F2(function (text,id) {    return Node({text: text,id: id,status: "OK"});});
+      var node = F3(function (text,id,childs) {    return NodeInfo({text: text,id: id,status: OK,childs: childs});});
       return ModelLoaded({statusTree: _U.list([A3(node,
                                               "testing1",
                                               "1",
@@ -11079,23 +11101,14 @@ Elm.Main.make = function (_elm) {
                                                       ,A3(node,"testing23","23",_U.list([]))]))])
                          ,expandedItems: _U.list([])});
    }();
-   var update = F2(function (action,model) {
-      var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
-      var _p8 = action;
-      switch (_p8.ctor)
-      {case "Loaded": return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};
-         case "ToggleSection": return {ctor: "_Tuple2",_0: A2(toggleId,model,_p8._0),_1: $Effects.none};
-         default: return {ctor: "_Tuple2",_0: ModelMessage(A2($Basics._op["++"],"Error loading json: ",_p8._0)),_1: $Effects.none};}
-   });
-   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
-   var main = app.html;
-   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    return _elm.Main.values = {_op: _op
                              ,ModelLoaded: ModelLoaded
                              ,ModelMessage: ModelMessage
                              ,Status: Status
-                             ,Node: Node
                              ,NodeInfo: NodeInfo
+                             ,OK: OK
+                             ,WARNING: WARNING
+                             ,ERROR: ERROR
                              ,initModel: initModel
                              ,main: main
                              ,app: app
@@ -11105,10 +11118,13 @@ Elm.Main.make = function (_elm) {
                              ,ErrorJson: ErrorJson
                              ,update: update
                              ,view: view
-                             ,treeToHtml: treeToHtml
+                             ,listNodesToHtml: listNodesToHtml
                              ,nodeToHtml: nodeToHtml
+                             ,lazy: lazy
                              ,decodeTree: decodeTree
+                             ,stringToNodeStatus: stringToNodeStatus
                              ,fetchStatus: fetchStatus
+                             ,nodeInfoToHtml: nodeInfoToHtml
                              ,toggleId: toggleId
                              ,testModel: testModel};
 };

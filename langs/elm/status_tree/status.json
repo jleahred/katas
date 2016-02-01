@@ -1,7 +1,80 @@
 [
     {
         "text" : "Level1",
-        "status" : "ERROR",
-        "id" : "id1"
+        "status" : "OK",
+        "id" : "id1",
+        "childs" :
+        [
+            {
+                "text" : "Level11",
+                "status" : "OK",
+                "id" : "id11",
+                "childs" : []
+            },
+            {
+                "text" : "Level12",
+                "status" : "ERROR",
+                "id" : "id12",
+                "childs" : []
+            },
+            {
+                "text" : "Level13",
+                "status" : "ERROR",
+                "id" : "id13",
+                "childs" : []
+            }
+        ]
+    },
+    {
+        "text" : "Level2",
+        "status" : "OK",
+        "id" : "id2",
+        "childs" :
+        [
+            {
+                "text" : "Level21",
+                "status" : "ERROR",
+                "id" : "id21",
+                "childs" : []
+            },
+            {
+                "text" : "Level22",
+                "status" : "ERROR",
+                "id" : "id22",
+                "childs" : []
+            },
+            {
+                "text" : "Level23",
+                "status" : "ERROR",
+                "id" : "id23",
+                "childs" : []
+            },
+            {
+                "text" : "Level24",
+                "status" : "ERROR",
+                "id" : "id24",
+                "childs" :
+                [
+                  {
+                      "text" : "Level241",
+                      "status" : "ERROR",
+                      "id" : "id241",
+                      "childs" : []
+                  },
+                  {
+                      "text" : "Level242",
+                      "status" : "ERROR",
+                      "id" : "id242",
+                      "childs" : []
+                  }
+                ]
+            }
+        ]
+    },
+    {
+        "text" : "Level3",
+        "status" : "OK",
+        "id" : "id3",
+        "childs" : []
     }
 ]
