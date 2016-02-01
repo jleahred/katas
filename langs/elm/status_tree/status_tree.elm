@@ -6,6 +6,7 @@ import Effects exposing (Effects, Never)
 import Task exposing (Task, andThen)
 import StartApp as StartApp
 import Graphics.Element exposing (show)
+import Time
 
 import Json.Decode as Json exposing ((:=))
 
@@ -43,7 +44,6 @@ initModel =
     ModelMessage  "Initializing..."
 
 
-
 --  MAIN
 
 
@@ -54,28 +54,58 @@ main =
 app: StartApp.App Model
 app =
   StartApp.start
-    { init = init
+    { init = (init, Effects.none)
     , update = update
     , view = view
-    , inputs = []
+    , inputs = [Signal.map JsonLoaded readingsMailbox2.signal]
     }
 
 
 
-init: (Model, Effects Action)
-init =
-    (initModel, fetchStatus)
+init: Model
+init = initModel
 
 
+getStatusFromServer: Task a ()
+getStatusFromServer =
+    let
+        resquest =
+            Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
+            --Http.get (Json.list decodeTree) "http://100.100.16.64:8000/status.json"
+            |> Task.map StatusLoaded
+    in
+        resquest
+            `Task.onError` (\err -> Task.succeed (ErrorJson <| toString err))
+            `Task.andThen`
+                (\_ -> Signal.send readingsMailbox2.address testModel)
+            --|> Effects.task
 
+{--
+httpGet: Task () ()
+httpGet =
+  (Http.getString "http://127.0.0.1:8000/status.json"
+    |> Task.toMaybe)
+    `Task.andThen`
+    (\maybeString -> Signal.send readingsMailbox.address maybeString)
+--}
+port periodicTasks : Signal (Task () ())
+port periodicTasks = Signal.map (\_ -> getStatusFromServer) <|  Time.every (2*Time.second)
+
+--readingsMailbox : Signal.Mailbox (Maybe String)
+--readingsMailbox = Signal.mailbox Nothing
+
+readingsMailbox2 : Signal.Mailbox Model
+readingsMailbox2 = Signal.mailbox testModel
 
 
 
 -- UPDATE
 
 type Action
-    = ToggleSection String
-    | Loaded        (List NodeInfo)
+    = RequestLoad
+    | ToggleSection String
+    | StatusLoaded  (List NodeInfo)
+    | JsonLoaded    Model
     | ErrorJson     String
 
 update: Action -> Model -> (Model, Effects Action)
@@ -88,9 +118,11 @@ update action model =
             }
     in
         case action of
-            Loaded st -> (modelFromLTree st, Effects.none)
+            JsonLoaded    model -> (model, Effects.none)
+            RequestLoad         -> (ModelMessage <| "Requested load: ", Effects.none)
+            StatusLoaded  st    -> (modelFromLTree st, Effects.none)
             ToggleSection id    -> (toggleId model id, Effects.none)
-            ErrorJson  error    ->
+            ErrorJson     error ->
                 (ModelMessage <| "Error loading json: " ++ error, Effects.none)
 
 
@@ -154,17 +186,7 @@ stringToNodeStatus d =
   Json.customDecoder d (\s-> Ok ERROR)
 
 
-fetchStatus: Effects Action
-fetchStatus =
-    let
-        resquest =
-            Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
-            --Http.get (Json.list decodeTree) "http://100.100.16.64:8000/status.json"
-            |> Task.map Loaded
-    in
-        resquest
-            `Task.onError` (\err -> Task.succeed (ErrorJson <| toString err))
-            |> Effects.task
+
 
 
 
@@ -172,6 +194,9 @@ fetchStatus =
 
 --  SUPPORT
 
+nodeInfoToHtml: Signal.Address Action
+                -> { a | id : String, text : String }
+                -> Html
 nodeInfoToHtml address nodeInfo=
     let
         listStyle =

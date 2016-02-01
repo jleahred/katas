@@ -11002,13 +11002,15 @@ Elm.Main.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $StartApp = Elm.StartApp.make(_elm),
-   $Task = Elm.Task.make(_elm);
+   $Task = Elm.Task.make(_elm),
+   $Time = Elm.Time.make(_elm);
    var _op = {};
    var lazy = function (thunk) {
       return A2($Json$Decode.customDecoder,$Json$Decode.value,function (js) {    return A2($Json$Decode.decodeValue,thunk({ctor: "_Tuple0"}),js);});
    };
    var ErrorJson = function (a) {    return {ctor: "ErrorJson",_0: a};};
-   var Loaded = function (a) {    return {ctor: "Loaded",_0: a};};
+   var JsonLoaded = function (a) {    return {ctor: "JsonLoaded",_0: a};};
+   var StatusLoaded = function (a) {    return {ctor: "StatusLoaded",_0: a};};
    var ToggleSection = function (a) {    return {ctor: "ToggleSection",_0: a};};
    var nodeInfoToHtml = F2(function (address,nodeInfo) {
       var buttonStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "border",_1: "none"},{ctor: "_Tuple2",_0: "background",_1: "none"}]));
@@ -11038,6 +11040,7 @@ Elm.Main.make = function (_elm) {
             return $Html.text(_p3._0);
          }
    });
+   var RequestLoad = {ctor: "RequestLoad"};
    var ERROR = {ctor: "ERROR"};
    var stringToNodeStatus = function (d) {    return A2($Json$Decode.customDecoder,d,function (s) {    return $Result.Ok(ERROR);});};
    var WARNING = {ctor: "WARNING"};
@@ -11049,14 +11052,10 @@ Elm.Main.make = function (_elm) {
    stringToNodeStatus(A2($Json$Decode._op[":="],"status",$Json$Decode.string)),
    A2($Json$Decode._op[":="],"id",$Json$Decode.string),
    A2($Json$Decode._op[":="],"childs",$Json$Decode.list(lazy(function (_p5) {    return decodeTree;}))));
-   var fetchStatus = function () {
-      var resquest = A2($Task.map,Loaded,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
-      return $Effects.task(A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}));
-   }();
    var Status = F2(function (a,b) {    return {statusTree: a,expandedItems: b};});
    var ModelMessage = function (a) {    return {ctor: "ModelMessage",_0: a};};
    var initModel = ModelMessage("Initializing...");
-   var init = {ctor: "_Tuple2",_0: initModel,_1: fetchStatus};
+   var init = initModel;
    var ModelLoaded = function (a) {    return {ctor: "ModelLoaded",_0: a};};
    var toggleId = F2(function (model,id) {
       var _p6 = model;
@@ -11076,13 +11075,12 @@ Elm.Main.make = function (_elm) {
       var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
       var _p8 = action;
       switch (_p8.ctor)
-      {case "Loaded": return {ctor: "_Tuple2",_0: modelFromLTree(_p8._0),_1: $Effects.none};
+      {case "JsonLoaded": return {ctor: "_Tuple2",_0: _p8._0,_1: $Effects.none};
+         case "RequestLoad": return {ctor: "_Tuple2",_0: ModelMessage("Requested load: "),_1: $Effects.none};
+         case "StatusLoaded": return {ctor: "_Tuple2",_0: modelFromLTree(_p8._0),_1: $Effects.none};
          case "ToggleSection": return {ctor: "_Tuple2",_0: A2(toggleId,model,_p8._0),_1: $Effects.none};
          default: return {ctor: "_Tuple2",_0: ModelMessage(A2($Basics._op["++"],"Error loading json: ",_p8._0)),_1: $Effects.none};}
    });
-   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
-   var main = app.html;
-   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    var testModel = function () {
       var node = F3(function (text,id,childs) {    return NodeInfo({text: text,id: id,status: OK,childs: childs});});
       return ModelLoaded({statusTree: _U.list([A3(node,
@@ -11101,6 +11099,23 @@ Elm.Main.make = function (_elm) {
                                                       ,A3(node,"testing23","23",_U.list([]))]))])
                          ,expandedItems: _U.list([])});
    }();
+   var readingsMailbox2 = $Signal.mailbox(testModel);
+   var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
+                             ,update: update
+                             ,view: view
+                             ,inputs: _U.list([A2($Signal.map,JsonLoaded,readingsMailbox2.signal)])});
+   var main = app.html;
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
+   var getStatusFromServer = function () {
+      var resquest = A2($Task.map,StatusLoaded,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
+      return A2($Task.andThen,
+      A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}),
+      function (_p9) {
+         return A2($Signal.send,readingsMailbox2.address,testModel);
+      });
+   }();
+   var periodicTasks = Elm.Native.Task.make(_elm).performSignal("periodicTasks",
+   A2($Signal.map,function (_p10) {    return getStatusFromServer;},$Time.every(2 * $Time.second)));
    return _elm.Main.values = {_op: _op
                              ,ModelLoaded: ModelLoaded
                              ,ModelMessage: ModelMessage
@@ -11113,8 +11128,12 @@ Elm.Main.make = function (_elm) {
                              ,main: main
                              ,app: app
                              ,init: init
+                             ,getStatusFromServer: getStatusFromServer
+                             ,readingsMailbox2: readingsMailbox2
+                             ,RequestLoad: RequestLoad
                              ,ToggleSection: ToggleSection
-                             ,Loaded: Loaded
+                             ,StatusLoaded: StatusLoaded
+                             ,JsonLoaded: JsonLoaded
                              ,ErrorJson: ErrorJson
                              ,update: update
                              ,view: view
@@ -11123,7 +11142,6 @@ Elm.Main.make = function (_elm) {
                              ,lazy: lazy
                              ,decodeTree: decodeTree
                              ,stringToNodeStatus: stringToNodeStatus
-                             ,fetchStatus: fetchStatus
                              ,nodeInfoToHtml: nodeInfoToHtml
                              ,toggleId: toggleId
                              ,testModel: testModel};
