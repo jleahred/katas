@@ -69,44 +69,35 @@ init = initModel
 getStatusFromServer: Task a ()
 getStatusFromServer =
     let
+        modelFromLTree lt =
+            ModelLoaded
+            { statusTree    = lt
+            , expandedItems = []
+            }
         resquest =
             Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
             --Http.get (Json.list decodeTree) "http://100.100.16.64:8000/status.json"
-            |> Task.map StatusLoaded
+            |> Task.map modelFromLTree
     in
         resquest
-            `Task.onError` (\err -> Task.succeed (ErrorJson <| toString err))
+            `Task.onError`
+                (\err -> Task.succeed (ModelMessage <| toString err))
             `Task.andThen`
-                (\_ -> Signal.send readingsMailbox2.address testModel)
-            --|> Effects.task
+                (\m -> Signal.send readingsMailbox2.address m)
 
-{--
-httpGet: Task () ()
-httpGet =
-  (Http.getString "http://127.0.0.1:8000/status.json"
-    |> Task.toMaybe)
-    `Task.andThen`
-    (\maybeString -> Signal.send readingsMailbox.address maybeString)
---}
 port periodicTasks : Signal (Task () ())
 port periodicTasks = Signal.map (\_ -> getStatusFromServer) <|  Time.every (2*Time.second)
 
---readingsMailbox : Signal.Mailbox (Maybe String)
---readingsMailbox = Signal.mailbox Nothing
-
 readingsMailbox2 : Signal.Mailbox Model
-readingsMailbox2 = Signal.mailbox testModel
+readingsMailbox2 = Signal.mailbox initModel
 
 
 
 -- UPDATE
 
 type Action
-    = RequestLoad
-    | ToggleSection String
-    | StatusLoaded  (List NodeInfo)
+    = ToggleSection String
     | JsonLoaded    Model
-    | ErrorJson     String
 
 update: Action -> Model -> (Model, Effects Action)
 update action model =
@@ -119,11 +110,7 @@ update action model =
     in
         case action of
             JsonLoaded    model -> (model, Effects.none)
-            RequestLoad         -> (ModelMessage <| "Requested load: ", Effects.none)
-            StatusLoaded  st    -> (modelFromLTree st, Effects.none)
             ToggleSection id    -> (toggleId model id, Effects.none)
-            ErrorJson     error ->
-                (ModelMessage <| "Error loading json: " ++ error, Effects.none)
 
 
 

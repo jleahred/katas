@@ -11008,9 +11008,7 @@ Elm.Main.make = function (_elm) {
    var lazy = function (thunk) {
       return A2($Json$Decode.customDecoder,$Json$Decode.value,function (js) {    return A2($Json$Decode.decodeValue,thunk({ctor: "_Tuple0"}),js);});
    };
-   var ErrorJson = function (a) {    return {ctor: "ErrorJson",_0: a};};
    var JsonLoaded = function (a) {    return {ctor: "JsonLoaded",_0: a};};
-   var StatusLoaded = function (a) {    return {ctor: "StatusLoaded",_0: a};};
    var ToggleSection = function (a) {    return {ctor: "ToggleSection",_0: a};};
    var nodeInfoToHtml = F2(function (address,nodeInfo) {
       var buttonStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "border",_1: "none"},{ctor: "_Tuple2",_0: "background",_1: "none"}]));
@@ -11040,7 +11038,6 @@ Elm.Main.make = function (_elm) {
             return $Html.text(_p3._0);
          }
    });
-   var RequestLoad = {ctor: "RequestLoad"};
    var ERROR = {ctor: "ERROR"};
    var stringToNodeStatus = function (d) {    return A2($Json$Decode.customDecoder,d,function (s) {    return $Result.Ok(ERROR);});};
    var WARNING = {ctor: "WARNING"};
@@ -11056,31 +11053,48 @@ Elm.Main.make = function (_elm) {
    var ModelMessage = function (a) {    return {ctor: "ModelMessage",_0: a};};
    var initModel = ModelMessage("Initializing...");
    var init = initModel;
+   var readingsMailbox2 = $Signal.mailbox(initModel);
    var ModelLoaded = function (a) {    return {ctor: "ModelLoaded",_0: a};};
+   var getStatusFromServer = function () {
+      var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
+      var resquest = A2($Task.map,modelFromLTree,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
+      return A2($Task.andThen,
+      A2($Task.onError,resquest,function (err) {    return $Task.succeed(ModelMessage($Basics.toString(err)));}),
+      function (m) {
+         return A2($Signal.send,readingsMailbox2.address,m);
+      });
+   }();
+   var periodicTasks = Elm.Native.Task.make(_elm).performSignal("periodicTasks",
+   A2($Signal.map,function (_p6) {    return getStatusFromServer;},$Time.every(2 * $Time.second)));
    var toggleId = F2(function (model,id) {
-      var _p6 = model;
-      if (_p6.ctor === "ModelLoaded") {
-            var _p7 = _p6._0;
-            return ModelLoaded(_U.update(_p7,
-            {expandedItems: $Basics.not(A2($List.member,id,_p7.expandedItems)) ? A2($Basics._op["++"],_p7.expandedItems,_U.list([id])) : A2($List.filter,
+      var _p7 = model;
+      if (_p7.ctor === "ModelLoaded") {
+            var _p8 = _p7._0;
+            return ModelLoaded(_U.update(_p8,
+            {expandedItems: $Basics.not(A2($List.member,id,_p8.expandedItems)) ? A2($Basics._op["++"],_p8.expandedItems,_U.list([id])) : A2($List.filter,
             function (i) {
                return !_U.eq(i,id);
             },
-            _p7.expandedItems)}));
+            _p8.expandedItems)}));
          } else {
             return ModelMessage("Error, received toggle with invalid status tree");
          }
    });
    var update = F2(function (action,model) {
       var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
-      var _p8 = action;
-      switch (_p8.ctor)
-      {case "JsonLoaded": return {ctor: "_Tuple2",_0: _p8._0,_1: $Effects.none};
-         case "RequestLoad": return {ctor: "_Tuple2",_0: ModelMessage("Requested load: "),_1: $Effects.none};
-         case "StatusLoaded": return {ctor: "_Tuple2",_0: modelFromLTree(_p8._0),_1: $Effects.none};
-         case "ToggleSection": return {ctor: "_Tuple2",_0: A2(toggleId,model,_p8._0),_1: $Effects.none};
-         default: return {ctor: "_Tuple2",_0: ModelMessage(A2($Basics._op["++"],"Error loading json: ",_p8._0)),_1: $Effects.none};}
+      var _p9 = action;
+      if (_p9.ctor === "JsonLoaded") {
+            return {ctor: "_Tuple2",_0: _p9._0,_1: $Effects.none};
+         } else {
+            return {ctor: "_Tuple2",_0: A2(toggleId,model,_p9._0),_1: $Effects.none};
+         }
    });
+   var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
+                             ,update: update
+                             ,view: view
+                             ,inputs: _U.list([A2($Signal.map,JsonLoaded,readingsMailbox2.signal)])});
+   var main = app.html;
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    var testModel = function () {
       var node = F3(function (text,id,childs) {    return NodeInfo({text: text,id: id,status: OK,childs: childs});});
       return ModelLoaded({statusTree: _U.list([A3(node,
@@ -11099,23 +11113,6 @@ Elm.Main.make = function (_elm) {
                                                       ,A3(node,"testing23","23",_U.list([]))]))])
                          ,expandedItems: _U.list([])});
    }();
-   var readingsMailbox2 = $Signal.mailbox(testModel);
-   var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
-                             ,update: update
-                             ,view: view
-                             ,inputs: _U.list([A2($Signal.map,JsonLoaded,readingsMailbox2.signal)])});
-   var main = app.html;
-   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
-   var getStatusFromServer = function () {
-      var resquest = A2($Task.map,StatusLoaded,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
-      return A2($Task.andThen,
-      A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}),
-      function (_p9) {
-         return A2($Signal.send,readingsMailbox2.address,testModel);
-      });
-   }();
-   var periodicTasks = Elm.Native.Task.make(_elm).performSignal("periodicTasks",
-   A2($Signal.map,function (_p10) {    return getStatusFromServer;},$Time.every(2 * $Time.second)));
    return _elm.Main.values = {_op: _op
                              ,ModelLoaded: ModelLoaded
                              ,ModelMessage: ModelMessage
@@ -11130,11 +11127,8 @@ Elm.Main.make = function (_elm) {
                              ,init: init
                              ,getStatusFromServer: getStatusFromServer
                              ,readingsMailbox2: readingsMailbox2
-                             ,RequestLoad: RequestLoad
                              ,ToggleSection: ToggleSection
-                             ,StatusLoaded: StatusLoaded
                              ,JsonLoaded: JsonLoaded
-                             ,ErrorJson: ErrorJson
                              ,update: update
                              ,view: view
                              ,listNodesToHtml: listNodesToHtml
