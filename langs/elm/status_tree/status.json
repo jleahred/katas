@@ -1,7 +1,150 @@
 [
     {
         "text" : "Level1",
-        "status" : "ERROR",
-        "id" : "id1"
+        "status" : "OK",
+        "id" : "id1",
+        "childs" :
+        [
+            {
+                "text" : "Level11",
+                "status" : "OK",
+                "id" : "id11",
+                "childs" :
+                [
+                    {
+                        "text" : "Level111",
+                        "status" : "OK",
+                        "id" : "id111",
+                        "childs" : []
+                    },
+                    {
+                        "text" : "Level112",
+                        "status" : "WARNING",
+                        "id" : "id112",
+                        "childs" :
+                        [
+                            {
+                                "text" : "Level1111",
+                                "status" : "OK",
+                                "id" : "id1111",
+                                "childs" : []
+                            },
+                            {
+                                "text" : "Level1112",
+                                "status" : "WARNING",
+                                "id" : "id1112",
+                                "childs" : []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "text" : "Level12",
+                "status" : "OK",
+                "id" : "id12",
+                "childs" : []
+            },
+            {
+                "text" : "Level13",
+                "status" : "ERROR",
+                "id" : "id13",
+                "childs" :
+                [
+                    {
+                        "text" : "Level131",
+                        "status" : "OK",
+                        "id" : "id131",
+                        "childs" : []
+                    },
+                    {
+                        "text" : "Level132",
+                        "status" : "WARNING",
+                        "id" : "id132",
+                        "childs" : []
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "text" : "Level2",
+        "status" : "OK",
+        "id" : "id2",
+        "childs" :
+        [
+            {
+                "text" : "Level21",
+                "status" : "WARNING",
+                "id" : "id21",
+                "childs" : []
+            },
+            {
+                "text" : "Level22",
+                "status" : "ERROR",
+                "id" : "id22",
+                "childs" : []
+            },
+            {
+                "text" : "Level23",
+                "status" : "OK",
+                "id" : "id23",
+                "childs" : []
+            },
+            {
+                "text" : "Level24",
+                "status" : "WARNING",
+                "id" : "id24",
+                "childs" :
+                [
+                  {
+                      "text" : "Level241",
+                      "status" : "ERROR",
+                      "id" : "id241",
+                      "childs" : []
+                  },
+                  {
+                      "text" : "Level242",
+                      "status" : "ERROR",
+                      "id" : "id242",
+                      "childs" : []
+                  }
+                ]
+            }
+        ]
+    },
+    {
+        "text" : "Level3",
+        "status" : "WARNING",
+        "id" : "id3",
+        "childs" :
+        [
+            {
+                "text" : "Level3111",
+                "status" : "OK",
+                "id" : "id3111",
+                "childs" : []
+            },
+            {
+                "text" : "Level3112",
+                "status" : "WARNING",
+                "id" : "id3112",
+                "childs" :
+                [
+                    {
+                        "text" : "Level31111",
+                        "status" : "OK",
+                        "id" : "id31111",
+                        "childs" : []
+                    },
+                    {
+                        "text" : "Level31112",
+                        "status" : "ERROR",
+                        "id" : "id31112",
+                        "childs" : []
+                    }
+                ]
+            }
+        ]
     }
 ]

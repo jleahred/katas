@@ -1,5 +1,6 @@
-var Elm = Elm || { Native: {} };
-Elm.Native.Array = {};
+<!DOCTYPE HTML>
+<html><head><meta charset="UTF-8"><title>Main</title><style>html,head,body { padding:0; margin:0; }
+body { font-family: calibri, helvetica, arial, sans-serif; }</style><script type="text/javascript">var Elm = Elm || { Native: {} };Elm.Native.Array = {};
 Elm.Native.Array.make = function(localRuntime) {
 
 	localRuntime.Native = localRuntime.Native || {};
@@ -979,7 +980,6 @@ Elm.Native.Array.make = function(localRuntime) {
 
 	return localRuntime.Native.Array.values = Elm.Native.Array.values;
 };
-
 Elm.Native.Basics = {};
 Elm.Native.Basics.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -1116,7 +1116,6 @@ Elm.Native.Basics.make = function(localRuntime) {
 		isInfinite: isInfinite
 	};
 };
-
 Elm.Native.Port = {};
 
 Elm.Native.Port.make = function(localRuntime) {
@@ -1248,7 +1247,6 @@ Elm.Native.Port.make = function(localRuntime) {
 		outboundSignal: outboundSignal
 	};
 };
-
 if (!Elm.fullscreen) {
 	(function() {
 		'use strict';
@@ -1885,7 +1883,6 @@ if (!Elm.fullscreen) {
 			: fun(a)(b)(c)(d)(e)(f)(g)(h)(i);
 	}
 }
-
 Elm.Native = Elm.Native || {};
 Elm.Native.Utils = {};
 Elm.Native.Utils.make = function(localRuntime) {
@@ -2416,7 +2413,6 @@ Elm.Native.Utils.make = function(localRuntime) {
 		toString: toString
 	};
 };
-
 Elm.Basics = Elm.Basics || {};
 Elm.Basics.make = function (_elm) {
    "use strict";
@@ -2531,8 +2527,7 @@ Elm.Basics.make = function (_elm) {
                                ,LT: LT
                                ,EQ: EQ
                                ,GT: GT};
-};
-Elm.Maybe = Elm.Maybe || {};
+};Elm.Maybe = Elm.Maybe || {};
 Elm.Maybe.make = function (_elm) {
    "use strict";
    _elm.Maybe = _elm.Maybe || {};
@@ -2613,8 +2608,7 @@ Elm.Maybe.make = function (_elm) {
                               ,oneOf: oneOf
                               ,Just: Just
                               ,Nothing: Nothing};
-};
-Elm.Native.List = {};
+};Elm.Native.List = {};
 Elm.Native.List.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
 	localRuntime.Native.List = localRuntime.Native.List || {};
@@ -2778,7 +2772,6 @@ Elm.Native.List.make = function(localRuntime) {
 	};
 	return localRuntime.Native.List.values = Elm.Native.List.values;
 };
-
 Elm.List = Elm.List || {};
 Elm.List.make = function (_elm) {
    "use strict";
@@ -2952,8 +2945,7 @@ Elm.List.make = function (_elm) {
                              ,sort: sort
                              ,sortBy: sortBy
                              ,sortWith: sortWith};
-};
-Elm.Array = Elm.Array || {};
+};Elm.Array = Elm.Array || {};
 Elm.Array.make = function (_elm) {
    "use strict";
    _elm.Array = _elm.Array || {};
@@ -3012,8 +3004,7 @@ Elm.Array.make = function (_elm) {
                               ,filter: filter
                               ,foldl: foldl
                               ,foldr: foldr};
-};
-Elm.Native.Char = {};
+};Elm.Native.Char = {};
 Elm.Native.Char.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
 	localRuntime.Native.Char = localRuntime.Native.Char || {};
@@ -3033,7 +3024,6 @@ Elm.Native.Char.make = function(localRuntime) {
 		toLocaleLower: function(c) { return Utils.chr(c.toLocaleLowerCase()); }
 	};
 };
-
 Elm.Char = Elm.Char || {};
 Elm.Char.make = function (_elm) {
    "use strict";
@@ -3067,8 +3057,7 @@ Elm.Char.make = function (_elm) {
                              ,toLocaleLower: toLocaleLower
                              ,toCode: toCode
                              ,fromCode: fromCode};
-};
-Elm.Native.Color = {};
+};Elm.Native.Color = {};
 Elm.Native.Color.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
 	localRuntime.Native.Color = localRuntime.Native.Color || {};
@@ -3107,7 +3096,6 @@ Elm.Native.Color.make = function(localRuntime) {
 		toCss: toCss
 	};
 };
-
 Elm.Color = Elm.Color || {};
 Elm.Color.make = function (_elm) {
    "use strict";
@@ -3270,8 +3258,7 @@ Elm.Color.make = function (_elm) {
                               ,lightGray: lightGray
                               ,gray: gray
                               ,darkGray: darkGray};
-};
-Elm.Native.Signal = {};
+};Elm.Native.Signal = {};
 
 Elm.Native.Signal.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -3741,7 +3728,6 @@ Elm.Native.Signal.make = function(localRuntime) {
 		delay: F2(delay)
 	};
 };
-
 Elm.Native.Time = {};
 
 Elm.Native.Time.make = function(localRuntime)
@@ -3851,7 +3837,6 @@ Elm.Native.Time.make = function(localRuntime)
 		read: read
 	};
 };
-
 Elm.Native.Transform2D = {};
 Elm.Native.Transform2D.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -3962,7 +3947,6 @@ Elm.Native.Transform2D.make = function(localRuntime) {
 		*/
 	};
 };
-
 Elm.Transform2D = Elm.Transform2D || {};
 Elm.Transform2D.make = function (_elm) {
    "use strict";
@@ -3989,7 +3973,6 @@ Elm.Transform2D.make = function (_elm) {
                                     ,scaleX: scaleX
                                     ,scaleY: scaleY};
 };
-
 // setup
 Elm.Native = Elm.Native || {};
 Elm.Native.Graphics = Elm.Native.Graphics || {};
@@ -4653,7 +4636,6 @@ Elm.Native.Graphics.Collage.make = function(localRuntime) {
 		collage: F3(collage)
 	};
 };
-
 
 // setup
 Elm.Native = Elm.Native || {};
@@ -5390,7 +5372,6 @@ Elm.Native.Graphics.Element.make = function(localRuntime) {
 		markdown: markdown
 	};
 };
-
 Elm.Native.Text = {};
 Elm.Native.Text.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -5678,7 +5659,6 @@ Elm.Native.Text.make = function(localRuntime) {
 		renderHtml: renderHtml
 	};
 };
-
 Elm.Text = Elm.Text || {};
 Elm.Text.make = function (_elm) {
    "use strict";
@@ -5730,8 +5710,7 @@ Elm.Text.make = function (_elm) {
                              ,Under: Under
                              ,Over: Over
                              ,Through: Through};
-};
-Elm.Graphics = Elm.Graphics || {};
+};Elm.Graphics = Elm.Graphics || {};
 Elm.Graphics.Element = Elm.Graphics.Element || {};
 Elm.Graphics.Element.make = function (_elm) {
    "use strict";
@@ -5928,8 +5907,7 @@ Elm.Graphics.Element.make = function (_elm) {
                                          ,topRightAt: topRightAt
                                          ,bottomLeftAt: bottomLeftAt
                                          ,bottomRightAt: bottomRightAt};
-};
-Elm.Graphics = Elm.Graphics || {};
+};Elm.Graphics = Elm.Graphics || {};
 Elm.Graphics.Collage = Elm.Graphics.Collage || {};
 Elm.Graphics.Collage.make = function (_elm) {
    "use strict";
@@ -6060,8 +6038,7 @@ Elm.Graphics.Collage.make = function (_elm) {
                                          ,Smooth: Smooth
                                          ,Sharp: Sharp
                                          ,Clipped: Clipped};
-};
-Elm.Native.Debug = {};
+};Elm.Native.Debug = {};
 Elm.Native.Debug.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
 	localRuntime.Native.Debug = localRuntime.Native.Debug || {};
@@ -6127,7 +6104,6 @@ Elm.Native.Debug.make = function(localRuntime) {
 		watchSummary: F3(watchSummary)
 	};
 };
-
 Elm.Debug = Elm.Debug || {};
 Elm.Debug.make = function (_elm) {
    "use strict";
@@ -6141,8 +6117,7 @@ Elm.Debug.make = function (_elm) {
    var crash = $Native$Debug.crash;
    var log = $Native$Debug.log;
    return _elm.Debug.values = {_op: _op,log: log,crash: crash,watch: watch,watchSummary: watchSummary,trace: trace};
-};
-Elm.Native.Task = {};
+};Elm.Native.Task = {};
 
 Elm.Native.Task.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -6367,7 +6342,6 @@ Elm.Native.Task.make = function(localRuntime) {
 		sleep: sleep
 	};
 };
-
 Elm.Result = Elm.Result || {};
 Elm.Result.make = function (_elm) {
    "use strict";
@@ -6468,8 +6442,7 @@ Elm.Result.make = function (_elm) {
                                ,formatError: formatError
                                ,Ok: Ok
                                ,Err: Err};
-};
-Elm.Task = Elm.Task || {};
+};Elm.Task = Elm.Task || {};
 Elm.Task.make = function (_elm) {
    "use strict";
    _elm.Task = _elm.Task || {};
@@ -6560,8 +6533,7 @@ Elm.Task.make = function (_elm) {
                              ,fromResult: fromResult
                              ,spawn: spawn
                              ,sleep: sleep};
-};
-Elm.Signal = Elm.Signal || {};
+};Elm.Signal = Elm.Signal || {};
 Elm.Signal.make = function (_elm) {
    "use strict";
    _elm.Signal = _elm.Signal || {};
@@ -6626,8 +6598,7 @@ Elm.Signal.make = function (_elm) {
                                ,message: message
                                ,forwardTo: forwardTo
                                ,Mailbox: Mailbox};
-};
-Elm.Time = Elm.Time || {};
+};Elm.Time = Elm.Time || {};
 Elm.Time.make = function (_elm) {
    "use strict";
    _elm.Time = _elm.Time || {};
@@ -6672,8 +6643,7 @@ Elm.Time.make = function (_elm) {
                              ,timestamp: timestamp
                              ,delay: delay
                              ,since: since};
-};
-Elm.Native.String = {};
+};Elm.Native.String = {};
 
 Elm.Native.String.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -7014,7 +6984,6 @@ Elm.Native.String.make = function(localRuntime) {
 		fromList: fromList
 	};
 };
-
 Elm.String = Elm.String || {};
 Elm.String.make = function (_elm) {
    "use strict";
@@ -7105,8 +7074,7 @@ Elm.String.make = function (_elm) {
                                ,foldr: foldr
                                ,any: any
                                ,all: all};
-};
-Elm.Dict = Elm.Dict || {};
+};Elm.Dict = Elm.Dict || {};
 Elm.Dict.make = function (_elm) {
    "use strict";
    _elm.Dict = _elm.Dict || {};
@@ -7666,8 +7634,7 @@ Elm.Dict.make = function (_elm) {
                              ,values: values
                              ,toList: toList
                              ,fromList: fromList};
-};
-Elm.Native.Json = {};
+};Elm.Native.Json = {};
 
 Elm.Native.Json.make = function(localRuntime) {
 	localRuntime.Native = localRuntime.Native || {};
@@ -8162,7 +8129,6 @@ Elm.Native.Json.make = function(localRuntime) {
 
 	};
 };
-
 Elm.Json = Elm.Json || {};
 Elm.Json.Encode = Elm.Json.Encode || {};
 Elm.Json.Encode.make = function (_elm) {
@@ -8192,8 +8158,7 @@ Elm.Json.Encode.make = function (_elm) {
                                     ,list: list
                                     ,array: array
                                     ,object: object};
-};
-Elm.Json = Elm.Json || {};
+};Elm.Json = Elm.Json || {};
 Elm.Json.Decode = Elm.Json.Decode || {};
 Elm.Json.Decode.make = function (_elm) {
    "use strict";
@@ -8284,8 +8249,7 @@ Elm.Json.Decode.make = function (_elm) {
                                     ,andThen: andThen
                                     ,value: value
                                     ,customDecoder: customDecoder};
-};
-Elm.Native.Effects = {};
+};Elm.Native.Effects = {};
 Elm.Native.Effects.make = function(localRuntime) {
 
 	localRuntime.Native = localRuntime.Native || {};
@@ -8425,7 +8389,6 @@ Elm.Native.Effects.make = function(localRuntime) {
 	};
 
 };
-
 Elm.Effects = Elm.Effects || {};
 Elm.Effects.make = function (_elm) {
    "use strict";
@@ -8481,8 +8444,7 @@ Elm.Effects.make = function (_elm) {
          default: return Batch(A2($List.map,map(func),_p7._0));}
    });
    return _elm.Effects.values = {_op: _op,none: none,task: task,tick: tick,map: map,batch: batch,toTask: toTask};
-};
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+};(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
 (function (global){
@@ -10076,7 +10038,6 @@ Elm.Native.VirtualDom.make = function(elm)
 };
 
 },{"virtual-dom/vdom/create-element":6,"virtual-dom/vdom/patch":9,"virtual-dom/vnode/is-vhook":13,"virtual-dom/vnode/vnode":18,"virtual-dom/vnode/vtext":20,"virtual-dom/vtree/diff":22}]},{},[23]);
-
 Elm.VirtualDom = Elm.VirtualDom || {};
 Elm.VirtualDom.make = function (_elm) {
    "use strict";
@@ -10124,8 +10085,7 @@ Elm.VirtualDom.make = function (_elm) {
                                    ,lazy2: lazy2
                                    ,lazy3: lazy3
                                    ,Options: Options};
-};
-Elm.Html = Elm.Html || {};
+};Elm.Html = Elm.Html || {};
 Elm.Html.make = function (_elm) {
    "use strict";
    _elm.Html = _elm.Html || {};
@@ -10347,8 +10307,7 @@ Elm.Html.make = function (_elm) {
                              ,summary: summary
                              ,menuitem: menuitem
                              ,menu: menu};
-};
-Elm.Html = Elm.Html || {};
+};Elm.Html = Elm.Html || {};
 Elm.Html.Attributes = Elm.Html.Attributes || {};
 Elm.Html.Attributes.make = function (_elm) {
    "use strict";
@@ -10572,8 +10531,7 @@ Elm.Html.Attributes.make = function (_elm) {
                                         ,manifest: manifest
                                         ,property: property
                                         ,attribute: attribute};
-};
-Elm.Html = Elm.Html || {};
+};Elm.Html = Elm.Html || {};
 Elm.Html.Events = Elm.Html.Events || {};
 Elm.Html.Events.make = function (_elm) {
    "use strict";
@@ -10638,8 +10596,7 @@ Elm.Html.Events.make = function (_elm) {
                                     ,targetChecked: targetChecked
                                     ,keyCode: keyCode
                                     ,Options: Options};
-};
-Elm.Native.Http = {};
+};Elm.Native.Http = {};
 Elm.Native.Http.make = function(localRuntime) {
 
 	localRuntime.Native = localRuntime.Native || {};
@@ -10823,7 +10780,6 @@ Elm.Native.Http.make = function(localRuntime) {
 		uriDecode: uriDecode
 	};
 };
-
 Elm.Http = Elm.Http || {};
 Elm.Http.make = function (_elm) {
    "use strict";
@@ -10942,8 +10898,7 @@ Elm.Http.make = function (_elm) {
                              ,BadResponse: BadResponse
                              ,RawTimeout: RawTimeout
                              ,RawNetworkError: RawNetworkError};
-};
-Elm.StartApp = Elm.StartApp || {};
+};Elm.StartApp = Elm.StartApp || {};
 Elm.StartApp.make = function (_elm) {
    "use strict";
    _elm.StartApp = _elm.StartApp || {};
@@ -10981,8 +10936,7 @@ Elm.StartApp.make = function (_elm) {
    var App = F3(function (a,b,c) {    return {html: a,model: b,tasks: c};});
    var Config = F4(function (a,b,c,d) {    return {init: a,update: b,view: c,inputs: d};});
    return _elm.StartApp.values = {_op: _op,start: start,Config: Config,App: App};
-};
-Elm.Main = Elm.Main || {};
+};Elm.Main = Elm.Main || {};
 Elm.Main.make = function (_elm) {
    "use strict";
    _elm.Main = _elm.Main || {};
@@ -10991,8 +10945,8 @@ Elm.Main.make = function (_elm) {
    $Basics = Elm.Basics.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Effects = Elm.Effects.make(_elm),
-   $Graphics$Element = Elm.Graphics.Element.make(_elm),
    $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $Html$Events = Elm.Html.Events.make(_elm),
    $Http = Elm.Http.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
@@ -11001,68 +10955,146 @@ Elm.Main.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $StartApp = Elm.StartApp.make(_elm),
-   $Task = Elm.Task.make(_elm);
+   $Task = Elm.Task.make(_elm),
+   $Time = Elm.Time.make(_elm);
    var _op = {};
-   var ErrorJson = function (a) {    return {ctor: "ErrorJson",_0: a};};
-   var Loaded = function (a) {    return {ctor: "Loaded",_0: a};};
+   var fontStyle = {ctor: "_Tuple2",_0: "font-size",_1: "1.1em"};
+   var getExpList = function (model) {    var _p0 = model;if (_p0.ctor === "ModelMessage") {    return _U.list([]);} else {    return _p0._0.expandedItems;}};
+   var lazy = function (thunk) {
+      return A2($Json$Decode.customDecoder,$Json$Decode.value,function (js) {    return A2($Json$Decode.decodeValue,thunk({ctor: "_Tuple0"}),js);});
+   };
+   var JsonLoaded = function (a) {    return {ctor: "JsonLoaded",_0: a};};
    var ToggleSection = function (a) {    return {ctor: "ToggleSection",_0: a};};
-   var nodeToHtml = F3(function (address,toggledIds,_p0) {
-      var _p1 = _p0;
-      var _p3 = _p1._0;
-      var _p2 = _p1._1;
-      var nodeInfoToHtml = function (address) {
-         return A2($Html.li,
-         _U.list([]),
-         _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,ToggleSection(_p3.id))]),_U.list([$Html.text(_p3.text)]))]));
+   var nodeInfoToHtml = F2(function (address,nodeInfo) {
+      var statusColor = function (status) {
+         var _p1 = status;
+         switch (_p1.ctor)
+         {case "OK": return "green";
+            case "WARNING": return "orange";
+            default: return "red";}
       };
-      return _U.eq($List.length(_p2),0) || $Basics.not(A2($List.member,_p3.id,toggledIds)) ? nodeInfoToHtml(address) : A2($Html.span,
+      var circleStatus = function (status) {
+         return A2($Html.div,
+         _U.list([$Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "border-radius",_1: "30px"}
+                                                 ,{ctor: "_Tuple2",_0: "margin-top",_1: "3px"}
+                                                 ,{ctor: "_Tuple2",_0: "width",_1: "15px"}
+                                                 ,{ctor: "_Tuple2",_0: "height",_1: "15px"}
+                                                 ,{ctor: "_Tuple2",_0: "background",_1: statusColor(status)}
+                                                 ,{ctor: "_Tuple2",_0: "color",_1: "transparent"}
+                                                 ,{ctor: "_Tuple2",_0: "float",_1: "left"}]))]),
+         _U.list([$Html.text("_")]));
+      };
+      var styleLI = function (nChilds) {    return _U.eq(nChilds,0) ? _U.list([{ctor: "_Tuple2",_0: "color",_1: "transparent"}]) : _U.list([]);};
+      var listIndicator = function (ni) {
+         return A2($Html.span,
+         _U.list([$Html$Attributes.style(A2($Basics._op["++"],
+         styleLI($List.length(nodeInfo.childs)),
+         _U.list([{ctor: "_Tuple2",_0: "margin-left",_1: "7px"}])))]),
+         _U.list([$Html.text(" · ")]));
+      };
+      var buttonStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "border",_1: "none"},{ctor: "_Tuple2",_0: "background",_1: "none"},fontStyle]));
+      var listStyle = $Html$Attributes.style(_U.list([{ctor: "_Tuple2",_0: "list-style",_1: "none"}]));
+      return A2($Html.li,
+      _U.list([listStyle]),
+      _U.list([A2($Html.button,
+      _U.list([A2($Html$Events.onClick,address,ToggleSection(nodeInfo.id)),buttonStyle]),
+      _U.list([circleStatus(nodeInfo.status),listIndicator(nodeInfo),$Html.text(nodeInfo.text)]))]));
+   });
+   var nodeToHtml = F3(function (address,toggledIds,_p2) {
+      var _p3 = _p2;
+      var _p4 = _p3._0;
+      return _U.eq($List.length(_p4.childs),0) || $Basics.not(A2($List.member,_p4.id,toggledIds)) ? A2(nodeInfoToHtml,address,_p4) : A2($Html.span,
       _U.list([]),
-      A2($Basics._op["++"],_U.list([nodeInfoToHtml(address)]),_U.list([A3(treeToHtml,address,toggledIds,_p2)])));
+      A2($Basics._op["++"],_U.list([A2(nodeInfoToHtml,address,_p4)]),_U.list([A3(listNodesToHtml,address,toggledIds,_p4.childs)])));
    });
-   var treeToHtml = F3(function (address,toggledIds,tree) {    return A2($Html.ul,_U.list([]),A2($List.map,A2(nodeToHtml,address,toggledIds),tree));});
+   var listNodesToHtml = F3(function (address,toggledIds,treeList) {
+      return A2($Html.ul,_U.list([]),A2($List.map,A2(nodeToHtml,address,toggledIds),treeList));
+   });
    var view = F2(function (address,model) {
-      var _p4 = model;
-      if (_p4.ctor === "ModelLoaded") {
-            var _p5 = _p4._0;
-            return A2($Html.div,
-            _U.list([]),
-            _U.list([A3(treeToHtml,address,_p5.expandedItems,_p5.statusTree),$Html.fromElement($Graphics$Element.show(model))]));
-         } else {
-            return $Html.text(_p4._0);
-         }
+      return A2($Html.body,
+      _U.list([$Html$Attributes.style(_U.list([fontStyle]))]),
+      _U.list([function () {
+         var _p5 = model;
+         if (_p5.ctor === "ModelLoaded") {
+               var _p6 = _p5._0;
+               return A2($Html.div,_U.list([]),_U.list([A3(listNodesToHtml,address,_p6.expandedItems,_p6.statusTree)]));
+            } else {
+               return $Html.text(_p5._0);
+            }
+      }()]));
    });
-   var NodeInfo = F3(function (a,b,c) {    return {text: a,status: b,id: c};});
-   var decodeTree = A4($Json$Decode.object3,
-   NodeInfo,
+   var ERROR = {ctor: "ERROR"};
+   var WARNING = {ctor: "WARNING"};
+   var OK = {ctor: "OK"};
+   var stringToNodeStatus = function (d) {
+      return A2($Json$Decode.customDecoder,
+      d,
+      function (s) {
+         return $Result.Ok(function () {    var _p7 = s;switch (_p7) {case "OK": return OK;case "WARNING": return WARNING;default: return ERROR;}}());
+      });
+   };
+   var NodeInfo = function (a) {    return {ctor: "NodeInfo",_0: a};};
+   var decodeTree = A5($Json$Decode.object4,
+   F4(function (t,s,i,c) {    return NodeInfo({text: t,status: s,id: i,childs: c});}),
    A2($Json$Decode._op[":="],"text",$Json$Decode.string),
-   A2($Json$Decode._op[":="],"status",$Json$Decode.string),
-   A2($Json$Decode._op[":="],"id",$Json$Decode.string));
-   var fetchStatus = function () {
-      var resquest = A2($Task.map,Loaded,A2($Http.get,$Json$Decode.list(decodeTree),"http://127.0.0.1:8000/status.json"));
-      return $Effects.task(A2($Task.onError,resquest,function (err) {    return $Task.succeed(ErrorJson($Basics.toString(err)));}));
-   }();
-   var Node = F2(function (a,b) {    return {ctor: "Node",_0: a,_1: b};});
+   stringToNodeStatus(A2($Json$Decode._op[":="],"status",$Json$Decode.string)),
+   A2($Json$Decode._op[":="],"id",$Json$Decode.string),
+   A2($Json$Decode._op[":="],"childs",$Json$Decode.list(lazy(function (_p8) {    return decodeTree;}))));
    var Status = F2(function (a,b) {    return {statusTree: a,expandedItems: b};});
    var ModelMessage = function (a) {    return {ctor: "ModelMessage",_0: a};};
    var initModel = ModelMessage("Initializing...");
-   var init = {ctor: "_Tuple2",_0: initModel,_1: fetchStatus};
+   var init = initModel;
+   var readingsMailbox2 = $Signal.mailbox(initModel);
    var ModelLoaded = function (a) {    return {ctor: "ModelLoaded",_0: a};};
+   var getStatusFromServer = function () {
+      var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
+      var resquest = A2($Task.map,modelFromLTree,A3($Http.post,$Json$Decode.list(decodeTree),"status.json",$Http.empty));
+      return A2($Task.andThen,
+      A2($Task.onError,resquest,function (err) {    return $Task.succeed(ModelMessage($Basics.toString(err)));}),
+      function (m) {
+         return A2($Signal.send,readingsMailbox2.address,m);
+      });
+   }();
+   var periodicTasks = Elm.Native.Task.make(_elm).performSignal("periodicTasks",
+   A2($Signal.map,function (_p9) {    return getStatusFromServer;},$Time.every(2 * $Time.second)));
+   var copyExpaned2Model = F2(function (nwModel,prevModel) {
+      var _p10 = nwModel;
+      if (_p10.ctor === "ModelMessage") {
+            return nwModel;
+         } else {
+            return ModelLoaded(_U.update(_p10._0,{expandedItems: getExpList(prevModel)}));
+         }
+   });
    var toggleId = F2(function (model,id) {
-      var _p6 = model;
-      if (_p6.ctor === "ModelLoaded") {
-            var _p7 = _p6._0;
-            return ModelLoaded(_U.update(_p7,
-            {expandedItems: $Basics.not(A2($List.member,id,_p7.expandedItems)) ? A2($Basics._op["++"],_p7.expandedItems,_U.list([id])) : A2($List.filter,
+      var _p11 = model;
+      if (_p11.ctor === "ModelLoaded") {
+            var _p12 = _p11._0;
+            return ModelLoaded(_U.update(_p12,
+            {expandedItems: $Basics.not(A2($List.member,id,_p12.expandedItems)) ? A2($Basics._op["++"],_p12.expandedItems,_U.list([id])) : A2($List.filter,
             function (i) {
                return !_U.eq(i,id);
             },
-            _p7.expandedItems)}));
+            _p12.expandedItems)}));
          } else {
             return ModelMessage("Error, received toggle with invalid status tree");
          }
    });
+   var update = F2(function (action,model) {
+      var _p13 = action;
+      if (_p13.ctor === "JsonLoaded") {
+            return {ctor: "_Tuple2",_0: A2(copyExpaned2Model,_p13._0,model),_1: $Effects.none};
+         } else {
+            return {ctor: "_Tuple2",_0: A2(toggleId,model,_p13._0),_1: $Effects.none};
+         }
+   });
+   var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
+                             ,update: update
+                             ,view: view
+                             ,inputs: _U.list([A2($Signal.map,JsonLoaded,readingsMailbox2.signal)])});
+   var main = app.html;
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    var testModel = function () {
-      var node = F2(function (text,id) {    return Node({text: text,id: id,status: "OK"});});
+      var node = F3(function (text,id,childs) {    return NodeInfo({text: text,id: id,status: OK,childs: childs});});
       return ModelLoaded({statusTree: _U.list([A3(node,
                                               "testing1",
                                               "1",
@@ -11079,36 +11111,33 @@ Elm.Main.make = function (_elm) {
                                                       ,A3(node,"testing23","23",_U.list([]))]))])
                          ,expandedItems: _U.list([])});
    }();
-   var update = F2(function (action,model) {
-      var modelFromLTree = function (lt) {    return ModelLoaded({statusTree: lt,expandedItems: _U.list([])});};
-      var _p8 = action;
-      switch (_p8.ctor)
-      {case "Loaded": return {ctor: "_Tuple2",_0: testModel,_1: $Effects.none};
-         case "ToggleSection": return {ctor: "_Tuple2",_0: A2(toggleId,model,_p8._0),_1: $Effects.none};
-         default: return {ctor: "_Tuple2",_0: ModelMessage(A2($Basics._op["++"],"Error loading json: ",_p8._0)),_1: $Effects.none};}
-   });
-   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
-   var main = app.html;
-   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    return _elm.Main.values = {_op: _op
                              ,ModelLoaded: ModelLoaded
                              ,ModelMessage: ModelMessage
                              ,Status: Status
-                             ,Node: Node
                              ,NodeInfo: NodeInfo
+                             ,OK: OK
+                             ,WARNING: WARNING
+                             ,ERROR: ERROR
                              ,initModel: initModel
                              ,main: main
                              ,app: app
                              ,init: init
                              ,ToggleSection: ToggleSection
-                             ,Loaded: Loaded
-                             ,ErrorJson: ErrorJson
+                             ,JsonLoaded: JsonLoaded
                              ,update: update
                              ,view: view
-                             ,treeToHtml: treeToHtml
+                             ,listNodesToHtml: listNodesToHtml
                              ,nodeToHtml: nodeToHtml
+                             ,lazy: lazy
                              ,decodeTree: decodeTree
-                             ,fetchStatus: fetchStatus
+                             ,stringToNodeStatus: stringToNodeStatus
+                             ,getStatusFromServer: getStatusFromServer
+                             ,readingsMailbox2: readingsMailbox2
+                             ,copyExpaned2Model: copyExpaned2Model
+                             ,getExpList: getExpList
+                             ,nodeInfoToHtml: nodeInfoToHtml
                              ,toggleId: toggleId
+                             ,fontStyle: fontStyle
                              ,testModel: testModel};
-};
+};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>
