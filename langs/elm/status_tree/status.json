@@ -9,11 +9,39 @@
                 "text" : "Level11",
                 "status" : "OK",
                 "id" : "id11",
-                "childs" : []
+                "childs" :
+                [
+                    {
+                        "text" : "Level111",
+                        "status" : "OK",
+                        "id" : "id111",
+                        "childs" : []
+                    },
+                    {
+                        "text" : "Level112",
+                        "status" : "WARNING",
+                        "id" : "id112",
+                        "childs" :
+                        [
+                            {
+                                "text" : "Level1111",
+                                "status" : "OK",
+                                "id" : "id1111",
+                                "childs" : []
+                            },
+                            {
+                                "text" : "Level1112",
+                                "status" : "WARNING",
+                                "id" : "id1112",
+                                "childs" : []
+                            }
+                        ]
+                    }
+                ]
             },
             {
                 "text" : "Level12",
-                "status" : "ERROR",
+                "status" : "OK",
                 "id" : "id12",
                 "childs" : []
             },
@@ -21,7 +49,21 @@
                 "text" : "Level13",
                 "status" : "ERROR",
                 "id" : "id13",
-                "childs" : []
+                "childs" :
+                [
+                    {
+                        "text" : "Level131",
+                        "status" : "OK",
+                        "id" : "id131",
+                        "childs" : []
+                    },
+                    {
+                        "text" : "Level132",
+                        "status" : "WARNING",
+                        "id" : "id132",
+                        "childs" : []
+                    }
+                ]
             }
         ]
     },
@@ -33,7 +75,7 @@
         [
             {
                 "text" : "Level21",
-                "status" : "ERROR",
+                "status" : "WARNING",
                 "id" : "id21",
                 "childs" : []
             },
@@ -45,13 +87,13 @@
             },
             {
                 "text" : "Level23",
-                "status" : "ERROR",
+                "status" : "OK",
                 "id" : "id23",
                 "childs" : []
             },
             {
                 "text" : "Level24",
-                "status" : "ERROR",
+                "status" : "WARNING",
                 "id" : "id24",
                 "childs" :
                 [
@@ -73,8 +115,36 @@
     },
     {
         "text" : "Level3",
-        "status" : "OK",
+        "status" : "WARNING",
         "id" : "id3",
-        "childs" : []
+        "childs" :
+        [
+            {
+                "text" : "Level3111",
+                "status" : "OK",
+                "id" : "id3111",
+                "childs" : []
+            },
+            {
+                "text" : "Level3112",
+                "status" : "WARNING",
+                "id" : "id3112",
+                "childs" :
+                [
+                    {
+                        "text" : "Level31111",
+                        "status" : "OK",
+                        "id" : "id31111",
+                        "childs" : []
+                    },
+                    {
+                        "text" : "Level31112",
+                        "status" : "ERROR",
+                        "id" : "id31112",
+                        "childs" : []
+                    }
+                ]
+            }
+        ]
     }
 ]

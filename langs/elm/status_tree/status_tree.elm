@@ -66,32 +66,6 @@ init: Model
 init = initModel
 
 
-getStatusFromServer: Task a ()
-getStatusFromServer =
-    let
-        modelFromLTree lt =
-            ModelLoaded
-            { statusTree    = lt
-            , expandedItems = []
-            }
-        resquest =
-            Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
-            --Http.get (Json.list decodeTree) "http://100.100.16.64:8000/status.json"
-            |> Task.map modelFromLTree
-    in
-        resquest
-            `Task.onError`
-                (\err -> Task.succeed (ModelMessage <| toString err))
-            `Task.andThen`
-                (\m -> Signal.send readingsMailbox2.address m)
-
-port periodicTasks : Signal (Task () ())
-port periodicTasks = Signal.map (\_ -> getStatusFromServer) <|  Time.every (2*Time.second)
-
-readingsMailbox2 : Signal.Mailbox Model
-readingsMailbox2 = Signal.mailbox initModel
-
-
 
 -- UPDATE
 
@@ -99,18 +73,26 @@ type Action
     = ToggleSection String
     | JsonLoaded    Model
 
+
+
+getExpList model =
+    case model of
+        ModelMessage _      -> []
+        ModelLoaded status  -> status.expandedItems
+
+copyExpaned2Model nwModel prevModel =
+    case nwModel of
+        ModelMessage _      -> nwModel
+        ModelLoaded status  ->
+                      ModelLoaded
+                      { status
+                      | expandedItems = getExpList prevModel}
+
 update: Action -> Model -> (Model, Effects Action)
 update action model =
-    let
-        modelFromLTree lt =
-            ModelLoaded
-            { statusTree    = lt
-            , expandedItems = []
-            }
-    in
-        case action of
-            JsonLoaded    model -> (model, Effects.none)
-            ToggleSection id    -> (toggleId model id, Effects.none)
+    case action of
+        JsonLoaded    nwModel -> (copyExpaned2Model nwModel model, Effects.none)
+        ToggleSection id      -> (toggleId model id, Effects.none)
 
 
 
@@ -120,18 +102,21 @@ update action model =
 
 view : Signal.Address Action -> Model -> Html
 view address model =
-    case model of
-        ModelLoaded  status  ->
-            Html.div []
-            [ listNodesToHtml address status.expandedItems status.statusTree
-            , Html.fromElement <| show model    --  debug
-            ]
-        ModelMessage error   ->
-            Html.text error
+    Html.body [ style [fontStyle] ]
+    [ case model of
+          ModelLoaded  status  ->
+              Html.div []
+              [ listNodesToHtml address status.expandedItems status.statusTree
+              --, Html.fromElement <| show model    --  debug
+              ]
+          ModelMessage error   ->
+              Html.text error
+    ]
 
 listNodesToHtml: Signal.Address Action -> List String -> List NodeInfo  -> Html
 listNodesToHtml address toggledIds treeList =
-    Html.ul[] (List.map (nodeToHtml address toggledIds) treeList)
+    Html.ul[]
+          (List.map (nodeToHtml address toggledIds) treeList)
 
 nodeToHtml: Signal.Address Action -> List String -> NodeInfo ->  Html
 nodeToHtml address toggledIds (NodeInfo nodeInfo) =
@@ -170,7 +155,40 @@ decodeTree =
 
 stringToNodeStatus: Json.Decoder String -> Json.Decoder NodeStatus
 stringToNodeStatus d =
-  Json.customDecoder d (\s-> Ok ERROR)
+  Json.customDecoder d  (\s-> Ok <|
+                          case s of
+                              "OK"      -> OK
+                              "WARNING"  -> WARNING
+                              _         -> ERROR
+                        )
+
+
+getStatusFromServer: Task a ()
+getStatusFromServer =
+    let
+        modelFromLTree lt =
+            ModelLoaded
+            { statusTree    = lt
+            , expandedItems = []
+            }
+        resquest =
+            Http.post (Json.list decodeTree) "status.json" Http.empty
+            --Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
+            --Http.get (Json.list decodeTree) "http://100.100.16.64:8000/status.json"
+            |> Task.map modelFromLTree
+    in
+        resquest
+            `Task.onError`
+                (\err -> Task.succeed (ModelMessage <| toString err))
+            `Task.andThen`
+                (\m -> Signal.send readingsMailbox2.address m)
+
+port periodicTasks : Signal (Task () ())
+port periodicTasks = Signal.map (\_ -> getStatusFromServer)
+                                <|  Time.every (2*Time.second)
+
+readingsMailbox2 : Signal.Mailbox Model
+readingsMailbox2 = Signal.mailbox initModel
 
 
 
@@ -182,7 +200,11 @@ stringToNodeStatus d =
 --  SUPPORT
 
 nodeInfoToHtml: Signal.Address Action
-                -> { a | id : String, text : String }
+                -> { a | id : String
+                   , text : String
+                   , childs: List NodeInfo
+                   , status: NodeStatus
+                   }
                 -> Html
 nodeInfoToHtml address nodeInfo=
     let
@@ -190,13 +212,45 @@ nodeInfoToHtml address nodeInfo=
             style [("list-style", "none")]
         buttonStyle =
             style [ ("border", "none")
-                  , ("background", "none")]
+                  , ("background", "none")
+                  , fontStyle]
+        styleLI nChilds=
+            if nChilds == 0 then
+                [("color", "transparent")]
+            else
+                []
+        listIndicator ni =
+            Html.span [ style <| (styleLI <| List.length nodeInfo.childs)
+                              ++ [("margin-left", "7px")]
+                      ]
+                      [ text " · "]
+        statusColor status =
+            case status of
+              OK       -> "green"
+              WARNING  -> "orange"
+              _        -> "red"
+        circleStatus status =
+            Html.div [ style [ ("border-radius", "30px")
+                             , ("margin-top", "3px")
+                             , ("width", "15px")
+                             , ("height", "15px")
+                             , ("background", statusColor status)
+                             , ("color", "transparent")
+                             , ("float", "left")
+                             ]
+                      ]
+                      [ text "_"]
+
     in
         li [listStyle]
-          [ button [ onClick address (ToggleSection nodeInfo.id)
+           [ button [ onClick address (ToggleSection nodeInfo.id)
                    , buttonStyle
                    ]
-                   [text <| nodeInfo.text] ]
+                   [ circleStatus  nodeInfo.status
+                   , listIndicator nodeInfo
+                   , text <| nodeInfo.text
+                   ]
+           ]
 
 
 toggleId: Model -> String -> Model
@@ -216,7 +270,7 @@ toggleId model id =
 
 
 
-
+fontStyle = ("font-size", "1.1em")
 
 
 
