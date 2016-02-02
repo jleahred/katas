@@ -166,6 +166,7 @@ getStatusFromServer =
       }
     resquest =
       Http.post (Json.list decodeTree) "status.json" Http.empty
+      --Http.get (Json.list decodeTree) "status.json"
       --Http.get (Json.list decodeTree) "http://127.0.0.1:8000/status.json"
       --Http.get (Json.list decodeTree) "http://100.100.16.64:8000/status.json"
       |> Task.map modelFromLTree
