@@ -1,5 +1,116 @@
 defmodule MsgParse do
 
+  defmodule PS do
+    defstruct map_msg: %{}, body_length: 0, check_sum: 0
+  end
+
+  defmodule EndMessage do
+    defstruct pars_st: %PS{}
+  end
+
+  defmodule PartTag do
+    defstruct pars_st: %PS{}, chunk: ""
+  end
+
+  defmodule PartVal do
+    defstruct pars_st: %PS{}, tag: 0, chunk: ""
+  end
+
+
+
+  def add_char2(%EndMessage{ pars_st: _ps }, ch)  do
+      add_char2(%PartTag{}, ch)
+  end
+
+  def add_char2(%PartTag{pars_st: ps, chunk: chunk}, ?=)  do
+      #IO.puts chunk
+      tag = String.to_integer(chunk)
+      body_length = if tag == 10 or tag == 8 or tag == 9 do
+                      ps.body_length - String.length(chunk)
+                    else
+                      ps.body_length+1
+                    end
+      check_sum = rem(
+                    if tag == 10 do
+                      ps.check_sum + 256 + 256 - ?1 -?0
+                    else
+                      ps.check_sum + ?=
+                    end,
+                  256)
+
+      %PartVal {
+        pars_st: %PS{ps | body_length: body_length, check_sum: check_sum},
+        tag: tag,
+        chunk: ""
+      }
+  end
+
+  def add_char2(%PartTag{pars_st: ps, chunk: chunk}, ch)  do
+      %PartTag {
+        pars_st: %PS{ ps |
+                      body_length: ps.body_length+1,
+                      check_sum: rem(ps.check_sum + ch, 256)},
+        chunk: chunk <> <<ch>>
+      }
+  end
+
+  def add_char2(%PartVal{pars_st: ps, tag: 10, chunk: _}, 1)  do
+      #IO.puts "parsed full message"
+      %EndMessage { pars_st: ps }
+  end
+
+  def add_char2(%PartVal{pars_st: ps, tag: tag, chunk: chunk}, 1)  do
+    %PartTag {
+      pars_st: %PS{ ps |
+                    body_length: ps.body_length + if(tag==8 or tag==9, do: 0, else: 1),
+                    check_sum: rem(ps.check_sum + 1, 256),
+                    map_msg: Map.put(ps.map_msg, tag, chunk)},
+      chunk: ""
+    }
+
+
+  end
+
+  def add_char2(%PartVal{pars_st: ps, tag: tag, chunk: chunk}, ch)  do
+    #IO.puts "#{tag}  #{chunk<> <<ch>>}"
+    %PartVal {
+      pars_st: %PS{ ps |
+                    body_length: ps.body_length + if(tag==8 or tag==9 or tag==10, do: 0, else: 1),
+                    check_sum: if(tag != 10, do: rem(ps.check_sum + ch, 256), else: ps.check_sum)},
+      tag: tag,
+      chunk: chunk <> <<ch>>
+    }
+  end
+
+
+
+  def test_parse_string2 do
+      msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
+      msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
+
+      msg_list |> Enum.reduce(%EndMessage{}, &(add_char2(&2, &1)))
+  end
+
+  def test_parse_string_perf2 do
+      msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
+      msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
+
+      num_msg = 100_000
+
+      funt = fn -> Enum.each(1..num_msg,
+          fn(_) -> msg_list |> Enum.reduce(%EndMessage{}, &(add_char2(&2, &1))) end)
+        end
+
+      secs = :timer.tc(funt)
+      |> elem(0)
+      |> Kernel./(1_000_000)
+
+      IO.puts "total time #{secs} sec"
+      IO.puts "#{num_msg/secs} msg/sec"
+  end
+
+
+
 
 @doc ~S"""
 Add a new char msg to already received chunk
