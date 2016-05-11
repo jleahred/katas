@@ -18,11 +18,56 @@ defmodule MsgParse do
 
 
 
-  def add_char2(%EndMessage{ pars_st: _ps }, ch)  do
-      add_char2(%PartTag{}, ch)
+  @doc ~S"""
+  Add a new char msg to already received chunk
+
+  First parameter is status, the second one is the character to be added.
+
+  It will return the new status
+
+
+  Status could be...
+
+  * PartTag -> reading a tag
+  * PartVal -> reading a value (after =)
+  * EndMessage -> a message has been completed
+  * All status has the field pars_st of type PS (parsed status)
+
+
+
+  ###  Examples
+
+    iex> stpars = MsgParse.add_char(%MsgParse.EndMessage{}, ?8)
+    %MsgParse.PartTag{chunk: "8", pars_st: %MsgParse.PS{body_length: 1, check_sum: 56, map_msg: %{}}}
+    iex> stpars = MsgParse.add_char(stpars, ?=)
+    %MsgParse.PartVal{chunk: "", pars_st: %MsgParse.PS{body_length: 0, check_sum: 117, map_msg: %{}}, tag: 8}
+    iex> stpars = MsgParse.add_char(stpars, ?F)
+    %MsgParse.PartVal{chunk: "F", pars_st: %MsgParse.PS{body_length: 0, check_sum: 187, map_msg: %{}}, tag: 8}
+    iex> stpars = %MsgParse.PartVal{chunk: "FIX4.", pars_st: %MsgParse.PS{body_length: 0, check_sum: 190, map_msg: %{}}, tag: 8}
+    iex> stpars = MsgParse.add_char(stpars, ?4)
+    %MsgParse.PartVal{chunk: "FIX4.4", pars_st: %MsgParse.PS{body_length: 0, check_sum: 242, map_msg: %{}}, tag: 8}
+    iex> stpars = MsgParse.add_char(stpars, 1)
+    %MsgParse.PartTag{chunk: "", pars_st: %MsgParse.PS{body_length: 0, check_sum: 243, map_msg: %{8 => "FIX4.4"}}}
+    iex> stpars = MsgParse.add_char(stpars, ?9)
+    %MsgParse.PartTag{chunk: "9", pars_st: %MsgParse.PS{body_length: 1, check_sum: 44, map_msg: %{8 => "FIX4.4"}}}
+    iex> stpars = MsgParse.add_char(stpars, ?=)
+    %MsgParse.PartVal{chunk: "", pars_st: %MsgParse.PS{body_length: 0, check_sum: 105, map_msg: %{8 => "FIX4.4"}}, tag: 9}
+    iex> stpars = MsgParse.add_char(stpars, ?1)
+    %MsgParse.PartVal{chunk: "1", pars_st: %MsgParse.PS{body_length: 0, check_sum: 154, map_msg: %{8 => "FIX4.4"}}, tag: 9}
+    iex> stpars = MsgParse.add_char(stpars, ?2)
+    %MsgParse.PartVal{chunk: "12", pars_st: %MsgParse.PS{body_length: 0, check_sum: 204, map_msg: %{8 => "FIX4.4"}}, tag: 9}
+    iex> stpars = MsgParse.add_char(stpars, ?2)
+    %MsgParse.PartVal{chunk: "122", pars_st: %MsgParse.PS{body_length: 0, check_sum: 254, map_msg: %{8 => "FIX4.4"}}, tag: 9}
+    iex> stpars = MsgParse.add_char(stpars, 1)
+    %MsgParse.PartTag{chunk: "", pars_st: %MsgParse.PS{body_length: 0, check_sum: 255, map_msg: %{8 => "FIX4.4", 9 => "122"}}}
+"""
+
+
+  def add_char(%EndMessage{ pars_st: _ps }, ch)  do
+      add_char(%PartTag{}, ch)
   end
 
-  def add_char2(%PartTag{pars_st: ps, chunk: chunk}, ?=)  do
+  def add_char(%PartTag{pars_st: ps, chunk: chunk}, ?=)  do
       #IO.puts chunk
       tag = String.to_integer(chunk)
       body_length = if tag == 10 or tag == 8 or tag == 9 do
@@ -45,7 +90,7 @@ defmodule MsgParse do
       }
   end
 
-  def add_char2(%PartTag{pars_st: ps, chunk: chunk}, ch)  do
+  def add_char(%PartTag{pars_st: ps, chunk: chunk}, ch)  do
       %PartTag {
         pars_st: %PS{ ps |
                       body_length: ps.body_length+1,
@@ -54,12 +99,12 @@ defmodule MsgParse do
       }
   end
 
-  def add_char2(%PartVal{pars_st: ps, tag: 10, chunk: _}, 1)  do
+  def add_char(%PartVal{pars_st: ps, tag: 10, chunk: _}, 1)  do
       #IO.puts "parsed full message"
       %EndMessage { pars_st: ps }
   end
 
-  def add_char2(%PartVal{pars_st: ps, tag: tag, chunk: chunk}, 1)  do
+  def add_char(%PartVal{pars_st: ps, tag: tag, chunk: chunk}, 1)  do
     %PartTag {
       pars_st: %PS{ ps |
                     body_length: ps.body_length + if(tag==8 or tag==9, do: 0, else: 1),
@@ -71,7 +116,7 @@ defmodule MsgParse do
 
   end
 
-  def add_char2(%PartVal{pars_st: ps, tag: tag, chunk: chunk}, ch)  do
+  def add_char(%PartVal{pars_st: ps, tag: tag, chunk: chunk}, ch)  do
     #IO.puts "#{tag}  #{chunk<> <<ch>>}"
     %PartVal {
       pars_st: %PS{ ps |
@@ -84,21 +129,21 @@ defmodule MsgParse do
 
 
 
-  def test_parse_string2 do
+  def test_parse_string do
       msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
       msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
 
-      msg_list |> Enum.reduce(%EndMessage{}, &(add_char2(&2, &1)))
+      msg_list |> Enum.reduce(%EndMessage{}, &(add_char(&2, &1)))
   end
 
-  def test_parse_string_perf2 do
+  def test_parse_string_perf do
       msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
       msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
 
       num_msg = 100_000
 
       funt = fn -> Enum.each(1..num_msg,
-          fn(_) -> msg_list |> Enum.reduce(%EndMessage{}, &(add_char2(&2, &1))) end)
+          fn(_) -> msg_list |> Enum.reduce(%EndMessage{}, &(add_char(&2, &1))) end)
         end
 
       secs = :timer.tc(funt)
@@ -108,161 +153,6 @@ defmodule MsgParse do
       IO.puts "total time #{secs} sec"
       IO.puts "#{num_msg/secs} msg/sec"
   end
-
-
-
-
-@doc ~S"""
-Add a new char msg to already received chunk
-
-First parameter is status, the second one is the character to be added.
-
-It will return the new status
-
-
-Status could be...
-
-* { :end_msg, map_msg, {body_length, check_sum} } when a message is completed
-* { :partial_tag, chunk, map_msg, {body_length, check_sum} }  reading tag
-* { :partial_val, tag, part_val, map_msg, {body_length, check_sum} }  reading val
-
-
-###  Examples
-
-    iex> MsgParse.add_char({ :partial_tag, "123" }, ?4)
-    {:partial_tag, "1234"}
-
-    iex> MsgParse.add_char({ :partial_tag, "123" }, ?=)
-    {:partial_val, 123, ""}
-
-    iex> MsgParse.add_char({ :partial_val, 123, "abc" }, 0)
-    {:full_tag_val, 123, "abc"}
-
-    iex> MsgParse.add_char({ :partial_val, 123, "ab" }, ?c)
-    {:partial_tag, 123, "abc"}
-"""
-
-
-def add_char({ :end_msg, _map_msg, {_body_length, _check_sum} }, ch) do
-    add_char({ :partial_tag, "", %{}, {0, 0} }, ch)
-end
-
-def add_char({ :partial_tag, chunk, map_msg, {body_length, check_sum} }, ?=) do
-    #IO.puts chunk
-    tag = String.to_integer(chunk)
-    { :partial_val,
-      tag,
-      "",
-      map_msg,
-      { if tag == 10 or tag == 8 or tag == 9 do
-          body_length - String.length(chunk)
-        else
-          body_length+1
-        end,
-        rem(
-            if tag == 10 do
-              check_sum + 256 + 256 - ?1 -?0
-            else
-              check_sum + ?=
-            end,
-        256)
-      }
-    }
-end
-
-def add_char({ :partial_tag, chunk, map_msg, {body_length, check_sum} }, ch) do
-    { :partial_tag,
-      chunk <> <<ch>>,
-      map_msg,
-      {body_length+1, rem(check_sum + ch, 256)}
-    }
-end
-
-def add_char({ :partial_val, 10, _val, map_msg, {body_length, check_sum}}, 1) do
-    #IO.puts "parsed full message"
-    { :end_msg,
-      map_msg,
-      {body_length, rem(check_sum, 256)}
-    }
-end
-
-def add_char({ :partial_val, tag, _val, map_msg, {body_length, check_sum}}, 1) do
-    { :partial_tag,
-      "",
-      map_msg,
-      if(tag==8 or tag==9) do
-        { body_length, rem(check_sum + 1, 256)}
-      else
-        { body_length+1, rem(check_sum + 1, 256)}
-      end
-    }
-end
-
-def add_char({ :partial_val, tag, chunk, map_msg, {body_length, check_sum} }, ch) do
-    { :partial_val,
-      tag,
-      chunk <> <<ch>>,
-      map_msg,
-      { if tag==8 or tag==9 or tag==10 do
-          body_length
-        else
-          body_length+1
-        end,
-        if tag != 10 do
-          rem(check_sum + ch, 256)
-        else
-          check_sum
-        end
-      }
-    }
-end
-
-
-
-
-def test_parse_string do
-    msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
-    msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
-
-    msg_list |> Enum.reduce({:end_msg, %{}, {0, 0}}, &(add_char(&2, &1)))
-end
-
-def test_parse_2string do
-    msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
-    msg_list = String.to_char_list(String.replace(msg <> msg, "|", <<1>>))
-
-    msg_list |> Enum.reduce({:end_msg, %{}, {0, 0}}, &(add_char(&2, &1)))
-end
-
-
-
-
-@doc ~S"""
-
-## Examples
-
-    _iex> fix_map = MsgParse.test_parse_string
-"""
-def test_parse_string_perf do
-    msg = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
-    msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
-
-    num_msg = 100_000
-
-    funt = fn -> Enum.each(1..num_msg,
-        fn(_) -> msg_list |> Enum.reduce({:end_msg, %{}, {0, 0}}, &(add_char(&2, &1))) end)
-      end
-
-    secs = :timer.tc(funt)
-    |> elem(0)
-    |> Kernel./(1_000_000)
-
-    IO.puts "total time #{secs} sec"
-    IO.puts "#{num_msg/secs} msg/sec"
-end
-
-
-
 
 
 
@@ -310,41 +200,6 @@ def test_performance_body2map do
   |> Kernel./(1_000_000)
 
   "#{num_msg/secs} msg/sec"
-
-end
-
-
-def test_perf_concat_string do
-
-  num_msg = 1_000
-
-  funt =
-    fn -> Enum.each(1..num_msg,
-        fn(_) ->  Enum.reduce(1..1000, "", fn(_i, acc)-> acc <> <<?a>> end) end
-        ) end
-    secs = :timer.tc(funt)
-    |> elem(0)
-    |> Kernel./(1_000_000)
-
-    IO.puts "total time #{secs} sec"
-    IO.puts "#{num_msg/secs} msg/sec"
-
-end
-
-def test_perf_concat_list do
-
-  num_msg = 1_000
-
-  funt = fn -> Enum.each(1..num_msg,
-      fn(_) -> Enum.reduce(1..1000, [], fn(_i, acc)-> [?a | acc] end) end
-    ) end
-
-    secs = :timer.tc(funt)
-    |> elem(0)
-    |> Kernel./(1_000_000)
-
-    IO.puts "total time #{secs} sec"
-    IO.puts "#{num_msg/secs} msg/sec"
 
 end
 
