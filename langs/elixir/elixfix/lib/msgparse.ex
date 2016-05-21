@@ -6,7 +6,19 @@ defmodule MsgParse do
   end
 
   #######################################################3
-  defmodule MsgInfo do
+  defmodule Parsed do
+  @moduledoc """
+  Parsed contains common status info
+
+  * map_msg:    %{},  ->  (int, string) with tags values
+  * body_length:  0,
+  * check_sum:    0,
+  * num_tags:     0,
+  * orig_msg:    "",
+  * errors:      [],   [{pos, description}]
+  * position:     0
+
+  """
     defstruct   map_msg:    %{},
                 body_length:  0,
                 check_sum:    0,
@@ -18,14 +30,17 @@ defmodule MsgParse do
 
 
   def msginf_incpos(msg_info) do
-     %MsgInfo {
+     %Parsed {
         msg_info | position: msg_info.position + 1
      }
   end
 
   #######################################################3
   defmodule StFullMessage do
-    defstruct msg_inf: %MsgInfo{}
+    @moduledoc """
+    StFullMessage  the message has been parsed properly
+    """
+    defstruct msg_inf: %Parsed{}
   end
 
   defimpl Status, for: StFullMessage do
@@ -39,7 +54,12 @@ defmodule MsgParse do
 
   #######################################################3
   defmodule StPartTag do
-    defstruct msg_inf: %MsgInfo{}, chunk: ""
+    @moduledoc """
+    StPartTag  parsing a tag
+
+    on chunk, we will ad chars to tag
+    """
+    defstruct msg_inf: %Parsed{}, chunk: ""
   end
 
   defimpl Status, for: StPartTag do
@@ -53,7 +73,13 @@ defmodule MsgParse do
 
   #######################################################3
   defmodule StPartVal do
-    defstruct msg_inf: %MsgInfo{}, tag: 0, chunk: ""
+    @moduledoc """
+    StPartTag  parsing a tag
+
+    on chunk, we will ad chars to val
+    and we have the current tag on tag field
+    """
+    defstruct msg_inf: %Parsed{}, tag: 0, chunk: ""
   end
 
   defimpl Status, for: StPartVal do
@@ -111,7 +137,7 @@ defmodule MsgParse do
   * StPartTag -> reading a tag
   * StPartVal -> reading a value (after =)
   * StFullMessage -> a message has been completed
-  * All status has the field msg_inf of type MsgInfo (parsed status)
+  * All status has the field msg_inf of type Parsed (parsed status)
 
 
 
@@ -122,7 +148,7 @@ defmodule MsgParse do
     ...>        "44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
     iex> msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
     iex> msg_list |> Enum.reduce(%MsgParse.StFullMessage{}, &(MsgParse.add_char(&2, &1)))
-    %MsgParse.StFullMessage{msg_inf: %MsgParse.MsgInfo{body_length: 122,
+    %MsgParse.StFullMessage{msg_inf: %MsgParse.Parsed{body_length: 122,
       check_sum: 72, errors: [],
       map_msg: %{1 => "Marcel", 8 => "FIX.4.4", 9 => "122", 10 => "072",
         11 => "13346", 21 => "1", 34 => "215", 35 => "D", 40 => "2", 44 => "5",
@@ -132,7 +158,7 @@ defmodule MsgParse do
 
       iex> MsgParse.add_char(%MsgParse.StFullMessage{}, ?8)
       %MsgParse.StPartTag{chunk: "8",
-       msg_inf: %MsgParse.MsgInfo{body_length: 1, check_sum: 56, errors: [],
+       msg_inf: %MsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
         map_msg: %{}, num_tags: 0, orig_msg: "8"}}
 
 """
@@ -144,7 +170,7 @@ defmodule MsgParse do
 
   defp _add_char(%StFullMessage{ msg_inf: msg_inf }, 1)  do
     %StFullMessage{
-      msg_inf: %MsgInfo
+      msg_inf: %Parsed
                { msg_inf
                | errors: add_err_st("Invalid SOH after full message recieved")
               }
@@ -172,7 +198,7 @@ defmodule MsgParse do
                     256)
 
         %StPartVal {
-          msg_inf: %MsgInfo
+          msg_inf: %Parsed
                     { msg_inf
                     | body_length:  body_length,
                       check_sum:    check_sum,
@@ -189,7 +215,7 @@ defmodule MsgParse do
       rescue
         _ ->
           %StPartVal {
-            msg_inf: %MsgInfo
+            msg_inf: %Parsed
                        { msg_inf
                        | orig_msg:    msg_inf.orig_msg <> "=",
                          errors:      add_err_st("invalid tag value #{chunk}")
@@ -203,7 +229,7 @@ defmodule MsgParse do
 
   defp _add_char(%StPartTag{msg_inf: msg_inf, chunk: chunk}, 1)  do
       %StPartTag {
-        msg_inf: %MsgInfo
+        msg_inf: %Parsed
                      { msg_inf
                      | errors:    add_err_st(
                                     "Invalid SOH on #{chunk} waiting for tag"),
@@ -215,7 +241,7 @@ defmodule MsgParse do
 
   defp _add_char(%StPartTag{msg_inf: msg_inf, chunk: chunk}, ch)  do
       %StPartTag {
-        msg_inf: %MsgInfo
+        msg_inf: %Parsed
                       { msg_inf |
                         body_length: msg_inf.body_length+1,
                         check_sum: rem(msg_inf.check_sum + ch, 256),
@@ -245,8 +271,9 @@ defmodule MsgParse do
                 "Incorrect checksum calculated: #{msg_inf.check_sum} received #{check_sum}  #{msg_inf.orig_msg}  #{chunk}"
           true  -> ""
       end
+      error = error <> "#{check_full_message(msg_inf)}"
       %StFullMessage {
-          msg_inf: %MsgInfo { msg_inf
+          msg_inf: %Parsed { msg_inf
                             | map_msg: Map.put(msg_inf.map_msg, 10, chunk),
                               errors:  add_error_list(msg_inf.errors, error)
                             }
@@ -262,7 +289,7 @@ defmodule MsgParse do
         true                               ->  ""
     end
     %StPartTag {
-      msg_inf: %MsgInfo
+      msg_inf: %Parsed
                   { msg_inf
                   | body_length: msg_inf.body_length + if(tag==8 or tag==9, do: 0, else: 1),
                     check_sum: rem(msg_inf.check_sum + 1, 256),
@@ -281,7 +308,7 @@ defmodule MsgParse do
     bl = if(tag==8 or tag==9 or tag==10, do: 0, else: 1)
     check_sum = if(tag != 10, do: rem(msg_inf.check_sum + ch, 256), else: msg_inf.check_sum)
     %StPartVal {
-      msg_inf: %MsgInfo { msg_inf
+      msg_inf: %Parsed { msg_inf
                    | body_length: msg_inf.body_length + bl,
                      check_sum: check_sum,
                      orig_msg:  msg_inf.orig_msg <> <<ch>>
@@ -322,5 +349,22 @@ defmodule MsgParse do
       IO.puts "#{num_msg/secs} msg/sec"
   end
 
+
+  defp check_full_message(msg_inf) do
+      check_mand_tag = fn(tag, error) ->
+                          if(Map.has_key?(msg_inf.map_msg,  tag) == false) do
+                              error <> "missing tag #{tag}."
+                          else
+                              error
+                          end
+                        end
+      mandatory_tags = [8, 9, 49, 56, 34, 52]
+
+      Enum.reduce(
+                  mandatory_tags,
+                  "",
+                  fn(tag, error_desc) ->
+                            check_mand_tag.(tag, error_desc)  end)
+  end
 
 end

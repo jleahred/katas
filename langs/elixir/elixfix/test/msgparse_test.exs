@@ -91,7 +91,7 @@ defmodule MsgParseTest do
 
     assert result ==
         %MsgParse.StPartVal{chunk: "12",
-          msg_inf: %MsgParse.MsgInfo{body_length: 0, check_sum: 250, errors: [],
+          msg_inf: %MsgParse.Parsed{body_length: 0, check_sum: 250, errors: [],
           map_msg: %{8 => "FIX.4.4"}, num_tags: 1, orig_msg: "8=FIX.4.4^9=12",
           position: 13}, tag: 9}
   end
@@ -104,7 +104,7 @@ defmodule MsgParseTest do
 
     assert result ==
       %MsgParse.StPartTag{chunk: "5",
-       msg_inf: %MsgParse.MsgInfo{body_length: 50, check_sum: 42, errors: [],
+       msg_inf: %MsgParse.Parsed{body_length: 50, check_sum: 42, errors: [],
         map_msg: %{8 => "FIX.4.4", 9 => "121", 34 => "215", 35 => "D",
           49 => "CLIENT12", 52 => "20100225-19:41:57.316"}, num_tags: 6,
         orig_msg: "8=FIX.4.4^9=121^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^5",
@@ -117,7 +117,7 @@ defmodule MsgParseTest do
 
     assert result ==
       %MsgParse.StPartVal{chunk: "",
-       msg_inf: %MsgParse.MsgInfo{body_length: 8, check_sum: 186, errors: [],
+       msg_inf: %MsgParse.Parsed{body_length: 8, check_sum: 186, errors: [],
         map_msg: %{8 => "FIX.4.4", 9 => "121", 35 => "D"}, num_tags: 3,
         orig_msg: "8=FIX.4.4^9=121^35=D^34=", position: 23}, tag: 34}
     end
@@ -168,6 +168,17 @@ defmodule MsgParseTest do
       assert result.msg_inf.errors == [
                                   { 145,
                                     "Invalid SOH after full message recieved"}]
+    end
+
+    test "missing mandatory tag" do
+      result = process_string(
+            "8=FIX.4.4|9=117|35=D|34=215|49=CLIENT12|"<>
+            "52=20100225-19:41:57.316|1=Marcel|11=13346|"<>
+            "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=097|")
+
+      assert result.msg_inf.check_sum == 97
+      assert result.msg_inf.body_length == 117
+      assert result.msg_inf.errors == ["missing tag 56."]
     end
 
 end
