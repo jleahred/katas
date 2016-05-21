@@ -130,8 +130,7 @@ defmodule MsgParseTest do
       #IO.inspect result
 
       assert List.first(result.msg_inf.errors) ==
-          "Error tag value 56a on 8=FIX.4.4^9=121^" <>
-          "35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^56a"
+          {68, "invalid tag value 56a"}
     end
 
     test "emtpy tag" do
@@ -142,7 +141,7 @@ defmodule MsgParseTest do
       #IO.inspect result
 
       assert List.first(result.msg_inf.errors) ==
-          "Error tag value  on 8=FIX.4.4^9=121^35=D^34=215^49=CLIENT12^"<>
+          {65, "invalid tag value "}
           "52=20100225-19:41:57.316^"
     end
 
@@ -157,6 +156,18 @@ defmodule MsgParseTest do
       assert result.msg_inf.body_length == 121
       assert result.msg_inf.errors == []
 
+    end
+
+    test "SOH after full message" do
+      result = process_string(
+            "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|"<>
+            "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
+            "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072||")
+      #IO.inspect result
+
+      assert result.msg_inf.errors == [
+                                  { 145,
+                                    "Invalid SOH after full message recieved"}]
     end
 
 end

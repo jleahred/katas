@@ -81,6 +81,22 @@ defmodule MsgParse do
     end
   end
 
+  defmacrop add_err_st(error_desc) do
+    if error_desc != "" do
+      quote do
+          add_error_list( var!(msg_inf).errors,
+                          { var!(msg_inf).position,
+                            unquote(error_desc)
+                          })
+      end
+    else
+        quote do
+          var!(msg_inf).errors
+        end
+    end
+  end
+
+
 
   @doc ~S"""
   Add a new char msg to already received chunk
@@ -130,8 +146,7 @@ defmodule MsgParse do
     %StFullMessage{
       msg_inf: %MsgInfo
                { msg_inf
-               | errors: add_error_list(msg_inf.errors,
-                 "Invalid SOH after full message  recieved #{msg_inf.orig_msg}")
+               | errors: add_err_st("Invalid SOH after full message recieved")
               }
     }
   end
@@ -162,11 +177,11 @@ defmodule MsgParse do
                     | body_length:  body_length,
                       check_sum:    check_sum,
                       orig_msg:     msg_inf.orig_msg <> "=",
-                      errors:       if(chunk=="")  do
-                                      add_error_list(msg_inf.errors,
-                                      "Ending empty tag on #{msg_inf.orig_msg}")
-                                    else msg_inf.errors
-                                    end
+                      errors:
+                          if(chunk=="")  do
+                              add_err_st("Ending empty tag")
+                          else msg_inf.errors
+                          end
                     },
           tag: tag,
           chunk: ""
@@ -177,8 +192,7 @@ defmodule MsgParse do
             msg_inf: %MsgInfo
                        { msg_inf
                        | orig_msg:    msg_inf.orig_msg <> "=",
-                         errors:      add_error_list(msg_inf.errors,
-                                "Error tag value #{chunk} on #{msg_inf.orig_msg}")
+                         errors:      add_err_st("invalid tag value #{chunk}")
                        },
             tag: 0,
             chunk: ""
@@ -191,8 +205,8 @@ defmodule MsgParse do
       %StPartTag {
         msg_inf: %MsgInfo
                      { msg_inf
-                     | errors:    add_error_list(msg_inf.errors,
-                                  "Invalid SOH on #{chunk} waiting for tag"),
+                     | errors:    add_err_st(
+                                    "Invalid SOH on #{chunk} waiting for tag"),
                        orig_msg:  msg_inf.orig_msg <> "^"
                      },
         chunk: ""
