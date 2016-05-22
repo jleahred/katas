@@ -6,13 +6,20 @@
 FIX protocol implementation on Elixir/Erlang
 
 
+## Source organization
+
+On `f` folder will be modules with pure (or almost pure functions)
+
+This modules will start with FXxxxx
+
+
 ## Installation
 
 Pending...
 
 ## TODOs
 
-* Move functions with no side effects to func folder
+* Add pages to doc ???
 * Functions
   * SessionReceiver
   * Message Builder
