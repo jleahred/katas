@@ -1,13 +1,28 @@
 defmodule MsgParse do
+@moduledoc """
+  In this module we have the functions (quite pure) to parse FIX messages.
+
+  The main on is  add_char(status, char)
+
+  It will return the new status
+
+
+  """
 
 
   defprotocol Status do
+    @doc """
+On protocol Status. It will run commom operations for all status
+(over Parsed struct).
+
+For example, adding char to orig_msg or increasing possition
+    """
     def process_char_chunkparsed(status, char)
   end
 
   #######################################################3
   defmodule Parsed do
-  @moduledoc """
+  @doc """
   Parsed contains common status info
 
   * map_msg:    %{},  ->  (int, string) with tags values
@@ -39,7 +54,7 @@ defmodule MsgParse do
 
   #######################################################3
   defmodule StFullMessage do
-    @moduledoc """
+    @doc """
     StFullMessage  the message has been parsed properly
     """
     defstruct parsed: %Parsed{}
@@ -56,7 +71,7 @@ defmodule MsgParse do
 
   #######################################################3
   defmodule StPartTag do
-    @moduledoc """
+    @doc """
     StPartTag  parsing a tag
 
     on chunk, we will ad chars to tag
@@ -75,7 +90,7 @@ defmodule MsgParse do
 
   #######################################################3
   defmodule StPartVal do
-    @moduledoc """
+    @doc """
     StPartVal  parsing a value (right to =)
 
     on chunk, we will ad chars to val
@@ -127,27 +142,25 @@ defmodule MsgParse do
 
 
   @doc ~S"""
-  Add a new char msg to already received chunk
+Add a new char msg to already received chunk
 
-  First parameter is status, the second one is the character to be added.
+First parameter is status, the second one is the character to be added.
 
-  It will return the new status
-
-
-  Status could be...
-
-  * StPartTag -> reading a tag
-  * StPartVal -> reading a value (after =)
-  * StFullMessage -> a message has been completed
-  * All status has the field parsed of type Parsed (parsed status)
+It will return the new status
 
 
+Status could be...
 
-  ###  Examples
+* StPartTag -> reading a tag
+* StPartVal -> reading a value (after =)
+* StFullMessage -> a message has been completed
+* All status has the field parsed of type Parsed with the parsed info
 
-    iex> msg =  "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|" <>
-    ...>        "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|" <>
-    ...>        "44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
+
+
+##  Examples
+
+    iex> msg =  "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
     iex> msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
     iex> msg_list |> Enum.reduce(%MsgParse.StFullMessage{}, &(MsgParse.add_char(&2, &1)))
     %MsgParse.StFullMessage{parsed: %MsgParse.Parsed{body_length: 122,
@@ -158,10 +171,11 @@ defmodule MsgParse do
         59 => "0", 60 => "20100225-19:39:52.020"}, num_tags: 15,
       orig_msg: "8=FIX.4.4^9=122^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^56=B^1=Marcel^11=13346^21=1^40=2^44=5^54=1^59=0^60=20100225-19:39:52.020^10=072^", position: 145}}
 
-      iex> MsgParse.add_char(%MsgParse.StFullMessage{}, ?8)
-      %MsgParse.StPartTag{chunk: "8",
-       parsed: %MsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
-        map_msg: %{}, num_tags: 0, orig_msg: "8", position: 1}}
+
+    iex> MsgParse.add_char(%MsgParse.StFullMessage{}, ?8)
+    %MsgParse.StPartTag{chunk: "8",
+     parsed: %MsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
+      map_msg: %{}, num_tags: 0, orig_msg: "8", position: 1}}
 
 """
 
