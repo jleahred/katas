@@ -2,7 +2,7 @@ defmodule MsgParse do
 
 
   defprotocol Status do
-    def increase_position(status)
+    def process_char_chunkparsed(status, char)
   end
 
   #######################################################3
@@ -29,10 +29,12 @@ defmodule MsgParse do
   end
 
 
-  def msginf_incpos(msg_info) do
-     %Parsed {
-        msg_info | position: msg_info.position + 1
-     }
+  def process_char_chunkparsed(parsed, char) do
+    ch = if char == 1, do: "^", else: <<char>>
+    %Parsed  { parsed
+              | position: parsed.position + 1,
+                orig_msg: parsed.orig_msg <> ch
+    }
   end
 
   #######################################################3
@@ -40,14 +42,14 @@ defmodule MsgParse do
     @moduledoc """
     StFullMessage  the message has been parsed properly
     """
-    defstruct msg_inf: %Parsed{}
+    defstruct parsed: %Parsed{}
   end
 
   defimpl Status, for: StFullMessage do
-    def increase_position(status) do
+    def process_char_chunkparsed(status, char) do
       %StFullMessage {
           status  |
-          msg_inf: MsgParse.msginf_incpos(status.msg_inf)
+          parsed: MsgParse.process_char_chunkparsed(status.parsed, char)
       }
     end
   end
@@ -59,14 +61,14 @@ defmodule MsgParse do
 
     on chunk, we will ad chars to tag
     """
-    defstruct msg_inf: %Parsed{}, chunk: ""
+    defstruct parsed: %Parsed{}, chunk: ""
   end
 
   defimpl Status, for: StPartTag do
-    def increase_position(status) do
+    def process_char_chunkparsed(status, char) do
       %StPartTag {
           status  |
-          msg_inf: MsgParse.msginf_incpos(status.msg_inf)
+          parsed: MsgParse.process_char_chunkparsed(status.parsed, char)
       }
     end
   end
@@ -74,19 +76,19 @@ defmodule MsgParse do
   #######################################################3
   defmodule StPartVal do
     @moduledoc """
-    StPartTag  parsing a tag
+    StPartVal  parsing a value (right to =)
 
     on chunk, we will ad chars to val
     and we have the current tag on tag field
     """
-    defstruct msg_inf: %Parsed{}, tag: 0, chunk: ""
+    defstruct parsed: %Parsed{}, tag: 0, chunk: ""
   end
 
   defimpl Status, for: StPartVal do
-    def increase_position(status) do
+    def process_char_chunkparsed(status, char) do
       %StPartVal {
           status  |
-          msg_inf: MsgParse.msginf_incpos(status.msg_inf)
+          parsed: MsgParse.process_char_chunkparsed(status.parsed, char)
       }
     end
   end
@@ -94,13 +96,13 @@ defmodule MsgParse do
 
 
 
-  defp add_error_list(error_list, new_error_desc)  do
+  defp add_error_list(error_list, {pos, new_error_desc})  do
     cond do
       new_error_desc != "" ->
         cond  do
-          Enum.count(error_list) <  3 ->   error_list ++ [new_error_desc]
-          Enum.count(error_list) == 3 ->   error_list ++ [new_error_desc]
-                                                      ++ ["too may errors"]
+          Enum.count(error_list) <  3 ->   error_list ++ [{pos, new_error_desc}]
+          Enum.count(error_list) == 3 ->   error_list ++ [{pos, new_error_desc}]
+                                                      ++ [{pos, "too may errors"}]
           true                        ->   error_list
         end
       true ->  error_list
@@ -110,14 +112,14 @@ defmodule MsgParse do
   defmacrop add_err_st(error_desc) do
     if error_desc != "" do
       quote do
-          add_error_list( var!(msg_inf).errors,
-                          { var!(msg_inf).position,
+          add_error_list( var!(parsed).errors,
+                          { var!(parsed).position,
                             unquote(error_desc)
                           })
       end
     else
         quote do
-          var!(msg_inf).errors
+          var!(parsed).errors
         end
     end
   end
@@ -137,7 +139,7 @@ defmodule MsgParse do
   * StPartTag -> reading a tag
   * StPartVal -> reading a value (after =)
   * StFullMessage -> a message has been completed
-  * All status has the field msg_inf of type Parsed (parsed status)
+  * All status has the field parsed of type Parsed (parsed status)
 
 
 
@@ -148,65 +150,68 @@ defmodule MsgParse do
     ...>        "44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
     iex> msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
     iex> msg_list |> Enum.reduce(%MsgParse.StFullMessage{}, &(MsgParse.add_char(&2, &1)))
-    %MsgParse.StFullMessage{msg_inf: %MsgParse.Parsed{body_length: 122,
+    %MsgParse.StFullMessage{parsed: %MsgParse.Parsed{body_length: 122,
       check_sum: 72, errors: [],
       map_msg: %{1 => "Marcel", 8 => "FIX.4.4", 9 => "122", 10 => "072",
         11 => "13346", 21 => "1", 34 => "215", 35 => "D", 40 => "2", 44 => "5",
         49 => "CLIENT12", 52 => "20100225-19:41:57.316", 54 => "1", 56 => "B",
         59 => "0", 60 => "20100225-19:39:52.020"}, num_tags: 15,
-      orig_msg: "8=FIX.4.4^9=122^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^56=B^1=Marcel^11=13346^21=1^40=2^44=5^54=1^59=0^60=20100225-19:39:52.020^10=072", position: 144}}
+      orig_msg: "8=FIX.4.4^9=122^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^56=B^1=Marcel^11=13346^21=1^40=2^44=5^54=1^59=0^60=20100225-19:39:52.020^10=072^", position: 145}}
 
       iex> MsgParse.add_char(%MsgParse.StFullMessage{}, ?8)
       %MsgParse.StPartTag{chunk: "8",
-       msg_inf: %MsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
-        map_msg: %{}, num_tags: 0, orig_msg: "8"}}
+       parsed: %MsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
+        map_msg: %{}, num_tags: 0, orig_msg: "8", position: 1}}
 
 """
 
   def add_char(status, char) do
-    _add_char(Status.increase_position(status), char)
+    _add_char(
+            Status.process_char_chunkparsed(status, char),
+            #Status.process_char_chunkparsed(status, char),
+            char)
   end
 
 
-  defp _add_char(%StFullMessage{ msg_inf: msg_inf }, 1)  do
+  defp _add_char(%StFullMessage{ parsed: parsed }, 1)  do
     %StFullMessage{
-      msg_inf: %Parsed
-               { msg_inf
+      parsed: %Parsed
+               { parsed
                | errors: add_err_st("Invalid SOH after full message recieved")
               }
     }
   end
 
-  defp _add_char(%StFullMessage{ msg_inf: _msg_inf }, ch)  do
-      _add_char(%StPartTag{}, ch)
+  defp _add_char(%StFullMessage{ parsed: _parsed }, ch)  do
+      add_char(%StPartTag{}, ch)
   end
 
-  defp _add_char(%StPartTag{msg_inf: msg_inf, chunk: chunk}, ?=)  do
+  defp _add_char(%StPartTag{parsed: parsed, chunk: chunk}, ?=)  do
       try do  # better performance than  Integer.parse
         tag = String.to_integer(chunk)
         body_length = if tag == 10 or tag == 8 or tag == 9 do
-                       msg_inf.body_length - String.length(chunk)
+                       parsed.body_length - String.length(chunk)
                      else
-                       msg_inf.body_length+1
+                       parsed.body_length+1
                      end
         check_sum = rem(
                      if tag == 10 do
-                       msg_inf.check_sum + 256 + 256 - ?1 -?0
+                       parsed.check_sum + 256 + 256 - ?1 -?0
                      else
-                       msg_inf.check_sum + ?=
+                       parsed.check_sum + ?=
                       end,
                     256)
 
         %StPartVal {
-          msg_inf: %Parsed
-                    { msg_inf
+          parsed: %Parsed
+                    { parsed
                     | body_length:  body_length,
                       check_sum:    check_sum,
-                      orig_msg:     msg_inf.orig_msg <> "=",
+                      #orig_msg:     parsed.orig_msg <> "=",
                       errors:
                           if(chunk=="")  do
                               add_err_st("Ending empty tag")
-                          else msg_inf.errors
+                          else parsed.errors
                           end
                     },
           tag: tag,
@@ -215,9 +220,9 @@ defmodule MsgParse do
       rescue
         _ ->
           %StPartVal {
-            msg_inf: %Parsed
-                       { msg_inf
-                       | orig_msg:    msg_inf.orig_msg <> "=",
+            parsed: %Parsed
+                       { parsed
+                       | #orig_msg:    parsed.orig_msg <> "=",
                          errors:      add_err_st("invalid tag value #{chunk}")
                        },
             tag: 0,
@@ -227,33 +232,33 @@ defmodule MsgParse do
   end
 
 
-  defp _add_char(%StPartTag{msg_inf: msg_inf, chunk: chunk}, 1)  do
+  defp _add_char(%StPartTag{parsed: parsed, chunk: chunk}, 1)  do
       %StPartTag {
-        msg_inf: %Parsed
-                     { msg_inf
+        parsed: %Parsed
+                     { parsed
                      | errors:    add_err_st(
-                                    "Invalid SOH on #{chunk} waiting for tag"),
-                       orig_msg:  msg_inf.orig_msg <> "^"
+                                    "Invalid SOH on #{chunk} waiting for tag")#,
+                       #orig_msg:  parsed.orig_msg <> "^"
                      },
         chunk: ""
       }
   end
 
-  defp _add_char(%StPartTag{msg_inf: msg_inf, chunk: chunk}, ch)  do
+  defp _add_char(%StPartTag{parsed: parsed, chunk: chunk}, ch)  do
       %StPartTag {
-        msg_inf: %Parsed
-                      { msg_inf |
-                        body_length: msg_inf.body_length+1,
-                        check_sum: rem(msg_inf.check_sum + ch, 256),
-                        orig_msg:  msg_inf.orig_msg <> <<ch>>
+        parsed: %Parsed
+                      { parsed |
+                        body_length: parsed.body_length+1,
+                        check_sum: rem(parsed.check_sum + ch, 256)#,
+                        #orig_msg:  parsed.orig_msg <> <<ch>>
                       },
         chunk: chunk <> <<ch>>
       }
   end
 
-  defp _add_char(%StPartVal{msg_inf: msg_inf, tag: 10, chunk: chunk}, 1)  do
+  defp _add_char(%StPartVal{parsed: parsed, tag: 10, chunk: chunk}, 1)  do
       bl =  try do
-                String.to_integer(msg_inf.map_msg[9])
+                String.to_integer(parsed.map_msg[9])
             rescue
               _  ->  -1
             end
@@ -263,40 +268,40 @@ defmodule MsgParse do
                     _  ->  -1
                   end
       error = cond do
-          msg_inf.body_length != bl       ->
-                "Incorrect body length  calculated: #{msg_inf.body_length} received #{bl}  #{msg_inf.orig_msg}"
+          parsed.body_length != bl       ->
+                "Incorrect body length  calculated: #{parsed.body_length} received #{bl}"
           check_sum == -1    ->
-                "Error parsing checksum #{msg_inf.orig_msg}  chs: #{chunk}"
-          msg_inf.check_sum  != check_sum ->
-                "Incorrect checksum calculated: #{msg_inf.check_sum} received #{check_sum}  #{msg_inf.orig_msg}  #{chunk}"
+                "Error parsing checksum chs: #{chunk}"
+          parsed.check_sum  != check_sum ->
+                "Incorrect checksum calculated: #{parsed.check_sum} received #{check_sum}  chunk:#{chunk}"
           true  -> ""
       end
-      error = error <> "#{check_full_message(msg_inf)}"
+      error = error <> "#{check_full_message(parsed)}"
       %StFullMessage {
-          msg_inf: %Parsed { msg_inf
-                            | map_msg: Map.put(msg_inf.map_msg, 10, chunk),
-                              errors:  add_error_list(msg_inf.errors, error)
+          parsed: %Parsed { parsed
+                            | map_msg: Map.put(parsed.map_msg, 10, chunk),
+                              errors:  add_err_st(error)
                             }
       }
   end
 
-  defp _add_char(%StPartVal{msg_inf: msg_inf, tag: tag, chunk: chunk}, 1)  do
+  defp _add_char(%StPartVal{parsed: parsed, tag: tag, chunk: chunk}, 1)  do
     error = cond do
-        tag !=8 and msg_inf.num_tags == 0  ->  "First tag has to be 8"
-        tag !=9 and msg_inf.num_tags == 1  ->  "Second tag has to be 9"
-        tag ==8 and msg_inf.num_tags != 0  ->  "Tag 8 has to be on position 1"
-        tag ==9 and msg_inf.num_tags != 1  ->  "Tag 9 has to be on position 2"
+        tag !=8 and parsed.num_tags == 0  ->  "First tag has to be 8"
+        tag !=9 and parsed.num_tags == 1  ->  "Second tag has to be 9"
+        tag ==8 and parsed.num_tags != 0  ->  "Tag 8 has to be on position 1"
+        tag ==9 and parsed.num_tags != 1  ->  "Tag 9 has to be on position 2"
         true                               ->  ""
     end
     %StPartTag {
-      msg_inf: %Parsed
-                  { msg_inf
-                  | body_length: msg_inf.body_length + if(tag==8 or tag==9, do: 0, else: 1),
-                    check_sum: rem(msg_inf.check_sum + 1, 256),
-                    map_msg: Map.put(msg_inf.map_msg, tag, chunk),
-                    orig_msg:  msg_inf.orig_msg <> "^",
-                    num_tags:  msg_inf.num_tags + 1,
-                    errors:    add_error_list(msg_inf.errors, error)
+      parsed: %Parsed
+                  { parsed
+                  | body_length: parsed.body_length + if(tag==8 or tag==9, do: 0, else: 1),
+                    check_sum: rem(parsed.check_sum + 1, 256),
+                    map_msg: Map.put(parsed.map_msg, tag, chunk),
+                    #orig_msg:  parsed.orig_msg <> "^",
+                    num_tags:  parsed.num_tags + 1,
+                    errors:    add_err_st(error)
                   },
       chunk: ""
     }
@@ -304,14 +309,14 @@ defmodule MsgParse do
 
   end
 
-  defp _add_char(%StPartVal{msg_inf: msg_inf, tag: tag, chunk: chunk}, ch)  do
+  defp _add_char(%StPartVal{parsed: parsed, tag: tag, chunk: chunk}, ch)  do
     bl = if(tag==8 or tag==9 or tag==10, do: 0, else: 1)
-    check_sum = if(tag != 10, do: rem(msg_inf.check_sum + ch, 256), else: msg_inf.check_sum)
+    check_sum = if(tag != 10, do: rem(parsed.check_sum + ch, 256), else: parsed.check_sum)
     %StPartVal {
-      msg_inf: %Parsed { msg_inf
-                   | body_length: msg_inf.body_length + bl,
+      parsed: %Parsed { parsed
+                   | body_length: parsed.body_length + bl,
                      check_sum: check_sum,
-                     orig_msg:  msg_inf.orig_msg <> <<ch>>
+                     #orig_msg:  parsed.orig_msg <> <<ch>>
                    },
       tag: tag,
       chunk: chunk <> <<ch>>
@@ -350,9 +355,9 @@ defmodule MsgParse do
   end
 
 
-  defp check_full_message(msg_inf) do
+  defp check_full_message(parsed) do
       check_mand_tag = fn(tag, error) ->
-                          if(Map.has_key?(msg_inf.map_msg,  tag) == false) do
+                          if(Map.has_key?(parsed.map_msg,  tag) == false) do
                               error <> "missing tag #{tag}."
                           else
                               error
