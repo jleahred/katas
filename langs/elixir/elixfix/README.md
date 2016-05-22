@@ -13,7 +13,6 @@ Pending...
 ## TODOs
 
 * Move functions with no side effects to func folder
-* Generate HTML doc
 * Functions
   * SessionReceiver
   * Message Builder

@@ -1,4 +1,4 @@
-defmodule MsgParse do
+defmodule FMsgParse do
 @moduledoc """
   In this module we have the functions (quite pure) to parse FIX messages.
 
@@ -44,6 +44,8 @@ For example, adding char to orig_msg or increasing possition
   end
 
 
+
+  @doc false
   def process_char_chunkparsed(parsed, char) do
     ch = if char == 1, do: "^", else: <<char>>
     %Parsed  { parsed
@@ -64,7 +66,7 @@ For example, adding char to orig_msg or increasing possition
     def process_char_chunkparsed(status, char) do
       %StFullMessage {
           status  |
-          parsed: MsgParse.process_char_chunkparsed(status.parsed, char)
+          parsed: FMsgParse.process_char_chunkparsed(status.parsed, char)
       }
     end
   end
@@ -83,7 +85,7 @@ For example, adding char to orig_msg or increasing possition
     def process_char_chunkparsed(status, char) do
       %StPartTag {
           status  |
-          parsed: MsgParse.process_char_chunkparsed(status.parsed, char)
+          parsed: FMsgParse.process_char_chunkparsed(status.parsed, char)
       }
     end
   end
@@ -103,7 +105,7 @@ For example, adding char to orig_msg or increasing possition
     def process_char_chunkparsed(status, char) do
       %StPartVal {
           status  |
-          parsed: MsgParse.process_char_chunkparsed(status.parsed, char)
+          parsed: FMsgParse.process_char_chunkparsed(status.parsed, char)
       }
     end
   end
@@ -162,8 +164,8 @@ Status could be...
 
     iex> msg =  "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|"
     iex> msg_list = String.to_char_list(String.replace(msg, "|", <<1>>))
-    iex> msg_list |> Enum.reduce(%MsgParse.StFullMessage{}, &(MsgParse.add_char(&2, &1)))
-    %MsgParse.StFullMessage{parsed: %MsgParse.Parsed{body_length: 122,
+    iex> msg_list |> Enum.reduce(%FMsgParse.StFullMessage{}, &(FMsgParse.add_char(&2, &1)))
+    %FMsgParse.StFullMessage{parsed: %FMsgParse.Parsed{body_length: 122,
       check_sum: 72, errors: [],
       map_msg: %{1 => "Marcel", 8 => "FIX.4.4", 9 => "122", 10 => "072",
         11 => "13346", 21 => "1", 34 => "215", 35 => "D", 40 => "2", 44 => "5",
@@ -172,9 +174,9 @@ Status could be...
       orig_msg: "8=FIX.4.4^9=122^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^56=B^1=Marcel^11=13346^21=1^40=2^44=5^54=1^59=0^60=20100225-19:39:52.020^10=072^", position: 145}}
 
 
-    iex> MsgParse.add_char(%MsgParse.StFullMessage{}, ?8)
-    %MsgParse.StPartTag{chunk: "8",
-     parsed: %MsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
+    iex> FMsgParse.add_char(%FMsgParse.StFullMessage{}, ?8)
+    %FMsgParse.StPartTag{chunk: "8",
+     parsed: %FMsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
       map_msg: %{}, num_tags: 0, orig_msg: "8", position: 1}}
 
 """

@@ -1,11 +1,11 @@
-defmodule MsgParseTest do
+defmodule FMsgParseTest do
   use ExUnit.Case
-  doctest MsgParse
+  doctest FMsgParse
 
   def process_string(string) do
     list = String.to_char_list(String.replace(string, "|", <<1>>))
-    list |> Enum.reduce( %MsgParse.StFullMessage{},
-                                      &(MsgParse.add_char(&2, &1)))
+    list |> Enum.reduce( %FMsgParse.StFullMessage{},
+                                      &(FMsgParse.add_char(&2, &1)))
   end
 
 
@@ -84,8 +84,8 @@ defmodule MsgParseTest do
     #IO.inspect result
 
     assert result ==
-        %MsgParse.StPartVal{chunk: "12",
-          parsed: %MsgParse.Parsed{body_length: 0, check_sum: 250, errors: [],
+        %FMsgParse.StPartVal{chunk: "12",
+          parsed: %FMsgParse.Parsed{body_length: 0, check_sum: 250, errors: [],
           map_msg: %{8 => "FIX.4.4"}, num_tags: 1, orig_msg: "8=FIX.4.4^9=12",
           position: 14}, tag: 9}
   end
@@ -97,8 +97,8 @@ defmodule MsgParseTest do
     #IO.inspect result
 
     assert result ==
-      %MsgParse.StPartTag{chunk: "5",
-       parsed: %MsgParse.Parsed{body_length: 50, check_sum: 42, errors: [],
+      %FMsgParse.StPartTag{chunk: "5",
+       parsed: %FMsgParse.Parsed{body_length: 50, check_sum: 42, errors: [],
         map_msg: %{8 => "FIX.4.4", 9 => "121", 34 => "215", 35 => "D",
           49 => "CLIENT12", 52 => "20100225-19:41:57.316"}, num_tags: 6,
         orig_msg: "8=FIX.4.4^9=121^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^5",
@@ -110,8 +110,8 @@ defmodule MsgParseTest do
     #IO.inspect result
 
     assert result ==
-      %MsgParse.StPartVal{chunk: "",
-       parsed: %MsgParse.Parsed{body_length: 8, check_sum: 186, errors: [],
+      %FMsgParse.StPartVal{chunk: "",
+       parsed: %FMsgParse.Parsed{body_length: 8, check_sum: 186, errors: [],
         map_msg: %{8 => "FIX.4.4", 9 => "121", 35 => "D"}, num_tags: 3,
         orig_msg: "8=FIX.4.4^9=121^35=D^34=", position: 24}, tag: 34}
     end
