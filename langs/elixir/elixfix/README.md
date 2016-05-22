@@ -1,20 +1,26 @@
 # Elixfix
 
-**TODO: Add description**
+
+## Description
+
+FIX protocol implementation on Elixir/Erlang
+
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+Pending...
 
-  1. Add elixfix to your list of dependencies in `mix.exs`:
+## TODOs
 
-        def deps do
-          [{:elixfix, "~> 0.0.1"}]
-        end
-
-  2. Ensure elixfix is started before your application:
-
-        def application do
-          [applications: [:elixfix]]
-        end
-
+* Move functions with no side effects to func folder
+* Generate HTML doc
+* Functions
+  * SessionReceiver
+  * Message Builder
+* Services (actors)
+  * TCP (acceptor, initiator)
+  * MessageParser
+  * MessageBuilder
+  * SessionDispacher
+  * SessionManager
+  * ...
