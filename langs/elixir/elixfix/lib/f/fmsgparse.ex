@@ -2,7 +2,7 @@ defmodule FMsgParse do
 @moduledoc """
   In this module we have the functions (quite pure) to parse FIX messages.
 
-  The main on is  add_char(status, char)
+  The main is  add_char(status, char)
 
   It will return the new status
 
