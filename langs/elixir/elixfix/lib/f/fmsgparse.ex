@@ -370,22 +370,28 @@ Status could be...
       IO.puts "#{num_msg/secs} msg/sec"
   end
 
-
-  defp check_full_message(parsed) do
+  @doc ~S"""
+  This will check if all tags exists in message parsed
+  """
+  def check_mandatory_tags(map_msg, tags) do
       check_mand_tag = fn(tag, error) ->
-                          if(Map.has_key?(parsed.map_msg,  tag) == false) do
+                          if(Map.has_key?(map_msg,  tag) == false) do
                               error <> "missing tag #{tag}."
                           else
                               error
                           end
                         end
-      mandatory_tags = [8, 9, 49, 56, 34, 52]
-
       Enum.reduce(
-                  mandatory_tags,
+                  tags,
                   "",
                   fn(tag, error_desc) ->
                             check_mand_tag.(tag, error_desc)  end)
   end
+
+  defp check_full_message(parsed) do
+      check_mandatory_tags(parsed.map_msg, [8, 9, 49, 56, 34, 52])
+  end
+
+
 
 end
