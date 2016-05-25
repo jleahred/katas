@@ -28,14 +28,6 @@ defmodule  FSessionReceiver  do
     end
   end
 
-  defp get_tag_value_optional(tag, msg_map) do
-    if Map.has_key?(msg_map, tag)  do
-        msg_map[tag]
-    else
-        :none
-    end
-  end
-
   defp get_tag_value_mandatory_int(tag, msg_map)  do
     try do  # better performance than  Integer.parse
       { :ok, String.to_integer(msg_map[tag]) }
@@ -50,13 +42,13 @@ defmodule  FSessionReceiver  do
   @doc """
   Process message and return new status and action
 
-  It will return the new status and action to be done
+  It will return the new status and action to be done (in a tuple)
 
   Possible actions are:
 
       * :none
       * :reset_sequence
-      * reject_msg: desctiption
+      * reject_msg: description
   """
   def process_message(status, msg_map) do
       errors = check_tag_value(8,  status.fix_version,    msg_map, [])
@@ -88,6 +80,17 @@ defmodule  FSessionReceiver  do
   end
 
   defp logon(status, msg_map)  do
+    case status.state do
+        :waitting_login   ->  process_logon(status, msg_map)
+        :login_ok         ->
+          {  %Status { status | state: :waitting_login },
+              reject_msg: "received rq login on login status."
+          }
+
+    end
+  end
+
+  defp process_logon(status, msg_map) do
     errors = [FMsgParse.check_mandatory_tags(msg_map, [96, 98, 108])]
 
     # check password
@@ -96,17 +99,17 @@ defmodule  FSessionReceiver  do
     errors = check_tag_value(98, "0", msg_map, errors)
     # reset sequence
     { msg_seq, errors } =
-        case get_tag_value_optional(141, msg_map)  do
+        case Map.get(msg_map, 141, nil)  do
             "N"   ->   { status.msg_seq_num, errors }
             "Y"   ->   { 0,                  errors }
-            :none ->   { status.msg_seq_num, errors }
+            nil ->     { status.msg_seq_num, errors }
             other ->   { status.msg_seq_num, errors ++
                 ["Invalid value on tag 141 (ResetSeqNumFlag) rec: #{other}"] }
         end
 
     { hearbeat, errors } =
         case get_tag_value_mandatory_int(108, msg_map)  do
-            { :ok,    val }   ->   { val, [] }
+            { :ok,    val }   ->   { val, errors }
             { :error, desc }  ->   { 0, errors ++
                               ["Invalid value on tag 108 (Hearbeat) #{desc}"] }
         end
@@ -128,10 +131,7 @@ defmodule  FSessionReceiver  do
           reject_msg: errors
       }
     end
-
-
   end
-
 
 
 
