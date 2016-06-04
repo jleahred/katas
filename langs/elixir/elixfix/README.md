@@ -1,4 +1,4 @@
-# Elixfix
+# ELIXFIX
 
 
 ## Description
@@ -27,14 +27,16 @@ Pending...
 
 ## TODOs
 
+* Add specs
+* Tags dictionary
 * Functions
-  * On FSessionReceiver, create struct for config to be used on Status
-  * SessionReceiver
-  * Message Builder
+    * On FSessionReceiver, create struct for config to be used on Status
+    * SessionReceiver
+    * Message Builder
 * Services (actors)
-  * TCP (acceptor, initiator)
-  * MessageParser
-  * MessageBuilder
-  * SessionDispacher
-  * SessionManager
-  * ...
+    * TCP (acceptor, initiator)
+    * MessageParser
+    * MessageBuilder
+    * SessionDispacher
+    * SessionManager
+    * ...

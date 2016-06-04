@@ -1,8 +1,14 @@
 defmodule  FSessionReceiver  do
+@moduledoc """
+Session receiver pure functions
+"""
   import FMsgMapSupport, only: [check_tag_value: 3]
 
   defmodule Status do
-    @doc """
+    @moduledoc """
+    Session receiver Status
+
+    To see fields, click on source link
 
     """
     defstruct   state:            :waitting_login,   # :login_ok
@@ -30,7 +36,7 @@ Possible actions are:
 
     * :none
     * :reset_sequence
-    * {:reject_msg, description}
+    * '{:reject_msg, description}'
   """
   def process_message(status, msg_map) do
       {_, errors} =

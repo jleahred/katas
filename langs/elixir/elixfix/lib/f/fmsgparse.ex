@@ -13,7 +13,7 @@ Pure functions to parse FIX messages
 
 
   defprotocol Status do
-    @doc """
+    @moduledoc """
 On protocol Status. It will run commom operations for all status
 (over Parsed struct).
 
@@ -24,17 +24,12 @@ For example, adding char to orig_msg or increasing possition
 
   #######################################################3
   defmodule Parsed do
-  @doc """
-  Parsed contains common status info
+  @moduledoc """
+  Struct with parsed info
 
-  * msg_map:    %{},  ->  (int, string) with tags values
-  * body_length:  0,
-  * check_sum:    0,
-  * num_tags:     0,
-  * orig_msg:    "",
-  * errors:      [],   [{pos, description}]
-  * position:     0
+  It contains the info parsed till now
 
+  click on source link to see the definition
   """
     defstruct   msg_map:    %{},
                 body_length:  0,
@@ -57,10 +52,9 @@ For example, adding char to orig_msg or increasing possition
   end
 
   #######################################################3
+  # the message has been successfully parsed
   defmodule StFullMessage do
-    @doc """
-    StFullMessage  the message has been parsed properly
-    """
+    @moduledoc false
     defstruct parsed: %Parsed{}
   end
 
@@ -74,12 +68,10 @@ For example, adding char to orig_msg or increasing possition
   end
 
   #######################################################3
+  # receiving a tag
+  # on chunk, we will add chars to tag
   defmodule StPartTag do
-    @doc """
-    StPartTag  parsing a tag
-
-    on chunk, we will ad chars to tag
-    """
+    @moduledoc false
     defstruct parsed: %Parsed{}, chunk: ""
   end
 
@@ -93,13 +85,11 @@ For example, adding char to orig_msg or increasing possition
   end
 
   #######################################################3
+  #  receiving a value (right to =)
+  # on chunk, we will ad chars to val
+  # and we have the current tag on tag field
   defmodule StPartVal do
-    @doc """
-    StPartVal  parsing a value (right to =)
-
-    on chunk, we will ad chars to val
-    and we have the current tag on tag field
-    """
+    @moduledoc false
     defstruct parsed: %Parsed{}, tag: 0, chunk: ""
   end
 
@@ -186,7 +176,6 @@ Status could be...
   def add_char(status, char) do
     _add_char(
             Status.process_char_chunkparsed(status, char),
-            #Status.process_char_chunkparsed(status, char),
             char)
   end
 

@@ -1,4 +1,6 @@
-defmodule  FSessionReceiverSupport  do
+defmodule  FSessionReceiver.Support  do
+@moduledoc false
+
   #import FSessionReceiver
   import FMsgMapSupport, only: [check_tag_value: 3,
                                 get_tag_value_mandatory_int: 2,
