@@ -372,26 +372,11 @@ Status could be...
       IO.puts "#{num_msg/secs} msg/sec"
   end
 
-  @doc ~S"""
-  This will check if all tags exists in message parsed
-  """
-  def check_mandatory_tags(msg_map, tags) do
-      check_mand_tag = fn(tag, error) ->
-                          if(Map.has_key?(msg_map,  tag) == false) do
-                              error <> "missing tag #{tag}."
-                          else
-                              error
-                          end
-                        end
-      Enum.reduce(
-                  tags,
-                  "",
-                  fn(tag, error_desc) ->
-                            check_mand_tag.(tag, error_desc)  end)
-  end
-
   defp check_full_message(parsed) do
-      check_mandatory_tags(parsed.msg_map, [8, 9, 49, 56, 34, 52])
+      {_, errors} =
+        { parsed.msg_map , []}
+        |>  FMsgMapSupport.check_mandatory_tags([8, 9, 49, 56, 34, 52])
+      Enum.join(errors, ", ")
   end
 
 

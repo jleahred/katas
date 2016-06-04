@@ -13,29 +13,30 @@ Check if tag has value on msg_map
 It will receive previous errors and will add current error to this list if
 necessary.
 
-  iex> msg_map = FMsgParse.parse_string_test(
-  ...> "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|"<>
-  ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
-  ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
-  ...> .parsed.msg_map
-  iex> FMsgMapSupport.check_tag_value(8, "FIX.4.4", msg_map, [])
-  []
+    iex> msg_map = FMsgParse.parse_string_test(
+    ...> "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|"<>
+    ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
+    ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
+    ...> .parsed.msg_map
+    iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, 8, "FIX.4.4")
+    iex> errors
+    []
 
-  iex> msg_map = FMsgParse.parse_string_test(
-  ...> "8=FIX.4.1|9=122|35=D|34=215|49=CLIENT12|"<>
-  ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
-  ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
-  ...> .parsed.msg_map
-  iex> FMsgMapSupport.check_tag_value(8, "FIX.4.4", msg_map, [])
-  [" invalid tag value tag: 8  received: FIX.4.1, expected  FIX.4.4"]
-
+    iex> msg_map = FMsgParse.parse_string_test(
+    ...> "8=FIX.4.1|9=122|35=D|34=215|49=CLIENT12|"<>
+    ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
+    ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
+    ...> .parsed.msg_map
+    iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, 8, "FIX.4.4")
+    iex> errors
+    [" invalid tag value tag: 8  received: FIX.4.1, expected  FIX.4.4"]
 """
-def check_tag_value(tag, value, msg_map, errors) do
+def check_tag_value({msg_map, errors}, tag, value) do
   if msg_map[tag] != value do
-    errors ++ [ " invalid tag value tag: #{tag}  received: #{msg_map[tag]}, " <>
-                "expected  #{value}"]
+    {msg_map, errors ++ [ " invalid tag value tag: #{tag}  received: #{msg_map[tag]}, " <>
+                "expected  #{value}"]}
   else
-    errors
+    {msg_map, errors}
   end
 end
 
@@ -46,6 +47,7 @@ Return int from tag
 It will return
 
 > { :ok, int_val }
+>
 > { :error, description }
 
 
@@ -66,6 +68,35 @@ def get_tag_value_mandatory_int(tag, msg_map)  do
   rescue
     _  ->   {:error, "invalid val on tag #{tag}"}
   end
+end
+
+
+@doc ~S"""
+This will check if all tags exists in message parsed
+
+    iex> msg_map = FMsgParse.parse_string_test(
+    ...> "8=FIX.4.1|9=122|35=D|34=215|49=CLIENT12|"<>
+    ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
+    ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
+    ...> .parsed.msg_map
+    iex> {_,  errors} = FMsgMapSupport.check_mandatory_tags({msg_map, []},
+    ...> [8, 9, 49, 56, 34, 52, 999])
+    iex> errors
+    ["missing tag 999."]
+
+"""
+def check_mandatory_tags({msg_map, errors}, tags) do
+    check_mand_tag = fn(tag, errs) ->
+                        if(Map.has_key?(msg_map,  tag) == false) do
+                            errs ++ ["missing tag #{tag}."]
+                        else
+                            errs
+                        end
+                      end
+    {msg_map, Enum.reduce( tags,
+                 errors,
+                 fn(tag, errs_acc) ->
+                          check_mand_tag.(tag, errs_acc)  end) }
 end
 
 

@@ -1,5 +1,7 @@
 defmodule  FSessionReceiver  do
-
+  import FMsgMapSupport, only: [check_tag_value: 3,
+                                get_tag_value_mandatory_int: 2,
+                                check_mandatory_tags: 2]
 
   defmodule Status do
     @doc """
@@ -19,41 +21,26 @@ defmodule  FSessionReceiver  do
 
 
 
-  defp check_tag_value(tag, value, msg_map, errors) do
-    if msg_map[tag] != value do
-      errors ++ [ " invalid tag value tag: #{tag}  received: #{value}, " <>
-                  "expected  val: #{msg_map[tag]}"]
-    else
-      errors
-    end
-  end
-
-  defp get_tag_value_mandatory_int(tag, msg_map)  do
-    try do  # better performance than  Integer.parse
-      { :ok, String.to_integer(msg_map[tag]) }
-    rescue
-      _  ->   {:error, "invalid val on tag #{tag}"}
-    end
-  end
-
-
-
-
   @doc """
-  Process message and return new status and action
+Process message and return new status and action
 
-  It will return the new status and action to be done (in a tuple)
+It will return the new status and action to be done (in a tuple)
 
-  Possible actions are:
+>  { action, tuple }
 
-      * :none
-      * :reset_sequence
-      * reject_msg: description
+Possible actions are:
+
+    * :none
+    * :reset_sequence
+    * reject_msg: description
   """
   def process_message(status, msg_map) do
-      errors = check_tag_value(8,  status.fix_version,    msg_map, [])
-      errors = check_tag_value(49, status.sender_comp_id, msg_map, errors)
-      errors = check_tag_value(56, status.sender_comp_id, msg_map, errors)
+      {_, errors} =
+        {msg_map, []}
+        |>  check_tag_value(8,  status.fix_version)
+        |>  check_tag_value(49, status.sender_comp_id)
+        |>  check_tag_value(56, status.sender_comp_id)
+
       if errors == []  do
           status = %Status{ status |  msg_seq_num: status.msg_seq_num+1 }
           get_func_proc_msg(msg_map[35]).(status, msg_map)
@@ -63,7 +50,6 @@ defmodule  FSessionReceiver  do
           }
       end
   end
-
 
 
   defp get_func_proc_msg(msg_type) do
@@ -91,12 +77,19 @@ defmodule  FSessionReceiver  do
   end
 
   defp process_logon(status, msg_map) do
-    errors = [FMsgParse.check_mandatory_tags(msg_map, [96, 98, 108])]
+    {_, errors} =
+      { msg_map , []}
+      |>  check_mandatory_tags([96, 98, 108])
+      |>  check_tag_value(96, status.password)  # check password
+      |>  check_tag_value(98, 0)                # no encripytion
+
+
+    #errors = [FMsgParse.check_mandatory_tags(msg_map, [96, 98, 108])]
 
     # check password
-    errors = check_tag_value(96, status.password, msg_map, errors)
+    #errors = check_tag_value(96, status.password, msg_map, errors)
     # no encription
-    errors = check_tag_value(98, "0", msg_map, errors)
+    #errors = check_tag_value(98, "0", msg_map, errors)
     # reset sequence
     { msg_seq, errors } =
         case Map.get(msg_map, 141, nil)  do

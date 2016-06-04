@@ -167,6 +167,7 @@ defmodule FMsgParseTest do
             "52=20100225-19:41:57.316|1=Marcel|11=13346|"<>
             "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=097|")
 
+      #IO.inspect result
       assert result.parsed.check_sum == 97
       assert result.parsed.body_length == 117
       assert result.parsed.errors == [{140, "missing tag 56."}]
