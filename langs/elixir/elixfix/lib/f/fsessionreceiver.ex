@@ -126,8 +126,7 @@ defmodule  FSessionReceiver  do
           end
       }
     else
-      {  %Status { status | heartbeat_interv: hearbeat,
-                            msg_seq_num:      msg_seq},
+      {  %Status { status | msg_seq_num:      msg_seq},
           reject_msg: errors
       }
     end

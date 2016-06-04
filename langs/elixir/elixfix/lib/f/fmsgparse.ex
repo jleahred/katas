@@ -1,5 +1,7 @@
 defmodule FMsgParse do
 @moduledoc """
+Pure functions to parse FIX messages
+
   In this module we have the functions (quite pure) to parse FIX messages.
 
   The main is  add_char(status, char)
@@ -25,7 +27,7 @@ For example, adding char to orig_msg or increasing possition
   @doc """
   Parsed contains common status info
 
-  * map_msg:    %{},  ->  (int, string) with tags values
+  * msg_map:    %{},  ->  (int, string) with tags values
   * body_length:  0,
   * check_sum:    0,
   * num_tags:     0,
@@ -34,7 +36,7 @@ For example, adding char to orig_msg or increasing possition
   * position:     0
 
   """
-    defstruct   map_msg:    %{},
+    defstruct   msg_map:    %{},
                 body_length:  0,
                 check_sum:    0,
                 num_tags:     0,
@@ -167,7 +169,7 @@ Status could be...
     iex> msg_list |> Enum.reduce(%FMsgParse.StFullMessage{}, &(FMsgParse.add_char(&2, &1)))
     %FMsgParse.StFullMessage{parsed: %FMsgParse.Parsed{body_length: 122,
       check_sum: 72, errors: [],
-      map_msg: %{1 => "Marcel", 8 => "FIX.4.4", 9 => "122", 10 => "072",
+      msg_map: %{1 => "Marcel", 8 => "FIX.4.4", 9 => "122", 10 => "072",
         11 => "13346", 21 => "1", 34 => "215", 35 => "D", 40 => "2", 44 => "5",
         49 => "CLIENT12", 52 => "20100225-19:41:57.316", 54 => "1", 56 => "B",
         59 => "0", 60 => "20100225-19:39:52.020"}, num_tags: 15,
@@ -177,7 +179,7 @@ Status could be...
     iex> FMsgParse.add_char(%FMsgParse.StFullMessage{}, ?8)
     %FMsgParse.StPartTag{chunk: "8",
      parsed: %FMsgParse.Parsed{body_length: 1, check_sum: 56, errors: [],
-      map_msg: %{}, num_tags: 0, orig_msg: "8", position: 1}}
+      msg_map: %{}, num_tags: 0, orig_msg: "8", position: 1}}
 
 """
 
@@ -274,7 +276,7 @@ Status could be...
 
   defp _add_char(%StPartVal{parsed: parsed, tag: 10, chunk: chunk}, 1)  do
       bl =  try do
-                String.to_integer(parsed.map_msg[9])
+                String.to_integer(parsed.msg_map[9])
             rescue
               _  ->  -1
             end
@@ -295,7 +297,7 @@ Status could be...
       error = error <> "#{check_full_message(parsed)}"
       %StFullMessage {
           parsed: %Parsed { parsed
-                            | map_msg: Map.put(parsed.map_msg, 10, chunk),
+                            | msg_map: Map.put(parsed.msg_map, 10, chunk),
                               errors:  add_err_st(error)
                             }
       }
@@ -314,7 +316,7 @@ Status could be...
                   { parsed
                   | body_length: parsed.body_length + if(tag==8 or tag==9, do: 0, else: 1),
                     check_sum: rem(parsed.check_sum + 1, 256),
-                    map_msg: Map.put(parsed.map_msg, tag, chunk),
+                    msg_map: Map.put(parsed.msg_map, tag, chunk),
                     #orig_msg:  parsed.orig_msg <> "^",
                     num_tags:  parsed.num_tags + 1,
                     errors:    add_err_st(error)
@@ -373,9 +375,9 @@ Status could be...
   @doc ~S"""
   This will check if all tags exists in message parsed
   """
-  def check_mandatory_tags(map_msg, tags) do
+  def check_mandatory_tags(msg_map, tags) do
       check_mand_tag = fn(tag, error) ->
-                          if(Map.has_key?(map_msg,  tag) == false) do
+                          if(Map.has_key?(msg_map,  tag) == false) do
                               error <> "missing tag #{tag}."
                           else
                               error
@@ -389,9 +391,22 @@ Status could be...
   end
 
   defp check_full_message(parsed) do
-      check_mandatory_tags(parsed.map_msg, [8, 9, 49, 56, 34, 52])
+      check_mandatory_tags(parsed.msg_map, [8, 9, 49, 56, 34, 52])
   end
 
+
+  @doc """
+  Convert a string to a fix msg_map struct
+
+  It is for testing support
+
+
+  """
+  def parse_string_test(string) do
+    list = String.to_char_list(String.replace(string, "|", <<1>>))
+    list |> Enum.reduce( %FMsgParse.StFullMessage{},
+                                      &(FMsgParse.add_char(&2, &1)))
+  end
 
 
 end

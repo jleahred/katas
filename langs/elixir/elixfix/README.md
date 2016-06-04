@@ -28,6 +28,7 @@ Pending...
 ## TODOs
 
 * Functions
+  * On FSessionReceiver, create struct for config to be used on Status
   * SessionReceiver
   * Message Builder
 * Services (actors)
