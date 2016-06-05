@@ -11,64 +11,92 @@ defmodule FMsgMapSupportTest do
 
 
   test "check tag value OK" do
-    {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, []}, 8, "FIX.4.4")
+    {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, []}, BeginString, "FIX.4.4")
     assert errs == []
   end
 
   test "check tag value wrong" do
-    {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, []}, 8, "FIX.4.2")
-    assert errs == [" invalid tag value tag: 8  received: FIX.4.4, expected  FIX.4.2"]
+    {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, []}, BeginString, "FIX.4.2")
+    assert errs == [" invalid tag value tag: BeginString(8)  received: FIX.4.4, expected  FIX.4.2"]
   end
 
   test "check tag value OK prev errors" do
     {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, ["prev error"]},
-                                                  8, "FIX.4.4")
+                                                  BeginString, "FIX.4.4")
     assert errs ==  ["prev error"]
   end
 
   test "check tag value wrong prev errors" do
     {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, ["prev error"]},
-                                                  8, "FIX.4.1")
+                                                  BeginString, "FIX.4.1")
     assert errs == ["prev error",
-            " invalid tag value tag: 8  received: FIX.4.4, expected  FIX.4.1"]
+            " invalid tag value tag: BeginString(8)  received: FIX.4.4, expected  FIX.4.1"]
   end
 
   test "get integer value OK" do
-    assert {:ok, 13346} == FMsgMapSupport.get_tag_value_mandatory_int(11, @msg_map2test)
+    assert {:ok, 13346} == FMsgMapSupport.get_tag_value_mandatory_int(ClOrdID, @msg_map2test)
   end
 
   test "get integer value string field" do
-    assert {:error, "invalid val on tag 56"} ==
-              FMsgMapSupport.get_tag_value_mandatory_int(56, @msg_map2test)
+    assert {:error, "invalid val on tag TargetCompID(56)"} ==
+              FMsgMapSupport.get_tag_value_mandatory_int(TargetCompID, @msg_map2test)
   end
 
   test "check mandatory tags OK" do
     {_,  errs} = FMsgMapSupport.check_mandatory_tags({@msg_map2test, []},
-                                                  [8, 9, 49, 56, 34, 52])
+                                                  [ BeginString,
+                                                    BodyLength,
+                                                    SenderCompID,
+                                                    TargetCompID,
+                                                    MsgSeqNum,
+                                                    SendingTime])
     assert errs == []
   end
 
   test "check mandatory tags missing 999" do
     {_,  errs} = FMsgMapSupport.check_mandatory_tags({@msg_map2test, []},
-                                                  [8, 9, 49, 56, 34, 52, 999])
+                                                  [ BeginString,
+                                                    BodyLength,
+                                                    SenderCompID,
+                                                    TargetCompID,
+                                                    MsgSeqNum,
+                                                    SendingTime,
+                                                    999])
     assert errs == ["missing tag 999."]
   end
 
   test "check mandatory tags missing 999 && 998" do
     {_,  errs} = FMsgMapSupport.check_mandatory_tags({@msg_map2test, []},
-                                                  [8, 9, 49, 56, 34, 999, 998])
+                                                  [ BeginString,
+                                                    BodyLength,
+                                                    SenderCompID,
+                                                    TargetCompID,
+                                                    MsgSeqNum,
+                                                    999,
+                                                    998])
     assert errs == ["missing tag 999.", "missing tag 998."]
   end
 
   test "check mandatory tags OK, prev error" do
     {_,  errs} = FMsgMapSupport.check_mandatory_tags({@msg_map2test, ["prev"]},
-                                                  [8, 9, 49, 56, 34, 52])
+                                                [ BeginString,
+                                                  BodyLength,
+                                                  SenderCompID,
+                                                  TargetCompID,
+                                                  MsgSeqNum,
+                                                  SendingTime])
     assert errs == ["prev"]
   end
 
   test "check mandatory tags missing 999 prev err" do
     {_,  errs} = FMsgMapSupport.check_mandatory_tags({@msg_map2test, ["prev"]},
-                                                  [8, 9, 49, 56, 34, 52, 999])
+                                                [ BeginString,
+                                                  BodyLength,
+                                                  SenderCompID,
+                                                  TargetCompID,
+                                                  MsgSeqNum,
+                                                  SendingTime,
+                                                  999])
     assert errs == ["prev", "missing tag 999."]
   end
 

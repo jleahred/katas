@@ -12,7 +12,7 @@ defmodule FMsgParseTest do
     assert result.parsed.check_sum == 72
     assert result.parsed.body_length == 122
     assert result.parsed.errors == []
-    assert result.parsed.msg_map[56] == "B"
+    assert result.parsed.msg_map[TargetCompID] == "B"
   end
 
   test "parsed full message tag 8 not first" do
@@ -24,9 +24,9 @@ defmodule FMsgParseTest do
 
     assert result.parsed.check_sum == 72
     assert result.parsed.body_length == 122
-    assert result.parsed.errors == [{6,  "First tag has to be 8"},
-                                    {16, "Second tag has to be 9"}]
-    assert result.parsed.msg_map[56] == "B"
+    assert result.parsed.errors == [{6,  "First tag has to be BeginString"},
+                                    {16, "Second tag has to be BodyLength"}]
+    assert result.parsed.msg_map[TargetCompID] == "B"
   end
 
 
@@ -39,10 +39,10 @@ defmodule FMsgParseTest do
 
     assert result.parsed.check_sum == 72
     assert result.parsed.body_length == 122
-    assert result.parsed.errors == [{15, "Second tag has to be 9"},
-                                    {40, "Tag 9 has to be on position 2"}
+    assert result.parsed.errors == [{15, "Second tag has to be BodyLength"},
+                                    {40, "Tag BodyLength has to be on position 2"}
                                    ]
-    assert result.parsed.msg_map[56] == "B"
+    assert result.parsed.msg_map[TargetCompID] == "B"
   end
 
   test "parsed full message incorrect checksum" do
@@ -56,7 +56,7 @@ defmodule FMsgParseTest do
     assert result.parsed.body_length == 122
     assert result.parsed.errors == [{145,
           "Incorrect checksum calculated: 72 received 71  chunk:071"}]
-    assert result.parsed.msg_map[56] == "B"
+    assert result.parsed.msg_map[TargetCompID] == "B"
   end
 
   test "parsed full message incorrect bodylength" do
@@ -70,7 +70,7 @@ defmodule FMsgParseTest do
     assert result.parsed.body_length == 122
     assert result.parsed.errors == [{145,
                   "Incorrect body length  calculated: 122 received 121"}]
-    assert result.parsed.msg_map[56] == "B"
+    assert result.parsed.msg_map[TargetCompID] == "B"
   end
 
   test "partial val" do
@@ -80,8 +80,8 @@ defmodule FMsgParseTest do
     assert result ==
         %FMsgParse.StPartVal{chunk: "12",
           parsed: %FMsgParse.Parsed{body_length: 0, check_sum: 250, errors: [],
-          msg_map: %{8 => "FIX.4.4"}, num_tags: 1, orig_msg: "8=FIX.4.4^9=12",
-          position: 14}, tag: 9}
+          msg_map: %{BeginString => "FIX.4.4"}, num_tags: 1, orig_msg: "8=FIX.4.4^9=12",
+          position: 14}, tag: BodyLength}
   end
 
   test "partial tag" do
@@ -93,8 +93,8 @@ defmodule FMsgParseTest do
     assert result ==
       %FMsgParse.StPartTag{chunk: "5",
        parsed: %FMsgParse.Parsed{body_length: 50, check_sum: 42, errors: [],
-        msg_map: %{8 => "FIX.4.4", 9 => "121", 34 => "215", 35 => "D",
-          49 => "CLIENT12", 52 => "20100225-19:41:57.316"}, num_tags: 6,
+        msg_map: %{BeginString => "FIX.4.4", BodyLength => "121", MsgSeqNum => "215", MsgType => "D",
+          SenderCompID => "CLIENT12", SendingTime => "20100225-19:41:57.316"}, num_tags: 6,
         orig_msg: "8=FIX.4.4^9=121^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^5",
         position: 66}}
   end
@@ -106,8 +106,8 @@ defmodule FMsgParseTest do
     assert result ==
       %FMsgParse.StPartVal{chunk: "",
        parsed: %FMsgParse.Parsed{body_length: 8, check_sum: 186, errors: [],
-        msg_map: %{8 => "FIX.4.4", 9 => "121", 35 => "D"}, num_tags: 3,
-        orig_msg: "8=FIX.4.4^9=121^35=D^34=", position: 24}, tag: 34}
+        msg_map: %{BeginString => "FIX.4.4", BodyLength => "121", MsgType => "D"}, num_tags: 3,
+        orig_msg: "8=FIX.4.4^9=121^35=D^34=", position: 24}, tag: MsgSeqNum}
     end
 
 
@@ -170,7 +170,7 @@ defmodule FMsgParseTest do
       #IO.inspect result
       assert result.parsed.check_sum == 97
       assert result.parsed.body_length == 117
-      assert result.parsed.errors == [{140, "missing tag 56."}]
+      assert result.parsed.errors == [{140, "missing tag TargetCompID(56)."}]
     end
 
 end

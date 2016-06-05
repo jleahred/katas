@@ -10,7 +10,7 @@ defmodule  FSessionReceiver.Support  do
   def  process_logon(status, msg_map) do
     {_, errors} =
       { msg_map , []}
-      |>  check_mandatory_tags([96, 98, 108])
+      |>  check_mandatory_tags([RawData, EncryptMethod, HeartBtInt])
       |>  check_tag_value(96, status.password)  # check password
       |>  check_tag_value(98, 0)                # no encripytion
 
@@ -32,10 +32,10 @@ defmodule  FSessionReceiver.Support  do
         end
 
     { hearbeat, errors } =
-        case get_tag_value_mandatory_int(108, msg_map)  do
+        case get_tag_value_mandatory_int(HeartBtInt, msg_map)  do
             { :ok,    val }   ->   { val, errors }
             { :error, desc }  ->   { 0, errors ++
-                              ["Invalid value on tag 108 (Hearbeat) #{desc}"] }
+                              ["Invalid value on tag #{FTags.get_name(HeartBtInt)}  #{desc}"] }
         end
 
 
