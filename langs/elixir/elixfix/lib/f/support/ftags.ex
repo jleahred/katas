@@ -14,7 +14,7 @@ defmodule  FTags  do
     |> Stream.map(fn(line)  ->  List.to_tuple(String.split(line)) end)
     |> Stream.map(fn({stag, satom}) ->
             {elem(Integer.parse(stag), 0),
-            String.to_atom("Elixir.#{satom}"),
+            String.to_atom("#{satom}"),
             satom} end)
 
 
@@ -38,7 +38,7 @@ end
 
 
     iex> FTags.get_atom(8)
-    BeginString
+    :BeginString
 
 
 If tag is not known, it will return the received integer
@@ -67,7 +67,7 @@ end
 Convert from atom to string
 
 
-    iex> FTags.get_name(BeginString)
+    iex> FTags.get_name(:BeginString)
     "BeginString(8)"
 
 
@@ -99,7 +99,7 @@ end
 Convert from atom to int
 
 
-    iex> FTags.get_num(BeginString)
+    iex> FTags.get_num(:BeginString)
     8
 
 

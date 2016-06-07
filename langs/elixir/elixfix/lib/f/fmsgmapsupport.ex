@@ -18,7 +18,7 @@ necessary.
     ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
     ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
     ...> .parsed.msg_map
-    iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, BeginString, "FIX.4.4")
+    iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, :BeginString, "FIX.4.4")
     iex> errors
     []
 
@@ -27,7 +27,7 @@ necessary.
     ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
     ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
     ...> .parsed.msg_map
-    iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, BeginString, "FIX.4.4")
+    iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, :BeginString, "FIX.4.4")
     iex> errors
     [" invalid tag value tag: BeginString(8)  received: FIX.4.1, expected  FIX.4.4"]
 """
@@ -56,9 +56,9 @@ It will return
     ...> "52=20100225-19:41:57.316|56=B|1=Marcel|11=13346|"<>
     ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
     ...> .parsed.msg_map
-    iex> FMsgMapSupport.get_tag_value_mandatory_int(ClOrdID, msg_map)
+    iex> FMsgMapSupport.get_tag_value_mandatory_int(:ClOrdID, msg_map)
     {:ok, 13346}
-    iex> FMsgMapSupport.get_tag_value_mandatory_int(TargetCompID, msg_map)
+    iex> FMsgMapSupport.get_tag_value_mandatory_int(:TargetCompID, msg_map)
     {:error, "invalid val on tag TargetCompID(56)"}
 
 """
@@ -80,7 +80,7 @@ This will check if all tags exists in message parsed
     ...> "21=1|40=2|44=5|54=1|59=0|60=20100225-19:39:52.020|10=072|")
     ...> .parsed.msg_map
     iex> {_,  errors} = FMsgMapSupport.check_mandatory_tags({msg_map, []},
-    ...> [BeginString, BodyLength, SenderCompID, TargetCompID, MsgSeqNum, SendingTime, 999])
+    ...> [:BeginString, :BodyLength, :SenderCompID, :TargetCompID, :MsgSeqNum, :SendingTime, 999])
     iex> errors
     ["missing tag 999."]
 

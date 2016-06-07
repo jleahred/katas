@@ -159,11 +159,11 @@ Status could be...
     iex> msg_list |> Enum.reduce(%FMsgParse.StFullMessage{}, &(FMsgParse.add_char(&2, &1)))
     %FMsgParse.StFullMessage{parsed: %FMsgParse.Parsed{body_length: 122,
       check_sum: 72, errors: [],
-      msg_map: %{Account => "Marcel", BeginString => "FIX.4.4", BodyLength => "122",
-               CheckSum => "072", ClOrdID => "13346", HandlInst => "1", MsgSeqNum => "215",
-               MsgType => "D", OrdType => "2", Price => "5", SenderCompID => "CLIENT12",
-               SendingTime => "20100225-19:41:57.316", Side => "1", TargetCompID => "B",
-               TimeInForce => "0", TransactTime => "20100225-19:39:52.020"}, num_tags: 15,
+      msg_map: %{:Account => "Marcel", :BeginString => "FIX.4.4", :BodyLength => "122",
+               :CheckSum => "072", :ClOrdID => "13346", :HandlInst => "1", :MsgSeqNum => "215",
+               :MsgType => "D", :OrdType => "2", :Price => "5", :SenderCompID => "CLIENT12",
+               :SendingTime => "20100225-19:41:57.316", :Side => "1", :TargetCompID => "B",
+               :TimeInForce => "0", :TransactTime => "20100225-19:39:52.020"}, num_tags: 15,
              orig_msg: "8=FIX.4.4^9=122^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^56=B^1=Marcel^11=13346^21=1^40=2^44=5^54=1^59=0^60=20100225-19:39:52.020^10=072^",
              position: 145}}
 
@@ -197,15 +197,15 @@ Status could be...
   defp _add_char(%StPartTag{parsed: parsed, chunk: chunk}, ?=)  do
       try do  # better performance than  Integer.parse
         tag = String.to_integer(chunk)
-        body_length = if tag == FTags.get_num(CheckSum)
-                          or tag == FTags.get_num(BeginString)
-                          or tag == FTags.get_num(BodyLength)    do
+        body_length = if tag == FTags.get_num(:CheckSum)
+                          or tag == FTags.get_num(:BeginString)
+                          or tag == FTags.get_num(:BodyLength)    do
                        parsed.body_length - String.length(chunk)
                      else
                        parsed.body_length + 1
                      end
         check_sum = rem(
-                     if tag == FTags.get_num(CheckSum) do
+                     if tag == FTags.get_num(:CheckSum) do
                        parsed.check_sum + 256 + 256 - ?1 -?0
                      else
                        parsed.check_sum + ?=
@@ -263,8 +263,8 @@ Status could be...
   end
 
 
-  defp _add_char(%StPartVal{parsed: parsed, tag: CheckSum, chunk: chunk}, 1)  do
-      bl =  string2integer(parsed.msg_map[BodyLength])
+  defp _add_char(%StPartVal{parsed: parsed, tag: :CheckSum, chunk: chunk}, 1)  do
+      bl =  string2integer(parsed.msg_map[:BodyLength])
       check_sum = string2integer(chunk)
       error = cond do
           parsed.body_length != bl       ->
@@ -278,7 +278,7 @@ Status could be...
       error = error <> "#{check_full_message(parsed)}"
       %StFullMessage {
           parsed: %Parsed {parsed |
-                           msg_map: Map.put(parsed.msg_map, CheckSum, chunk),
+                           msg_map: Map.put(parsed.msg_map, :CheckSum, chunk),
                            errors:  add_err_st(error)
                           }
       }
@@ -286,13 +286,13 @@ Status could be...
 
   defp _add_char(%StPartVal{parsed: parsed, tag: tag, chunk: chunk}, 1)  do
     error = cond do
-        tag != BeginString and parsed.num_tags == 0  ->  "First tag has to be BeginString"
-        tag != BodyLength and parsed.num_tags == 1  ->  "Second tag has to be BodyLength"
-        tag == BeginString and parsed.num_tags != 0  ->  "Tag BeginString has to be on position 1"
-        tag == BodyLength and parsed.num_tags != 1  ->  "Tag BodyLength has to be on position 2"
+        tag != :BeginString and parsed.num_tags == 0  ->  "First tag has to be BeginString"
+        tag != :BodyLength and parsed.num_tags == 1  ->  "Second tag has to be BodyLength"
+        tag == :BeginString and parsed.num_tags != 0  ->  "Tag BeginString has to be on position 1"
+        tag == :BodyLength and parsed.num_tags != 1  ->  "Tag BodyLength has to be on position 2"
         true                               ->  ""
     end
-    add_body_length = if tag == BeginString  or tag == BodyLength, do: 0, else: 1
+    add_body_length = if tag == :BeginString  or tag == :BodyLength, do: 0, else: 1
     %StPartTag {
       parsed: %Parsed
                   {parsed |
@@ -307,8 +307,8 @@ Status could be...
   end
 
   defp _add_char(%StPartVal{parsed: parsed, tag: tag, chunk: chunk}, ch)  do
-    bl = if(tag == BeginString or tag == BodyLength or tag == CheckSum, do: 0, else: 1)
-    check_sum = if(tag != CheckSum, do: rem(parsed.check_sum + ch, 256), else: parsed.check_sum)
+    bl = if(tag == :BeginString or tag == :BodyLength or tag == :CheckSum, do: 0, else: 1)
+    check_sum = if(tag != :CheckSum, do: rem(parsed.check_sum + ch, 256), else: parsed.check_sum)
     %StPartVal {
       parsed: %Parsed{parsed |
                       body_length: parsed.body_length + bl,
@@ -354,12 +354,12 @@ Status could be...
   defp check_full_message(parsed) do
       {_, errors} =
         {parsed.msg_map, []}
-        |>  FMsgMapSupport.check_mandatory_tags([BeginString,
-                                                 BodyLength,
-                                                 SenderCompID,
-                                                 TargetCompID,
-                                                 MsgSeqNum,
-                                                 SendingTime])
+        |>  FMsgMapSupport.check_mandatory_tags([:BeginString,
+                                                 :BodyLength,
+                                                 :SenderCompID,
+                                                 :TargetCompID,
+                                                 :MsgSeqNum,
+                                                 :SendingTime])
       Enum.join(errors, ", ")
   end
 
