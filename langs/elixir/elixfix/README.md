@@ -28,7 +28,9 @@ Pending...
 ## TODOs
 
 * Add specs
-* Tags dictionary
+* Add credo
+* check all ++
+* (done) Tags dictionary
 * Functions
     * On FSessionReceiver, create struct for config to be used on Status
     * SessionReceiver

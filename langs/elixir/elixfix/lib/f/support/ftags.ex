@@ -7,6 +7,35 @@ defmodule  FTags  do
 * int -> atom
 """
 
+@tag_file Path.join(__DIR__, "tags.txt")
+@tag_atom File.stream!(@tag_file)
+    |> Enum.map(fn(line)  ->  List.to_tuple(String.split(line)) end)
+    |> Enum.map(fn({stag, satom}) ->
+            {elem(Integer.parse(stag), 0),
+            String.to_atom("Elixir.#{satom}")} end)
+
+#@tags |> Enum.each(&(IO.puts "#{elem(&1, 0)} -> #{elem(&1, 1)}"))
+
+for {tag, atom} <- @tag_atom  do
+  IO.puts tag
+  def  get_atom(unquote(tag))  do
+      unquote(atom)
+  end
+end
+
+#defp _get_atom(int_tag)  do
+#    int_tag
+#end
+
+#def get_atom(int_tag) do
+#  get_atomp(int_tag)
+#end
+
+
+
+
+
+
 @doc """
 Convert from int to atom
 
@@ -15,9 +44,9 @@ defmodule  FTags  do
 
 If tag is not known, it will return the received integer
 """
-def get_atom(int)  do
+def get_atom_old(int)  do
     case int do
-      1	->   Account
+      1 -> Account
       2	->   AdvId
       3	->   AdvRefID
       4	->   AdvSide

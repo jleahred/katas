@@ -45,9 +45,9 @@ For example, adding char to orig_msg or increasing possition
   @doc false
   def process_char_chunkparsed(parsed, char) do
     ch = if char == 1, do: "^", else: <<char>>
-    %Parsed  { parsed
-              | position: parsed.position + 1,
-                orig_msg: parsed.orig_msg <> ch
+    %Parsed{parsed |
+            position: parsed.position + 1,
+            orig_msg: parsed.orig_msg <> ch
     }
   end
 
@@ -106,24 +106,24 @@ For example, adding char to orig_msg or increasing possition
 
 
   defp add_error_list(error_list, {pos, new_error_desc})  do
-    cond do
-      new_error_desc != "" ->
+    if new_error_desc != "" do
         cond  do
           Enum.count(error_list) <  3 ->   error_list ++ [{pos, new_error_desc}]
           Enum.count(error_list) == 3 ->   error_list ++ [{pos, new_error_desc}]
                                                       ++ [{pos, "too may errors"}]
           true                        ->   error_list
         end
-      true ->  error_list
+    else
+        error_list
     end
   end
 
   defmacrop add_err_st(error_desc) do
     if error_desc != "" do
       quote do
-          add_error_list( var!(parsed).errors,
-                          { var!(parsed).position,
-                            unquote(error_desc)
+          add_error_list(var!(parsed).errors,
+                          {var!(parsed).position,
+                           unquote(error_desc)
                           })
       end
     else
@@ -181,16 +181,16 @@ Status could be...
   end
 
 
-  defp _add_char(%StFullMessage{ parsed: parsed }, 1)  do
+  defp _add_char(%StFullMessage{parsed: parsed}, 1)  do
     %StFullMessage{
       parsed: %Parsed
-               { parsed
-               | errors: add_err_st("Invalid SOH after full message recieved")
+               {parsed  |
+                errors: add_err_st("Invalid SOH after full message recieved")
               }
     }
   end
 
-  defp _add_char(%StFullMessage{ parsed: _parsed }, ch)  do
+  defp _add_char(%StFullMessage{parsed: _parsed}, ch)  do
       add_char(%StPartTag{}, ch)
   end
 
@@ -202,7 +202,7 @@ Status could be...
                           or tag == FTags.get_num(BodyLength)    do
                        parsed.body_length - String.length(chunk)
                      else
-                       parsed.body_length+1
+                       parsed.body_length + 1
                      end
         check_sum = rem(
                      if tag == FTags.get_num(CheckSum) do
@@ -214,12 +214,11 @@ Status could be...
 
         %StPartVal {
           parsed: %Parsed
-                    { parsed
-                    | body_length:  body_length,
-                      check_sum:    check_sum,
-                      #orig_msg:     parsed.orig_msg <> "=",
-                      errors:
-                          if(chunk=="")  do
+                    {parsed  |
+                     body_length:  body_length,
+                     check_sum:    check_sum,
+                     errors:
+                          if(chunk == "")  do
                               add_err_st("Ending empty tag")
                           else parsed.errors
                           end
@@ -231,9 +230,8 @@ Status could be...
         _ ->
           %StPartVal {
             parsed: %Parsed
-                       { parsed
-                       | #orig_msg:    parsed.orig_msg <> "=",
-                         errors:      add_err_st("invalid tag value #{chunk}")
+                       {parsed  |
+                        errors:      add_err_st("invalid tag value #{chunk}")
                        },
             tag: 0,
             chunk: ""
@@ -245,10 +243,9 @@ Status could be...
   defp _add_char(%StPartTag{parsed: parsed, chunk: chunk}, 1)  do
       %StPartTag {
         parsed: %Parsed
-                     { parsed
-                     | errors:    add_err_st(
+                     {parsed |
+                      errors:    add_err_st(
                                     "Invalid SOH on #{chunk} waiting for tag")#,
-                       #orig_msg:  parsed.orig_msg <> "^"
                      },
         chunk: ""
       }
@@ -257,26 +254,18 @@ Status could be...
   defp _add_char(%StPartTag{parsed: parsed, chunk: chunk}, ch)  do
       %StPartTag {
         parsed: %Parsed
-                      { parsed |
-                        body_length: parsed.body_length+1,
-                        check_sum: rem(parsed.check_sum + ch, 256)#,
-                        #orig_msg:  parsed.orig_msg <> <<ch>>
+                      {parsed |
+                       body_length: parsed.body_length + 1,
+                       check_sum: rem(parsed.check_sum + ch, 256)
                       },
         chunk: chunk <> <<ch>>
       }
   end
 
+
   defp _add_char(%StPartVal{parsed: parsed, tag: CheckSum, chunk: chunk}, 1)  do
-      bl =  try do
-                String.to_integer(parsed.msg_map[BodyLength])
-            rescue
-              _  ->  -1
-            end
-      check_sum = try do
-                      String.to_integer(chunk)
-                  rescue
-                    _  ->  -1
-                  end
+      bl =  string2integer(parsed.msg_map[BodyLength])
+      check_sum = string2integer(chunk)
       error = cond do
           parsed.body_length != bl       ->
                 "Incorrect body length  calculated: #{parsed.body_length} received #{bl}"
@@ -288,48 +277,43 @@ Status could be...
       end
       error = error <> "#{check_full_message(parsed)}"
       %StFullMessage {
-          parsed: %Parsed { parsed
-                            | msg_map: Map.put(parsed.msg_map, CheckSum, chunk),
-                              errors:  add_err_st(error)
-                            }
+          parsed: %Parsed {parsed |
+                           msg_map: Map.put(parsed.msg_map, CheckSum, chunk),
+                           errors:  add_err_st(error)
+                          }
       }
   end
 
   defp _add_char(%StPartVal{parsed: parsed, tag: tag, chunk: chunk}, 1)  do
     error = cond do
-        tag !=BeginString and parsed.num_tags == 0  ->  "First tag has to be BeginString"
-        tag !=BodyLength and parsed.num_tags == 1  ->  "Second tag has to be BodyLength"
-        tag ==BeginString and parsed.num_tags != 0  ->  "Tag BeginString has to be on position 1"
-        tag ==BodyLength and parsed.num_tags != 1  ->  "Tag BodyLength has to be on position 2"
+        tag != BeginString and parsed.num_tags == 0  ->  "First tag has to be BeginString"
+        tag != BodyLength and parsed.num_tags == 1  ->  "Second tag has to be BodyLength"
+        tag == BeginString and parsed.num_tags != 0  ->  "Tag BeginString has to be on position 1"
+        tag == BodyLength and parsed.num_tags != 1  ->  "Tag BodyLength has to be on position 2"
         true                               ->  ""
     end
+    add_body_length = if tag == BeginString  or tag == BodyLength, do: 0, else: 1
     %StPartTag {
       parsed: %Parsed
-                  { parsed
-                  | body_length: parsed.body_length + if(tag==BeginString
-                                                        or tag==BodyLength,
-                                                        do: 0, else: 1),
-                    check_sum: rem(parsed.check_sum + 1, 256),
-                    msg_map: Map.put(parsed.msg_map, tag, chunk),
-                    #orig_msg:  parsed.orig_msg <> "^",
-                    num_tags:  parsed.num_tags + 1,
-                    errors:    add_err_st(error)
+                  {parsed |
+                   body_length: parsed.body_length + add_body_length,
+                   check_sum: rem(parsed.check_sum + 1, 256),
+                   msg_map: Map.put(parsed.msg_map, tag, chunk),
+                   num_tags:  parsed.num_tags + 1,
+                   errors:    add_err_st(error)
                   },
       chunk: ""
     }
-
-
   end
 
   defp _add_char(%StPartVal{parsed: parsed, tag: tag, chunk: chunk}, ch)  do
-    bl = if(tag==BeginString or tag==BodyLength or tag==CheckSum, do: 0, else: 1)
+    bl = if(tag == BeginString or tag == BodyLength or tag == CheckSum, do: 0, else: 1)
     check_sum = if(tag != CheckSum, do: rem(parsed.check_sum + ch, 256), else: parsed.check_sum)
     %StPartVal {
-      parsed: %Parsed { parsed
-                   | body_length: parsed.body_length + bl,
-                     check_sum: check_sum,
-                     #orig_msg:  parsed.orig_msg <> <<ch>>
-                   },
+      parsed: %Parsed{parsed |
+                      body_length: parsed.body_length + bl,
+                      check_sum: check_sum
+                      },
       tag: FTags.get_atom(tag),
       chunk: chunk <> <<ch>>
     }
@@ -358,9 +342,10 @@ Status could be...
           fn(_) -> msg_list |> Enum.reduce(%StFullMessage{}, &(_add_char(&2, &1))) end)
         end
 
-      secs = :timer.tc(funt)
-      |> elem(0)
-      |> Kernel./(1_000_000)
+      secs = funt
+              |> :timer.tc
+              |>  elem(0)
+              |>  Kernel./(1_000_000)
 
       IO.puts "total time #{secs} sec"
       IO.puts "#{num_msg/secs} msg/sec"
@@ -368,13 +353,13 @@ Status could be...
 
   defp check_full_message(parsed) do
       {_, errors} =
-        { parsed.msg_map , []}
-        |>  FMsgMapSupport.check_mandatory_tags([ BeginString,
-                                                  BodyLength,
-                                                  SenderCompID,
-                                                  TargetCompID,
-                                                  MsgSeqNum,
-                                                  SendingTime])
+        {parsed.msg_map, []}
+        |>  FMsgMapSupport.check_mandatory_tags([BeginString,
+                                                 BodyLength,
+                                                 SenderCompID,
+                                                 TargetCompID,
+                                                 MsgSeqNum,
+                                                 SendingTime])
       Enum.join(errors, ", ")
   end
 
@@ -388,9 +373,16 @@ Status could be...
   """
   def parse_string_test(string) do
     list = String.to_char_list(String.replace(string, "|", <<1>>))
-    list |> Enum.reduce( %FMsgParse.StFullMessage{},
+    list |> Enum.reduce(%FMsgParse.StFullMessage{},
                                       &(FMsgParse.add_char(&2, &1)))
   end
 
+  defp  string2integer(string)   do
+    try do
+        String.to_integer(string)
+    rescue
+      _  ->  -1
+    end
+  end
 
 end

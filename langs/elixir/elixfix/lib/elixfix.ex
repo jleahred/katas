@@ -1,4 +1,7 @@
 defmodule Elixfix do
+@moduledoc """
+Pending...
+"""
   use Application
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html

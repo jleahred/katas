@@ -445,7 +445,7 @@
 447	PartyIDSource
 448	PartyID
 449	TotalVolumeTradedDate
-450	TotalVolumeTraded Time
+450	TotalVolumeTradedTime
 451	NetChgPrevDay
 452	PartyRole
 453	NoPartyIDs

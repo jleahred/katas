@@ -50,7 +50,7 @@ defmodule  FSessionReceiver.Support  do
           end
       }
     else
-      {  %FSessionReceiver.Status { status | msg_seq_num:      msg_seq},
+      {  %FSessionReceiver.Status { status | msg_seq_num:      msg_seq },
           reject_msg: errors
       }
     end

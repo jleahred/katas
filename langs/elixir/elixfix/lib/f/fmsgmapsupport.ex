@@ -33,7 +33,7 @@ necessary.
 """
 def check_tag_value({msg_map, errors}, tag, value) do
   if msg_map[tag] != value do
-    {msg_map, errors ++ [ " invalid tag value tag: #{FTags.get_name(tag)}  received: #{msg_map[tag]}, " <>
+    {msg_map, errors ++ [" invalid tag value tag: #{FTags.get_name(tag)}  received: #{msg_map[tag]}, " <>
                 "expected  #{value}"]}
   else
     {msg_map, errors}
@@ -64,7 +64,7 @@ It will return
 """
 def get_tag_value_mandatory_int(tag, msg_map)  do
   try do  # better performance than  Integer.parse
-    { :ok, String.to_integer(msg_map[tag]) }
+    {:ok, String.to_integer(msg_map[tag])}
   rescue
     _  ->   {:error, "invalid val on tag #{FTags.get_name(tag)}"}
   end
@@ -93,10 +93,10 @@ def check_mandatory_tags({msg_map, errors}, tags) do
                             errs
                         end
                       end
-    {msg_map, Enum.reduce( tags,
+    {msg_map, Enum.reduce(tags,
                  errors,
                  fn(tag, errs_acc) ->
-                          check_mand_tag.(tag, errs_acc)  end) }
+                          check_mand_tag.(tag, errs_acc)  end)}
 end
 
 

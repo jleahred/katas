@@ -46,10 +46,10 @@ Possible actions are:
         |>  check_tag_value(56, status.sender_comp_id)
 
       if errors == []  do
-          status = %Status{ status |  msg_seq_num: status.msg_seq_num+1 }
+          status = %Status{status |  msg_seq_num: status.msg_seq_num + 1}
           get_func_proc_msg(msg_map[35]).(status, msg_map)
       else
-          {  %Status { status |  msg_seq_num: status.msg_seq_num+1},
+          {%Status {status |  msg_seq_num: status.msg_seq_num + 1},
              reject_msg: errors
           }
       end
@@ -73,7 +73,7 @@ Possible actions are:
     case status.state do
         :waitting_login   ->  Support.process_logon(status, msg_map)
         :login_ok         ->
-          {  %Status { status | state: :waitting_login },
+          {%Status {status | state: :waitting_login},
               reject_msg: "received rq login on login status."
           }
 
