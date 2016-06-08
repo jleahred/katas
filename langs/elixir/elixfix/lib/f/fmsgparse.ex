@@ -371,8 +371,8 @@ Status could be...
 
 
   """
-  def parse_string_test(string) do
-    list = String.to_char_list(String.replace(string, "|", <<1>>))
+  def parse_string_test(string, sep\\"|") do
+    list = String.to_char_list(String.replace(string, sep, <<1>>))
     list |> Enum.reduce(%FMsgParse.StFullMessage{},
                                       &(FMsgParse.add_char(&2, &1)))
   end

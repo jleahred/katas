@@ -17,7 +17,7 @@ Session receiver pure functions
                 target_comp_id:   "",
                 password:         "",
                 heartbeat_interv:  0,
-                msg_seq_num:       0    # returning 0 means reset seq numb
+                msg_seq_num:       1 
   end
 
 
@@ -34,20 +34,20 @@ It will return the new status and action to be done (in a tuple)
 
 Possible actions are:
 
-    * :none
+    * nil
     * :reset_sequence
     * '{:reject_msg, description}'
   """
   def process_message(status, msg_map) do
       {_, errors} =
         {msg_map, []}
-        |>  check_tag_value(8,  status.fix_version)
-        |>  check_tag_value(49, status.sender_comp_id)
-        |>  check_tag_value(56, status.sender_comp_id)
+        |>  check_tag_value(:BeginString,  status.fix_version)
+        |>  check_tag_value(:SenderCompID, status.sender_comp_id)
+        |>  check_tag_value(:TargetCompID, status.target_comp_id)
 
       if errors == []  do
           status = %Status{status |  msg_seq_num: status.msg_seq_num + 1}
-          get_func_proc_msg(msg_map[35]).(status, msg_map)
+          get_func_proc_msg(msg_map[:MsgType]).(status, msg_map)
       else
           {%Status {status |  msg_seq_num: status.msg_seq_num + 1},
              reject_msg: errors
@@ -71,10 +71,10 @@ Possible actions are:
 
   defp logon(status, msg_map)  do
     case status.state do
-        :waitting_login   ->  Support.process_logon(status, msg_map)
+        :waitting_login   ->  Support.process_logon_on_waitlog(status, msg_map)
         :login_ok         ->
           {%Status {status | state: :waitting_login},
-              reject_msg: "received rq login on login status."
+              reject_msg: "received rq login on login status. Disconecting..."
           }
 
     end
@@ -82,31 +82,31 @@ Possible actions are:
 
 
 
-  defp logout(status, msg_map)  do
+  defp logout(_status, _msg_map)  do
 
   end
 
-  defp heartbeat(status, msg_map)  do
+  defp heartbeat(_status, _msg_map)  do
 
   end
 
-  defp test_request(status, msg_map)  do
+  defp test_request(_status, _msg_map)  do
 
   end
 
-  defp sequence_reset(status, msg_map)  do
+  defp sequence_reset(_status, _msg_map)  do
 
   end
 
-  defp resend_request(status, msg_map)  do
+  defp resend_request(_status, _msg_map)  do
 
   end
 
-  defp session_level_reject(status, msg_map)  do
+  defp session_level_reject(_status, _msg_map)  do
 
   end
 
-  defp not_session_message(status, msg_map)  do
+  defp not_session_message(_status, _msg_map)  do
 
   end
 

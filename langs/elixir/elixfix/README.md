@@ -27,6 +27,7 @@ Pending...
 
 ## TODOs
 
+* MsgSeqNum has to save the value on int (on parse)
 * Add specs
 * Add credo
 * check all ++

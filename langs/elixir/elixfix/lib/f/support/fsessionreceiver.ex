@@ -1,59 +1,73 @@
 defmodule  FSessionReceiver.Support  do
 @moduledoc false
 
-  #import FSessionReceiver
+  alias FSessionReceiver, as: FSR
   import FMsgMapSupport, only: [check_tag_value: 3,
                                 get_tag_value_mandatory_int: 2,
                                 check_mandatory_tags: 2]
 
-
-  def  process_logon(status, msg_map) do
-    {_, errors} =
-      { msg_map , []}
-      |>  check_mandatory_tags([RawData, EncryptMethod, HeartBtInt])
-      |>  check_tag_value(96, status.password)  # check password
-      |>  check_tag_value(98, 0)                # no encripytion
-
-
-    #errors = [FMsgParse.check_mandatory_tags(msg_map, [96, 98, 108])]
-
-    # check password
-    #errors = check_tag_value(96, status.password, msg_map, errors)
-    # no encription
-    #errors = check_tag_value(98, "0", msg_map, errors)
-    # reset sequence
-    { msg_seq, errors } =
-        case Map.get(msg_map, 141, nil)  do
-            "N"   ->   { status.msg_seq_num, errors }
-            "Y"   ->   { 0,                  errors }
-            nil ->     { status.msg_seq_num, errors }
-            other ->   { status.msg_seq_num, errors ++
-                ["Invalid value on tag 141 (ResetSeqNumFlag) rec: #{other}"] }
-        end
-
-    { hearbeat, errors } =
-        case get_tag_value_mandatory_int(HeartBtInt, msg_map)  do
-            { :ok,    val }   ->   { val, errors }
-            { :error, desc }  ->   { 0, errors ++
-                              ["Invalid value on tag #{FTags.get_name(HeartBtInt)}  #{desc}"] }
-        end
-
-
-    if errors == []  do
-      {  %FSessionReceiver.Status { status | state:            :login_ok,
-                            heartbeat_interv: hearbeat,
-                            msg_seq_num:      msg_seq},
-          if msg_seq == 0 do
-              :reset_sequence
-          else
-              :none
-          end
-      }
-    else
-      {  %FSessionReceiver.Status { status | msg_seq_num:      msg_seq },
-          reject_msg: errors
-      }
-    end
+  defp try({status, msg_map, action}, function)  do
+      case  action do
+          {:reject_msg, _errors}  ->  {status, msg_map, action}
+          _                       ->  function.({status, msg_map, action})
+      end
   end
 
+
+  def  process_logon_on_waitlog(status, msg_map) do
+      {_, errors} =
+          {msg_map , []}
+          |>  check_mandatory_tags([:RawData, :EncryptMethod, :HeartBtInt])
+          |>  check_tag_value(:RawData, status.password)  # check password
+          |>  check_tag_value(:EncryptMethod, "0")          # no encripytion
+
+      action =  if errors == [], do: nil, else: {:reject_msg, errors}
+
+      {status, msg_map, action}
+      |> try(&process_heart_beat/1)
+      |> try(&process_reset_sequence/1)
+
+  end
+
+  @lint {~r/Refactor/, false}
+  defp process_reset_sequence({status, msg_map, nil})  do
+      {:ok, rec_seq_num} = get_tag_value_mandatory_int(:MsgSeqNum, msg_map)
+      reset_seq_no = fn() ->
+          cond   do
+              rec_seq_num == status.msg_seq_num ->
+                {status, msg_map, nil}
+              rec_seq_num < status.msg_seq_num ->
+                  {status, msg_map, {:reject_msg,
+                      "Invalid value on #{FTags.get_name(:MsgSeqNum)} " <>
+                      "rec: #{msg_map[:MsgSeqNum]} < exp: #{status.msg_seq_num}"}}
+              rec_seq_num > status.msg_seq_num ->
+                  {status, msg_map, {:resend_request,  rec_seq_num}}
+          end
+      end
+
+      case Map.get(msg_map, :ResetSeqNumFlag, nil)  do
+          "N" ->  reset_seq_no.()
+          nil ->  reset_seq_no.()
+
+          "Y"   ->
+                if msg_map[:MsgSeqNum] == 1  do
+                    {%FSR.Status{status | msg_seq_num: 1}, msg_map, nil}
+                else
+                    {status, msg_map, {:reject_msg,
+                        "Invalid value on #{FTags.get_name(:MsgSeqNum)} " <>
+                        "rec: #{msg_map[:MsgSeqNum]} != exp: 1"}}
+                end
+
+          other ->   {status, msg_map, {:reject_msg,
+              ["Invalid value on tag #{FTags.get_name(:ResetSeqNumFlag)} rec: #{other}"]}}
+      end
+  end
+
+  defp process_heart_beat({status, msg_map, nil})  do
+      case get_tag_value_mandatory_int(:HeartBtInt, msg_map)  do
+          {:ok,    val}   ->   {%FSR.Status{status | heartbeat_interv: val}, msg_map, nil}
+          {:error, desc}  ->   {status, msg_map, {:reject_msg,
+                            ["Invalid value on tag #{FTags.get_name(:HeartBtInt)}  #{desc}"]}}
+      end
+  end
 end
