@@ -35,7 +35,6 @@ It will return the new status and action to be done (in a tuple)
 Possible actions are:
 
     * nil
-    * [reset_sequence:  seq]
     * [reject_msg: description]
     * [reject_msg: description, disconnect: true]
   """

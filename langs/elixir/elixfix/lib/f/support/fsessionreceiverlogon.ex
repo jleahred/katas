@@ -1,4 +1,4 @@
-defmodule  FSessionReceiver.Support  do
+defmodule  FSessionReceiverLogon.Support  do
 @moduledoc false
 
   alias FSessionReceiver, as: FSR

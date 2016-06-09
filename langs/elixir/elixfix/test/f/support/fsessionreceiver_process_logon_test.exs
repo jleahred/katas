@@ -1,6 +1,6 @@
 defmodule FSessionReceiverSupportProcessLogon_test do
   use ExUnit.Case
-  import FSessionReceiver.Support
+  import FSessionReceiverLogon.Support
 
   test "process_logon_on_waitlog OK" do
       status0 = %FSessionReceiver.Status{
