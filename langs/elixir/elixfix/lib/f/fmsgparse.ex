@@ -160,7 +160,7 @@ Status could be...
     %FMsgParse.StFullMessage{parsed: %FMsgParse.Parsed{body_length: 122,
       check_sum: 72, errors: [],
       msg_map: %{:Account => "Marcel", :BeginString => "FIX.4.4", :BodyLength => "122",
-               :CheckSum => "072", :ClOrdID => "13346", :HandlInst => "1", :MsgSeqNum => "215",
+               :CheckSum => "072", :ClOrdID => "13346", :HandlInst => "1", :MsgSeqNum => 215,
                :MsgType => "D", :OrdType => "2", :Price => "5", :SenderCompID => "CLIENT12",
                :SendingTime => "20100225-19:41:57.316", :Side => "1", :TargetCompID => "B",
                :TimeInForce => "0", :TransactTime => "20100225-19:39:52.020"}, num_tags: 15,
@@ -293,12 +293,22 @@ Status could be...
         true                               ->  ""
     end
     add_body_length = if tag == :BeginString  or tag == :BodyLength, do: 0, else: 1
+    value = if tag != :MsgSeqNum  do
+                chunk
+            else
+                try do  # better performance than  Integer.parse
+                    value = String.to_integer(chunk)
+                rescue
+                  _  ->   "Error:#{chunk}"
+                end
+            end
+
     %StPartTag {
       parsed: %Parsed
                   {parsed |
                    body_length: parsed.body_length + add_body_length,
                    check_sum: rem(parsed.check_sum + 1, 256),
-                   msg_map: Map.put(parsed.msg_map, tag, chunk),
+                   msg_map: Map.put(parsed.msg_map, tag, value),
                    num_tags:  parsed.num_tags + 1,
                    errors:    add_err_st(error)
                   },

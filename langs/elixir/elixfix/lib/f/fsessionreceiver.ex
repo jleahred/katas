@@ -17,7 +17,7 @@ Session receiver pure functions
                 target_comp_id:   "",
                 password:         "",
                 heartbeat_interv:  0,
-                msg_seq_num:       1 
+                msg_seq_num:       1
   end
 
 
@@ -35,8 +35,9 @@ It will return the new status and action to be done (in a tuple)
 Possible actions are:
 
     * nil
-    * :reset_sequence
-    * '{:reject_msg, description}'
+    * [reset_sequence:  seq]
+    * [reject_msg: description]
+    * [reject_msg: description, disconnect: true]
   """
   def process_message(status, msg_map) do
       {_, errors} =

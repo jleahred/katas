@@ -6,10 +6,17 @@ defmodule  FSessionReceiver.Support  do
                                 get_tag_value_mandatory_int: 2,
                                 check_mandatory_tags: 2]
 
-  defp try({status, msg_map, action}, function)  do
-      case  action do
-          {:reject_msg, _errors}  ->  {status, msg_map, action}
-          _                       ->  function.({status, msg_map, action})
+
+  defp try({status, msg_map, nil}, function)  do
+      function.({status, msg_map, nil})
+  end
+
+  defp try({status, msg_map, actions}, function)  do
+      [first_action | _] = actions
+      case  first_action do
+          {:disconnect, true}     ->  {status, msg_map, actions}
+          {:reject_msg, _errors}  ->  {status, msg_map, actions}
+          _                       ->  function.({status, msg_map, actions})
       end
   end
 
@@ -21,7 +28,7 @@ defmodule  FSessionReceiver.Support  do
           |>  check_tag_value(:RawData, status.password)  # check password
           |>  check_tag_value(:EncryptMethod, "0")          # no encripytion
 
-      action =  if errors == [], do: nil, else: {:reject_msg, errors}
+      action =  if errors == [], do: nil, else: [reject_msg: errors]
 
       {status, msg_map, action}
       |> try(&process_heart_beat/1)
@@ -31,17 +38,17 @@ defmodule  FSessionReceiver.Support  do
 
   @lint {~r/Refactor/, false}
   defp process_reset_sequence({status, msg_map, nil})  do
-      {:ok, rec_seq_num} = get_tag_value_mandatory_int(:MsgSeqNum, msg_map)
+      rec_seq_num = msg_map[:MsgSeqNum]
       reset_seq_no = fn() ->
           cond   do
               rec_seq_num == status.msg_seq_num ->
                 {status, msg_map, nil}
               rec_seq_num < status.msg_seq_num ->
-                  {status, msg_map, {:reject_msg,
+                  {status, msg_map, [reject_msg:
                       "Invalid value on #{FTags.get_name(:MsgSeqNum)} " <>
-                      "rec: #{msg_map[:MsgSeqNum]} < exp: #{status.msg_seq_num}"}}
+                      "rec: #{msg_map[:MsgSeqNum]} < exp: #{status.msg_seq_num}"]}
               rec_seq_num > status.msg_seq_num ->
-                  {status, msg_map, {:resend_request,  rec_seq_num}}
+                  {status, msg_map, [resend_request: rec_seq_num]}
           end
       end
 
@@ -53,21 +60,21 @@ defmodule  FSessionReceiver.Support  do
                 if msg_map[:MsgSeqNum] == 1  do
                     {%FSR.Status{status | msg_seq_num: 1}, msg_map, nil}
                 else
-                    {status, msg_map, {:reject_msg,
+                    {status, msg_map, [reject_msg:
                         "Invalid value on #{FTags.get_name(:MsgSeqNum)} " <>
-                        "rec: #{msg_map[:MsgSeqNum]} != exp: 1"}}
+                        "rec: #{msg_map[:MsgSeqNum]} != exp: 1"]}
                 end
 
-          other ->   {status, msg_map, {:reject_msg,
-              ["Invalid value on tag #{FTags.get_name(:ResetSeqNumFlag)} rec: #{other}"]}}
+          other ->   {status, msg_map, [reject_msg:
+              "Invalid value on tag #{FTags.get_name(:ResetSeqNumFlag)} rec: #{other}"]}
       end
   end
 
   defp process_heart_beat({status, msg_map, nil})  do
       case get_tag_value_mandatory_int(:HeartBtInt, msg_map)  do
           {:ok,    val}   ->   {%FSR.Status{status | heartbeat_interv: val}, msg_map, nil}
-          {:error, desc}  ->   {status, msg_map, {:reject_msg,
-                            ["Invalid value on tag #{FTags.get_name(:HeartBtInt)}  #{desc}"]}}
+          {:error, desc}  ->   {status, msg_map, [reject_msg:
+                            "Invalid value on tag #{FTags.get_name(:HeartBtInt)}  #{desc}"]}
       end
   end
 end

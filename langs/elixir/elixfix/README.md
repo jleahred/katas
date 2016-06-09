@@ -27,10 +27,9 @@ Pending...
 
 ## TODOs
 
-* MsgSeqNum has to save the value on int (on parse)
+* (done) MsgSeqNum  has to save the value on int (on parse)
 * Add specs
-* Add credo
-* check all ++
+* (done) Add credo
 * (done) Tags dictionary
 * Functions
     * On FSessionReceiver, create struct for config to be used on Status
@@ -43,3 +42,4 @@ Pending...
     * SessionDispacher
     * SessionManager
     * ...
+* check all ++

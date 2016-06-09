@@ -29,12 +29,17 @@ necessary.
     ...> .parsed.msg_map
     iex> {_, errors} = FMsgMapSupport.check_tag_value({msg_map, []}, :BeginString, "FIX.4.4")
     iex> errors
-    [" invalid tag value tag: BeginString(8)  received: FIX.4.1, expected  FIX.4.4"]
+    [" invalid tag value on: BeginString(8)  received: FIX.4.1, expected  FIX.4.4"]
 """
 def check_tag_value({msg_map, errors}, tag, value) do
   if msg_map[tag] != value do
-    {msg_map, errors ++ [" invalid tag value tag: #{FTags.get_name(tag)}  received: #{msg_map[tag]}, " <>
-                "expected  #{value}"]}
+    {msg_map, errors ++ [" invalid tag value on: #{FTags.get_name(tag)}  " <>
+                if tag == :RawData  or  tag == :Password do
+                  ""
+                else
+                  "received: #{msg_map[tag]}, expected  #{value}"
+                end
+    ]}
   else
     {msg_map, errors}
   end

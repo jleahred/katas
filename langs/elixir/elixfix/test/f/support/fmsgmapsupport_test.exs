@@ -17,7 +17,7 @@ defmodule FMsgMapSupportTest do
 
   test "check tag value wrong" do
     {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, []}, :BeginString, "FIX.4.2")
-    assert errs == [" invalid tag value tag: BeginString(8)  received: FIX.4.4, expected  FIX.4.2"]
+    assert errs == [" invalid tag value on: BeginString(8)  received: FIX.4.4, expected  FIX.4.2"]
   end
 
   test "check tag value OK prev errors" do
@@ -30,7 +30,7 @@ defmodule FMsgMapSupportTest do
     {_,  errs} = FMsgMapSupport.check_tag_value({@msg_map2test, ["prev error"]},
                                                   :BeginString, "FIX.4.1")
     assert errs == ["prev error",
-            " invalid tag value tag: BeginString(8)  received: FIX.4.4, expected  FIX.4.1"]
+            " invalid tag value on: BeginString(8)  received: FIX.4.4, expected  FIX.4.1"]
   end
 
   test "get integer value OK" do

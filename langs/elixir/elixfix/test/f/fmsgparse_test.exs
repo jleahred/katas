@@ -93,7 +93,7 @@ defmodule FMsgParseTest do
     assert result ==
       %FMsgParse.StPartTag{chunk: "5",
        parsed: %FMsgParse.Parsed{body_length: 50, check_sum: 42, errors: [],
-        msg_map: %{:BeginString => "FIX.4.4", :BodyLength => "121", :MsgSeqNum => "215", :MsgType => "D",
+        msg_map: %{:BeginString => "FIX.4.4", :BodyLength => "121", :MsgSeqNum => 215, :MsgType => "D",
           :SenderCompID => "CLIENT12", :SendingTime => "20100225-19:41:57.316"}, num_tags: 6,
         orig_msg: "8=FIX.4.4^9=121^35=D^34=215^49=CLIENT12^52=20100225-19:41:57.316^5",
         position: 66}}
