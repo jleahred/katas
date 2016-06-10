@@ -27,6 +27,9 @@ Pending...
 
 ## TODOs
 
+* Test on process_message
+    * It has to work with parsed message, not with message_map
+    * It has to check valid message format
 * (done) MsgSeqNum  has to save the value on int (on parse)
 * Add specs
 * (done) Add credo

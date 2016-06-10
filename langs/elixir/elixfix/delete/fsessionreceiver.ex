@@ -37,6 +37,7 @@ Possible actions are:
     * nil
     * [reject_msg: description]
     * [reject_msg: description, disconnect: true]
+    * [app_message: parsed_msg]
   """
   def process_message(status, msg_map) do
       {_, errors} =
