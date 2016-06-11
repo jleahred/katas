@@ -31,7 +31,30 @@ defmodule  FSessionLogonMsg  do
             * send_message: msg
     """
     def process(status, msg_map) do
+        case status.connect_role  do
+            :acceptor ->
+                case status.status do
+                    :waitting_login  ->  process_waitting_logon(status, msg_map)
+                    _                ->
+                        {%Session.Status{status | status: :logout},
+                          [send_message: FSS.reject_msg(
+                              "Logon on invalid state #{status.status}", msg_map)]
+                         ++ [disconnect: true]}
+                end
+            :initiator ->
+                case status.status do
+                    :waitting_login  ->  {%Session.Status{status |
+                                          status: :login_ok}, []}
+                    _                ->
+                        {%Session.Status{status | status: :logout},
+                          [send_message: FSS.reject_msg(
+                              "Logon on invalid state #{status.status}", msg_map)]
+                         ++ [disconnect: true]}
+                end
+        end
+    end
 
+    def process_waitting_logon(status, msg_map) do
         {_, errors} =
           {msg_map, []}
           |>  check_mandatory_tags([:Password, :EncryptMethod, :HeartBtInt])

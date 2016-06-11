@@ -116,15 +116,47 @@ defmodule FProcessLogonTest do
 
 
     test "logon initiator waitting_login" do
-      assert 1 + 1 == 2
+      status = %Session.Status{@init_status | connect_role: :initiator}
+      logon = @init_logon_msg
+      expected_status = %Session.Status{@init_expected_status |
+                            connect_role: :initiator}
+      #confirm_login = @init_confirm_login
+
+      {final_status, actions} = FSessionLogonMsg.process(status, logon)
+      assert  actions == []
+      assert  final_status == expected_status
     end
 
-    test "logon initiator logout" do
-      assert 1 + 1 == 2
+    test "logon initiator on logout" do
+      status = %Session.Status{@init_status |
+                    connect_role: :initiator,
+                    status: :logout}
+      logon = @init_logon_msg
+      expected_status = %Session.Status{@init_expected_status |
+                            connect_role: :initiator,
+                            status: :logout}
+      #confirm_login = @init_confirm_login
+
+      {final_status, actions} = FSessionLogonMsg.process(status, logon)
+      assert  actions == [send_message: %{MsgType: "3", RefMsgType: "A", RefSeqNum: 1,
+              Text: "Logon on invalid state logout"}, disconnect: true]
+      assert  final_status == expected_status
     end
 
-    test "logon initiator waitting_logout" do
-      assert 1 + 1 == 2
+    test "logon initiator on waitting_logout" do
+      status = %Session.Status{@init_status |
+                    connect_role: :initiator,
+                    status: :waitting_logout}
+      logon = @init_logon_msg
+      expected_status = %Session.Status{@init_expected_status |
+                            connect_role: :initiator,
+                            status: :logout}
+      #confirm_login = @init_confirm_login
+
+      {final_status, actions} = FSessionLogonMsg.process(status, logon)
+      assert  actions == [send_message: %{MsgType: "3", RefMsgType: "A", RefSeqNum: 1,
+              Text: "Logon on invalid state waitting_logout"}, disconnect: true]
+      assert  final_status == expected_status
     end
 
 end

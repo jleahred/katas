@@ -4,7 +4,7 @@ defmodule FProcessLogoutTest do
 
     @init_status %Session.Status{
         connect_role:         :acceptor,
-        status:               :login
+        status:               :login_ok
     }
     @init_logout_msg %{
         :MsgSeqNum => 1,
