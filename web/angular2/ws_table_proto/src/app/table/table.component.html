@@ -1,0 +1,8 @@
+<table>
+  <tr>
+      <th *ngFor="let h of _data.headers"  class="{{h.style}}">{{h.text}}</th>
+  </tr>
+  <tr *ngFor="let row of _data.cells">
+    <td  *ngFor="let cell of row" class="{{cell.style}}">{{cell.text}}</td>
+  </tr>
+</table>
