@@ -4,6 +4,7 @@ use std::io::Write;
 use self::difference::Difference;
 
 
+#[macro_export]
 macro_rules!  assert_eq_dif {
     ($f:expr, $s:expr)  => (
         if $f != $s {

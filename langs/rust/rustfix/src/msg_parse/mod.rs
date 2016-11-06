@@ -1,3 +1,7 @@
+#[cfg(test)]
+pub mod test;
+
+
 use std::collections::BTreeMap;
 use std::collections::LinkedList;
 
