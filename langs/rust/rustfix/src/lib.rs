@@ -1,6 +1,6 @@
-mod msg_parse;
+pub mod msg_parse;
 #[macro_use]
-mod test_diff;
+pub mod test_diff;
 
 
 #[cfg(test)]
@@ -10,8 +10,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let init = Parsing::default();
-        let mut finish = init.clone();
+        let mut finish = Parsing::default();
         finish.add_char('\u{1}');
 
         let check = Parsing {
