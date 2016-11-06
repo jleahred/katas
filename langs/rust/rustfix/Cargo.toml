@@ -1,0 +1,8 @@
+[package]
+name = "rustfix"
+version = "0.1.0"
+authors = ["maiquel <jleahred@gmail.com>"]
+
+[dependencies]
+difference = "0.4"  
+term = "0.4.4"
