@@ -20,6 +20,7 @@
 mod test_diff;
 
 pub mod distance;
+pub mod distance2;
 
 
 
