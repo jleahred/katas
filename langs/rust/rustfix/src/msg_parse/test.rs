@@ -137,8 +137,26 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
 
 //  too long
 //      error and igonre big tag
+
 #[test]
 fn too_long_tag() {
+    let mut parsing = ParsingInfo::new();
+    add_chars(&mut parsing, "1234567890");
+
+    let check = ParsingInfo {
+        orig_msg: "1234567890".to_string(),
+        msg_length: 10,
+        reading_tag: "1234567890".to_string(),
+        current_field_error: Some((10, errors::TAG_TOO_LONG)),
+        ..Default::default()
+    };
+
+    assert_eq_dif!(parsing, check);
+}
+
+
+#[test]
+fn too_long_tag_ignore_excess() {
     let mut parsing = ParsingInfo::new();
     add_chars(&mut parsing, "123456789012345");
 
