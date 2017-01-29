@@ -2,6 +2,17 @@ use msg_parse::{ParsingInfo, errors};
 use test_diff;
 
 
+
+fn add_chars(pi: &mut ParsingInfo, s: &'static str) {
+    for ch in s.chars() {
+        pi.add_char(if ch == '^' {
+            1u8 as char
+        } else {
+            ch
+        });
+    }
+}
+
 #[test]
 fn init_add_char() {
     let mut parsing = ParsingInfo::new();
@@ -92,12 +103,7 @@ fn invalid_chars_2errors() {
 #[test]
 fn invalid_chars_2errors_andvalids() {
     let mut parsing = ParsingInfo::new();
-    parsing.add_char('1');
-    parsing.add_char('2');
-    parsing.add_char('a');
-    parsing.add_char('b');
-    parsing.add_char('3');
-    parsing.add_char('4');
+    add_chars(&mut parsing, "12ab34");
 
     let check = ParsingInfo {
         orig_msg: "12ab34".to_string(),
@@ -114,13 +120,7 @@ fn invalid_chars_2errors_andvalids() {
 #[test]
 fn invalid_chars_2errors_and_valids_non_consecutives() {
     let mut parsing = ParsingInfo::new();
-    parsing.add_char('1');
-    parsing.add_char('2');
-    parsing.add_char('a');
-    parsing.add_char('3');
-    parsing.add_char('b');
-    parsing.add_char('4');
-    parsing.add_char('5');
+    add_chars(&mut parsing, "12a3b45");
 
     let check = ParsingInfo {
         orig_msg: "12a3b45".to_string(),
@@ -132,3 +132,33 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
 
     assert_eq_dif!(parsing, check);
 }
+
+
+
+//  too long
+//      error and igonre big tag
+
+//  =
+//      start receiving val
+
+//  receiving val
+//      "a"
+//      "abcdefg"
+//      too long val received
+
+//  received field  0x01
+//      calculate checksum
+//      check field in position (session fields)
+//      insert in map
+
+//  received field  0x01 ERROR
+//      at the beginning of tag
+//      reading tag
+//      after =
+
+
+//  detected end of message
+//      finished status
+//      check message length
+//      check original message
+//      check checksum
