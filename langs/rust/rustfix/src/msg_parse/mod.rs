@@ -5,13 +5,16 @@ use std::collections::BTreeMap;
 use std::collections::LinkedList;
 
 mod errors {
-    pub const TAG_INVALID_CHAR: &'static str = "Invalid char in tag.";
+    pub const TAG_INVALID_CHAR: &'static str = "Invalid char in tag";
+    pub const TAG_TOO_LONG: &'static str = "Tag too long";
 }
 
 
+const TAG_LONG_LIMIT: usize = 10;
+
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ParsingState {
+enum ParsingState {
     StReadingTag,
     StReadingValue,
     StFinished,
@@ -57,13 +60,19 @@ impl ParsingInfo {
     }
 
     fn add_char_reading_tag(&mut self, ch: char) {
-        self.reading_tag.push(ch);
         match self.current_field_error {
             Some(_) => (),
             None => {
                 if ch < '0' || ch > '9' {
                     self.current_field_error = Some((self.msg_length,
                                                      self::errors::TAG_INVALID_CHAR));
+                    self.reading_tag.push(ch);
+                } else {
+                    self.reading_tag.push(ch);
+                    if self.reading_tag.len() + 1 > TAG_LONG_LIMIT {
+                        self.current_field_error = Some((self.msg_length,
+                                                         self::errors::TAG_TOO_LONG));
+                    }
                 }
             }
         }

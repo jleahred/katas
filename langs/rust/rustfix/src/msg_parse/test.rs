@@ -92,7 +92,7 @@ fn invalid_chars_2errors() {
     let check = ParsingInfo {
         orig_msg: "1ab".to_string(),
         msg_length: 3,
-        reading_tag: "1ab".to_string(),
+        reading_tag: "1a".to_string(),
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -108,7 +108,7 @@ fn invalid_chars_2errors_andvalids() {
     let check = ParsingInfo {
         orig_msg: "12ab34".to_string(),
         msg_length: 6,
-        reading_tag: "12ab34".to_string(),
+        reading_tag: "12a".to_string(),
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -125,7 +125,7 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
     let check = ParsingInfo {
         orig_msg: "12a3b45".to_string(),
         msg_length: 7,
-        reading_tag: "12a3b45".to_string(),
+        reading_tag: "12a".to_string(),
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -137,6 +137,25 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
 
 //  too long
 //      error and igonre big tag
+#[test]
+fn too_long_tag() {
+    let mut parsing = ParsingInfo::new();
+    add_chars(&mut parsing, "123456789012345");
+
+    let check = ParsingInfo {
+        orig_msg: "123456789012345".to_string(),
+        msg_length: 15,
+        reading_tag: "1234567890".to_string(),
+        current_field_error: Some((10, errors::TAG_TOO_LONG)),
+        ..Default::default()
+    };
+
+    assert_eq_dif!(parsing, check);
+}
+
+
+
+
 
 //  =
 //      start receiving val
