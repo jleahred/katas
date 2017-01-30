@@ -1,3 +1,18 @@
+// remove  #[derive(Debug, PartialEq, Eq, Clone)]
+// remove  #[derive(Debug, Default, Eq, PartialEq, Clone)]
+//
+// create a macro to test
+//
+// test_pi(
+// field1: value1,
+// field2: value2,
+// )
+//
+//
+
+//  move tags and errors to different files
+
+
 use msg_parse::{ParsingInfo, errors, ParsingState};
 use test_diff;
 
@@ -29,6 +44,10 @@ fn add_chars(pi: &mut ParsingInfo, s: &'static str) {
     }
 }
 
+
+
+
+
 #[test]
 fn init_add_char() {
     let mut parsing = ParsingInfo::new();
@@ -38,7 +57,8 @@ fn init_add_char() {
         orig_msg: "1".to_string(),
         msg_length: 1,
         reading_tag: 1,
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -58,7 +78,8 @@ fn init_add_chars() {
         orig_msg: "12345".to_string(),
         msg_length: 5,
         reading_tag: 12345,
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -74,7 +95,8 @@ fn invalid_first_char() {
         msg_length: 1,
         reading_tag: 0,
         current_field_error: Some((1, errors::TAG_INVALID_CHAR)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -91,7 +113,8 @@ fn invalid_second_char() {
         msg_length: 2,
         reading_tag: 1,
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -110,7 +133,8 @@ fn invalid_chars_2errors() {
         msg_length: 3,
         reading_tag: 1,
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -126,7 +150,8 @@ fn invalid_chars_2errors_andvalids() {
         msg_length: 6,
         reading_tag: 12,
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -143,7 +168,8 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
         msg_length: 7,
         reading_tag: 12,
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -164,7 +190,8 @@ fn too_long_tag() {
         msg_length: 10,
         reading_tag: 123_456_7,
         current_field_error: Some((7, errors::TAG_TOO_LONG)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -181,7 +208,8 @@ fn too_long_tag_ignore_excess() {
         msg_length: 15,
         reading_tag: 123_456_7,
         current_field_error: Some((7, errors::TAG_TOO_LONG)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -203,7 +231,8 @@ fn finish_tag() {
         msg_length: 7,
         reading_tag: 123_456,
         state: ParsingState::StReadingValue,
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -225,7 +254,8 @@ fn reading_val() {
         reading_tag: 123_456,
         reading_val: "a".to_string(),
         state: ParsingState::StReadingValue,
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -244,7 +274,8 @@ fn reading_val2() {
         reading_tag: 123_456,
         reading_val: "abcdefg".to_string(),
         state: ParsingState::StReadingValue,
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -266,7 +297,8 @@ fn too_long_val() {
         reading_val: "abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefga".to_string(),
         state: ParsingState::StReadingValue,
         current_field_error: Some((57, errors::VAL_TOO_LONG)),
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
@@ -274,8 +306,6 @@ fn too_long_val() {
 
 //  received field  0x01
 //      insert in map
-//      calculate checksum
-//      check field in position (session fields)
 #[test]
 fn complete_field() {
     let mut parsing = ParsingInfo::new();
@@ -289,11 +319,28 @@ fn complete_field() {
         reading_tag: 0,
         reading_val: "".to_string(),
         state: ParsingState::StReadingValue,
-        ..Default::default()
+
+        ..parsing.clone()
     };
 
     assert_eq_dif!(parsing, check);
 }
+
+
+
+//  completed two fields
+
+//  check_body_length1
+//  2 fields
+
+
+//  check_body_length1
+//  3 fields, one is tags::BODY_LENGTH
+
+
+// check position fields
+//  ...
+
 
 
 //  completed field with two errors

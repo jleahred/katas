@@ -10,12 +10,19 @@ mod errors {
     pub const VAL_TOO_LONG: &'static str = "Value too long";
 }
 
+mod tags {
+    pub const BEGIN_STRING: u32 = 1;
+    pub const BODY_LENGTH: u32 = 1;
+    pub const CHECK_SUM: u32 = 1;
+}
+
+
 
 const TAG_MAX_VALUE: u32 = 1_000_000;
 const VAL_LONG_LIMIT: usize = 50;
 
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParsingState {
     StReadingTag,
     StReadingValue,
@@ -29,11 +36,11 @@ impl Default for ParsingState {
 }
 
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct ParsingInfo {
     pub msg_map: BTreeMap<u32, String>,
     pub body_length: u32,
-    pub check_sum: u32,
+    pub check_sum: u16,
     pub num_tags: u32,
     pub orig_msg: String,
     pub errors: LinkedList<(u32, &'static str)>, //  position, description
@@ -41,7 +48,9 @@ pub struct ParsingInfo {
 
     state: ParsingState,
     reading_tag: u32,
-    reading_val: String, //  optimization */
+    reading_val: String, //  optimization
+    reading_checksum: u16,
+
     current_field_error: Option<(u32, &'static str)>,
 }
 
@@ -54,6 +63,10 @@ impl ParsingInfo {
     pub fn add_char(&mut self, ch: char) -> () {
         self.msg_length += 1;
         self.orig_msg.push(transform_ch(ch));
+
+        self.reading_checksum += ch as u16;
+        self.reading_checksum %= 256;
+
         match self.state {
             ParsingState::StReadingTag => self.add_char_reading_tag(ch),
             ParsingState::StReadingValue => self.add_char_reading_val(ch),
@@ -107,8 +120,18 @@ impl ParsingInfo {
 
         self.msg_map.insert(self.reading_tag, self.reading_val.clone());
 
+        self.check_sum = self.reading_checksum;
+        self.update_body_length();
+
         self.reading_tag = 0;
         self.reading_val = "".to_string();
+    }
+
+    fn update_body_length(&mut self) {
+        let tag = self.reading_tag;
+        if tag != tags::BEGIN_STRING && tag != tags::BODY_LENGTH && tag != tags::CHECK_SUM {
+            self.body_length += 1;
+        }
     }
 }
 
