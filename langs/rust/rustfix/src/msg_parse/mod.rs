@@ -7,11 +7,11 @@ use std::collections::LinkedList;
 mod errors {
     pub const TAG_INVALID_CHAR: &'static str = "Invalid char in tag";
     pub const TAG_TOO_LONG: &'static str = "Tag too long";
-    pub const VAL_TOO_LONG: &'static str = "Tag too long";
+    pub const VAL_TOO_LONG: &'static str = "Value too long";
 }
 
 
-const TAG_LONG_LIMIT: usize = 10;
+const TAG_MAX_VALUE: u32 = 1_000_000;
 const VAL_LONG_LIMIT: usize = 50;
 
 
@@ -40,7 +40,7 @@ pub struct ParsingInfo {
     pub msg_length: u32,
 
     state: ParsingState,
-    reading_tag: String, //  optimization
+    reading_tag: u32,
     reading_val: String, //  optimization */
     current_field_error: Option<(u32, &'static str)>,
 }
@@ -66,8 +66,9 @@ impl ParsingInfo {
             Some(_) => (),
             None => {
                 if ch >= '0' && ch <= '9' {
-                    self.reading_tag.push(ch);
-                    if self.reading_tag.len() + 1 > TAG_LONG_LIMIT {
+                    self.reading_tag *= 10;
+                    self.reading_tag += ch as u32 - '0' as u32;
+                    if self.reading_tag > TAG_MAX_VALUE {
                         self.current_field_error = Some((self.msg_length,
                                                          self::errors::TAG_TOO_LONG));
                     }
@@ -76,7 +77,6 @@ impl ParsingInfo {
                 } else {
                     self.current_field_error = Some((self.msg_length,
                                                      self::errors::TAG_INVALID_CHAR));
-                    self.reading_tag.push(ch);
                 }
             }
         }
@@ -100,16 +100,23 @@ impl ParsingInfo {
     }
 
     fn process_tag_val(&mut self) {
-        self.reading_tag = "".to_string();
-        self.reading_val = "".to_string();
         match self.current_field_error {
             Some(error) => self.errors.push_back(error),
             None => (),
         }
+
+        self.msg_map.insert(self.reading_tag, self.reading_val.clone());
+
+        self.reading_tag = 0;
+        self.reading_val = "".to_string();
     }
 }
 
 
 fn transform_ch(ch: char) -> char {
-    if ch == 1u8 as char { '^' } else { ch }
+    if ch == 1u8 as char {
+        '^'
+    } else {
+        ch
+    }
 }

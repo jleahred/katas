@@ -2,10 +2,30 @@ use msg_parse::{ParsingInfo, errors, ParsingState};
 use test_diff;
 
 
+macro_rules! hashmap {
+    ($( $key: expr => $val: expr ),*) => {{
+         let mut map = ::std::collections::HashMap::new();
+         $( map.insert($key, $val); )*
+         map
+    }}
+}
+
+macro_rules! btree {
+    ($( $key: expr => $val: expr ),*) => {{
+         let mut result = ::std::collections::BTreeMap::new();
+         $( result.insert($key, $val); )*
+         result
+    }}
+}
+
 
 fn add_chars(pi: &mut ParsingInfo, s: &'static str) {
     for ch in s.chars() {
-        pi.add_char(if ch == '^' { 1u8 as char } else { ch });
+        pi.add_char(if ch == '^' {
+            1u8 as char
+        } else {
+            ch
+        });
     }
 }
 
@@ -17,7 +37,7 @@ fn init_add_char() {
     let check = ParsingInfo {
         orig_msg: "1".to_string(),
         msg_length: 1,
-        reading_tag: "1".to_string(),
+        reading_tag: 1,
         ..Default::default()
     };
 
@@ -37,7 +57,7 @@ fn init_add_chars() {
     let check = ParsingInfo {
         orig_msg: "12345".to_string(),
         msg_length: 5,
-        reading_tag: "12345".to_string(),
+        reading_tag: 12345,
         ..Default::default()
     };
 
@@ -52,7 +72,7 @@ fn invalid_first_char() {
     let check = ParsingInfo {
         orig_msg: "a".to_string(),
         msg_length: 1,
-        reading_tag: "a".to_string(),
+        reading_tag: 0,
         current_field_error: Some((1, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -69,7 +89,7 @@ fn invalid_second_char() {
     let check = ParsingInfo {
         orig_msg: "1a".to_string(),
         msg_length: 2,
-        reading_tag: "1a".to_string(),
+        reading_tag: 1,
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -88,7 +108,7 @@ fn invalid_chars_2errors() {
     let check = ParsingInfo {
         orig_msg: "1ab".to_string(),
         msg_length: 3,
-        reading_tag: "1a".to_string(),
+        reading_tag: 1,
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -104,7 +124,7 @@ fn invalid_chars_2errors_andvalids() {
     let check = ParsingInfo {
         orig_msg: "12ab34".to_string(),
         msg_length: 6,
-        reading_tag: "12a".to_string(),
+        reading_tag: 12,
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -121,7 +141,7 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
     let check = ParsingInfo {
         orig_msg: "12a3b45".to_string(),
         msg_length: 7,
-        reading_tag: "12a".to_string(),
+        reading_tag: 12,
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
         ..Default::default()
     };
@@ -142,8 +162,8 @@ fn too_long_tag() {
     let check = ParsingInfo {
         orig_msg: "1234567890".to_string(),
         msg_length: 10,
-        reading_tag: "1234567890".to_string(),
-        current_field_error: Some((10, errors::TAG_TOO_LONG)),
+        reading_tag: 123_456_7,
+        current_field_error: Some((7, errors::TAG_TOO_LONG)),
         ..Default::default()
     };
 
@@ -159,8 +179,8 @@ fn too_long_tag_ignore_excess() {
     let check = ParsingInfo {
         orig_msg: "123456789012345".to_string(),
         msg_length: 15,
-        reading_tag: "1234567890".to_string(),
-        current_field_error: Some((10, errors::TAG_TOO_LONG)),
+        reading_tag: 123_456_7,
+        current_field_error: Some((7, errors::TAG_TOO_LONG)),
         ..Default::default()
     };
 
@@ -181,7 +201,7 @@ fn finish_tag() {
     let check = ParsingInfo {
         orig_msg: "123456=".to_string(),
         msg_length: 7,
-        reading_tag: "123456".to_string(),
+        reading_tag: 123_456,
         state: ParsingState::StReadingValue,
         ..Default::default()
     };
@@ -202,7 +222,7 @@ fn reading_val() {
     let check = ParsingInfo {
         orig_msg: "123456=a".to_string(),
         msg_length: 8,
-        reading_tag: "123456".to_string(),
+        reading_tag: 123_456,
         reading_val: "a".to_string(),
         state: ParsingState::StReadingValue,
         ..Default::default()
@@ -221,7 +241,7 @@ fn reading_val2() {
     let check = ParsingInfo {
         orig_msg: "123456=abcdefg".to_string(),
         msg_length: 14,
-        reading_tag: "123456".to_string(),
+        reading_tag: 123_456,
         reading_val: "abcdefg".to_string(),
         state: ParsingState::StReadingValue,
         ..Default::default()
@@ -242,10 +262,10 @@ fn too_long_val() {
         orig_msg: "123456=abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg"
             .to_string(),
         msg_length: 77,
-        reading_tag: "123456".to_string(),
+        reading_tag: 123_456,
         reading_val: "abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefga".to_string(),
         state: ParsingState::StReadingValue,
-        current_field_error: Some((57, "Tag too long")),
+        current_field_error: Some((57, errors::VAL_TOO_LONG)),
         ..Default::default()
     };
 
@@ -253,18 +273,20 @@ fn too_long_val() {
 }
 
 //  received field  0x01
+//      insert in map
 //      calculate checksum
 //      check field in position (session fields)
-//      insert in map
 #[test]
 fn complete_field() {
     let mut parsing = ParsingInfo::new();
     add_chars(&mut parsing, "123456=abcdefg\u{01}");
 
     let check = ParsingInfo {
+        msg_map: btree![123456 => "abcdefg".to_string()],
+
         orig_msg: "123456=abcdefg^".to_string(),
         msg_length: 15,
-        reading_tag: "".to_string(),
+        reading_tag: 0,
         reading_val: "".to_string(),
         state: ParsingState::StReadingValue,
         ..Default::default()
