@@ -24,8 +24,8 @@ macro_rules! machine_list {
 
 #[derive(Debug)]
 struct VisitInfo {
-    num: i16,
-    cost: i16,
+    num: u16,
+    cost: u16,
 }
 
 
@@ -89,7 +89,7 @@ fn main() {
 
 fn find_best_year(machines: &LinkedList<Machine>) -> () {
     let mut best_year;
-    let mut best_value = i16::max_value();
+    let mut best_value = u16::max_value();
     let mut chrono = PreciseTime::now();
     let write_each = 1_000_000;
 
@@ -112,7 +112,7 @@ fn find_best_year(machines: &LinkedList<Machine>) -> () {
     }
 }
 
-fn print_better(best_value: &i16, best_year: &Vec<(String, LinkedList<(i16, i16)>)>) {
+fn print_better(best_value: &u16, best_year: &Vec<(String, LinkedList<(u16, u16)>)>) {
     println!("BETTER: {:?}", best_value);
     for &(ref machine, ref year) in best_year {
         println!("{:?} {:?}", machine, year);
@@ -128,7 +128,7 @@ fn print_better(best_value: &i16, best_year: &Vec<(String, LinkedList<(i16, i16)
 
 
 
-fn get_machine_visits(ml: &LinkedList<Machine>) -> i16 {
+fn get_machine_visits(ml: &LinkedList<Machine>) -> u16 {
     let n_groups = ml.front().unwrap().sum_visits();
 
     for machine in ml.iter() {
@@ -140,15 +140,15 @@ fn get_machine_visits(ml: &LinkedList<Machine>) -> i16 {
 }
 
 impl Machine {
-    fn sum_visits(&self) -> i16 {
+    fn sum_visits(&self) -> u16 {
         self.visit_info.iter().fold(0, |acc, vi| acc + vi.num)
     }
 
-    fn get_random_visits(&self) -> LinkedList<(i16, i16)> {
+    fn get_random_visits(&self) -> LinkedList<(u16, u16)> {
         let mut vis_rand = Vec::new();
         for (i, vi) in self.visit_info.iter().enumerate() {
             for _ in 0..vi.num {
-                vis_rand.push((i as i16, vi.cost, rand::random::<i16>()));
+                vis_rand.push((i as u16, vi.cost, rand::random::<u16>()));
             }
         }
         vis_rand.sort_by(|&(_, _, ar), &(_, _, br)| ar.cmp(&br));
@@ -158,11 +158,11 @@ impl Machine {
 
 
 
-fn get_random_year(machines: &LinkedList<Machine>) -> Vec<(String, LinkedList<(i16, i16)>)> {
+fn get_random_year(machines: &LinkedList<Machine>) -> Vec<(String, LinkedList<(u16, u16)>)> {
     machines.iter().map(|m| (m.code.clone(), m.get_random_visits())).collect::<Vec<_>>()
 }
 
-fn cost_per_interval(year: &Vec<(String, LinkedList<(i16, i16)>)>) -> Vec<i16> {
+fn cost_per_interval(year: &Vec<(String, LinkedList<(u16, u16)>)>) -> Vec<u16> {
     let mut result = vec![0; 12];
 
     for &(ref _mcode, ref myear) in year {
@@ -173,8 +173,8 @@ fn cost_per_interval(year: &Vec<(String, LinkedList<(i16, i16)>)>) -> Vec<i16> {
     result
 }
 
-fn calculate_value_month_cost(mc: &Vec<i16>) -> i16 {
-    let (mut min, mut max) = (i16::max_value(), 0);
+fn calculate_value_month_cost(mc: &Vec<u16>) -> u16 {
+    let (mut min, mut max) = (u16::max_value(), 0);
     for item in mc {
         if *item < min {
             min = *item
@@ -186,6 +186,6 @@ fn calculate_value_month_cost(mc: &Vec<i16>) -> i16 {
     max - min
 }
 
-fn calculate_value_year(year: &Vec<(String, LinkedList<(i16, i16)>)>) -> i16 {
+fn calculate_value_year(year: &Vec<(String, LinkedList<(u16, u16)>)>) -> u16 {
     calculate_value_month_cost(&cost_per_interval(year))
 }
