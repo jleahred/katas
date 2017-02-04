@@ -55,23 +55,24 @@ pub struct ParsingInfo {
 }
 
 
+pub fn add_char(mut pi: ParsingInfo, ch: char) -> ParsingInfo {
+    pi.msg_length += 1;
+    pi.orig_msg.push(tranf_ch_01(ch));
+
+    pi.reading_checksum += ch as u16;
+    pi.reading_checksum %= 256;
+
+    match pi.state {
+        ParsingState::StReadingTag => pi.add_char_reading_tag(ch),
+        ParsingState::StReadingValue => pi.add_char_reading_val(ch),
+        ParsingState::StFinished => (),
+    }
+    pi
+}
+
 impl ParsingInfo {
     pub fn new() -> ParsingInfo {
         ParsingInfo { ..Default::default() }
-    }
-
-    pub fn add_char(&mut self, ch: char) -> () {
-        self.msg_length += 1;
-        self.orig_msg.push(transform_ch(ch));
-
-        self.reading_checksum += ch as u16;
-        self.reading_checksum %= 256;
-
-        match self.state {
-            ParsingState::StReadingTag => self.add_char_reading_tag(ch),
-            ParsingState::StReadingValue => self.add_char_reading_val(ch),
-            ParsingState::StFinished => (),
-        }
     }
 
     fn add_char_reading_tag(&mut self, ch: char) {
@@ -136,10 +137,6 @@ impl ParsingInfo {
 }
 
 
-fn transform_ch(ch: char) -> char {
-    if ch == 1u8 as char {
-        '^'
-    } else {
-        ch
-    }
+fn tranf_ch_01(ch: char) -> char {
+    if ch == 1u8 as char { '^' } else { ch }
 }

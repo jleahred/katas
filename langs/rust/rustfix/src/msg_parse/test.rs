@@ -13,7 +13,8 @@
 //  move tags and errors to different files
 
 
-use msg_parse::{ParsingInfo, errors, ParsingState};
+use msg_parse::{ParsingInfo, errors, ParsingState, add_char};
+
 use test_diff;
 
 
@@ -23,7 +24,7 @@ macro_rules! hashmap {
          $( map.insert($key, $val); )*
          map
     }}
-}
+    }
 
 macro_rules! btree {
     ($( $key: expr => $val: expr ),*) => {{
@@ -31,17 +32,14 @@ macro_rules! btree {
          $( result.insert($key, $val); )*
          result
     }}
-}
-
-
-fn add_chars(pi: &mut ParsingInfo, s: &'static str) {
-    for ch in s.chars() {
-        pi.add_char(if ch == '^' {
-            1u8 as char
-        } else {
-            ch
-        });
     }
+
+
+fn add_chars(mut pi: ParsingInfo, s: &'static str) -> ParsingInfo {
+    for ch in s.chars() {
+        pi = add_char(pi, if ch == '^' { 1u8 as char } else { ch });
+    }
+    pi
 }
 
 
@@ -50,45 +48,45 @@ fn add_chars(pi: &mut ParsingInfo, s: &'static str) {
 
 #[test]
 fn init_add_char() {
-    let mut parsing = ParsingInfo::new();
-    parsing.add_char('1');
+    let mut parser = ParsingInfo::new();
+    parser = add_char(parser, '1');
 
     let check = ParsingInfo {
         orig_msg: "1".to_string(),
         msg_length: 1,
         reading_tag: 1,
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
 #[test]
 fn init_add_chars() {
-    let mut parsing = ParsingInfo::new();
-    parsing.add_char('1');
-    parsing.add_char('2');
-    parsing.add_char('3');
-    parsing.add_char('4');
-    parsing.add_char('5');
+    let mut parser = ParsingInfo::new();
+    parser = add_char(parser, '1');
+    parser = add_char(parser, '2');
+    parser = add_char(parser, '3');
+    parser = add_char(parser, '4');
+    parser = add_char(parser, '5');
 
     let check = ParsingInfo {
         orig_msg: "12345".to_string(),
         msg_length: 5,
         reading_tag: 12345,
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 #[test]
 fn invalid_first_char() {
-    let mut parsing = ParsingInfo::new();
-    parsing.add_char('a');
+    let mut parser = ParsingInfo::new();
+    parser = add_char(parser, 'a');
 
     let check = ParsingInfo {
         orig_msg: "a".to_string(),
@@ -96,17 +94,17 @@ fn invalid_first_char() {
         reading_tag: 0,
         current_field_error: Some((1, errors::TAG_INVALID_CHAR)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 #[test]
 fn invalid_second_char() {
-    let mut parsing = ParsingInfo::new();
-    parsing.add_char('1');
-    parsing.add_char('a');
+    let mut parser = ParsingInfo::new();
+    parser = add_char(parser, '1');
+    parser = add_char(parser, 'a');
 
     let check = ParsingInfo {
         orig_msg: "1a".to_string(),
@@ -114,19 +112,19 @@ fn invalid_second_char() {
         reading_tag: 1,
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
 #[test]
 fn invalid_chars_2errors() {
-    let mut parsing = ParsingInfo::new();
-    parsing.add_char('1');
-    parsing.add_char('a');
-    parsing.add_char('b');
+    let mut parser = ParsingInfo::new();
+    parser = add_char(parser, '1');
+    parser = add_char(parser, 'a');
+    parser = add_char(parser, 'b');
 
     let check = ParsingInfo {
         orig_msg: "1ab".to_string(),
@@ -134,16 +132,16 @@ fn invalid_chars_2errors() {
         reading_tag: 1,
         current_field_error: Some((2, errors::TAG_INVALID_CHAR)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 #[test]
 fn invalid_chars_2errors_andvalids() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "12ab34");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "12ab34");
 
     let check = ParsingInfo {
         orig_msg: "12ab34".to_string(),
@@ -151,17 +149,17 @@ fn invalid_chars_2errors_andvalids() {
         reading_tag: 12,
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
 #[test]
 fn invalid_chars_2errors_and_valids_non_consecutives() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "12a3b45");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "12a3b45");
 
     let check = ParsingInfo {
         orig_msg: "12a3b45".to_string(),
@@ -169,12 +167,11 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
         reading_tag: 12,
         current_field_error: Some((3, errors::TAG_INVALID_CHAR)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
-
 
 
 //  too long
@@ -182,8 +179,8 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
 
 #[test]
 fn too_long_tag() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "1234567890");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "1234567890");
 
     let check = ParsingInfo {
         orig_msg: "1234567890".to_string(),
@@ -191,17 +188,17 @@ fn too_long_tag() {
         reading_tag: 123_456_7,
         current_field_error: Some((7, errors::TAG_TOO_LONG)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
 #[test]
 fn too_long_tag_ignore_excess() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "123456789012345");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "123456789012345");
 
     let check = ParsingInfo {
         orig_msg: "123456789012345".to_string(),
@@ -209,10 +206,10 @@ fn too_long_tag_ignore_excess() {
         reading_tag: 123_456_7,
         current_field_error: Some((7, errors::TAG_TOO_LONG)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
@@ -223,8 +220,8 @@ fn too_long_tag_ignore_excess() {
 //      start receiving val
 #[test]
 fn finish_tag() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "123456=");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "123456=");
 
     let check = ParsingInfo {
         orig_msg: "123456=".to_string(),
@@ -232,10 +229,10 @@ fn finish_tag() {
         reading_tag: 123_456,
         state: ParsingState::StReadingValue,
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
@@ -245,8 +242,8 @@ fn finish_tag() {
 //      "a"
 #[test]
 fn reading_val() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "123456=a");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "123456=a");
 
     let check = ParsingInfo {
         orig_msg: "123456=a".to_string(),
@@ -255,18 +252,18 @@ fn reading_val() {
         reading_val: "a".to_string(),
         state: ParsingState::StReadingValue,
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
 //      "abcdefg"
 #[test]
 fn reading_val2() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "123456=abcdefg");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "123456=abcdefg");
 
     let check = ParsingInfo {
         orig_msg: "123456=abcdefg".to_string(),
@@ -275,19 +272,19 @@ fn reading_val2() {
         reading_val: "abcdefg".to_string(),
         state: ParsingState::StReadingValue,
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
 //      too long val received
 #[test]
 fn too_long_val() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing,
-              "123456=abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser,
+                       "123456=abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg");
 
     let check = ParsingInfo {
         orig_msg: "123456=abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg"
@@ -298,18 +295,18 @@ fn too_long_val() {
         state: ParsingState::StReadingValue,
         current_field_error: Some((57, errors::VAL_TOO_LONG)),
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 //  received field  0x01
 //      insert in map
 #[test]
 fn complete_field() {
-    let mut parsing = ParsingInfo::new();
-    add_chars(&mut parsing, "123456=abcdefg\u{01}");
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "123456=abcdefg\u{01}");
 
     let check = ParsingInfo {
         msg_map: btree![123456 => "abcdefg".to_string()],
@@ -320,10 +317,10 @@ fn complete_field() {
         reading_val: "".to_string(),
         state: ParsingState::StReadingValue,
 
-        ..parsing.clone()
+        ..parser.clone()
     };
 
-    assert_eq_dif!(parsing, check);
+    assert_eq_dif!(parser, check);
 }
 
 
