@@ -47,18 +47,18 @@ fn main() {
 
 
     // machine  A	B	C	time A	    time B	    time C
-    // 1        8	2	1	15	        20	        30
-    // 2	    7	3	1	20	        30	        50
-    // 3	    6	4	1	25	        35	        55
-    // 4	    8	2	1	15	        20	        30
-    // 5	    8	2	1	12	        15	        28
-    // 6	    8	2	1	15	        20	        30
-    // 7	    7	3	1	20	        30	        50
-    // 8	    6	4	1	25	        35	        55
-    // 9	    8	2	1	15	        20	        30
-    // 10	    8	2	1	12	        15	        28
-    // 11	    8  	2	1	15	        20	        30
-    // 12	    8	2	1	12	        15	        28
+    // 1        8	2	2	15	        20	        30
+    // 2	    7	3	2	20	        30	        50
+    // 3	    6	4	2	25	        35	        55
+    // 4	    8	2	2	15	        20	        30
+    // 5	    8	2	2	12	        15	        28
+    // 6	    8	2	2	15	        20	        30
+    // 7	    7	3	2	20	        30	        50
+    // 8	    6	4	2	25	        35	        55
+    // 9	    8	2	2	15	        20	        30
+    // 10	    8	2	2	12	        15	        28
+    // 11	    8  	2	2	15	        20	        30
+    // 12	    8	2	2	12	        15	        28
 
     let machines = machine_list!{
         //  machine_code, [ (num_visits, minut_visits), (num_visits, minut_visits), ...]
@@ -97,9 +97,9 @@ fn find_best_year(machines: &LinkedList<Machine>) -> () {
         if i % write_each == 0 {
             let new_chrono = PreciseTime::now();
             let secs = chrono.to(new_chrono).num_microseconds().unwrap() as f32 / 1_000_000.0;
-            println!("\rtranstacts/sec {:?}  total transc: {:?}",
+            println!("\rtranstacts/sec {:?}  total transc: {:?} mill",
                      (write_each as f32) / secs,
-                     (i as f32) / (write_each as f32));
+                     i / write_each);
             chrono = new_chrono;
         }
         let new_year = get_random_year(machines);
