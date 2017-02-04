@@ -1,0 +1,6 @@
+[package]
+name = "machine_revisions_problem"
+version = "0.1.0"
+authors = ["josé luis <jleahred@gmail.com>"]
+
+[dependencies]
