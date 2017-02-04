@@ -21,15 +21,6 @@ macro_rules! machine_list {
 }
 
 
-// macro_rules! list {
-//     ($( [$num: expr,  $cost: expr ]),*) => {{
-//          let mut list = ::std::collections::LinkedList::new();
-//          $( list.push_back(visit_info{num: $num, cost: $cost}); )*
-//          list
-//     }}
-// }
-
-
 
 #[derive(Debug)]
 struct VisitInfo {
@@ -93,40 +84,23 @@ fn main() {
 
 
     find_best_year(&machines);
-
-    // println!("\n\nRANDOM...  {:?}",
-    //          machines.front().unwrap().get_random_visits());
-
-    // for m in machines {
-    //     println!("{:?}", m);
-    // }
 }
 
 
 fn find_best_year(machines: &LinkedList<Machine>) -> () {
-    // let year = get_random_year(machines);
-    // println!("{:?}", year);
-
-    // let month_cost = cost_per_interval(&year);
-    // println!("Cost per month  {:?}", month_cost);
-
-    // let year_value = calculate_value_month_cost(&month_cost);
-    // println!("Year value  {:?}", year_value);
-
     let mut best_year;
     let mut best_value = i16::max_value();
     let mut chrono = PreciseTime::now();
     let write_each = 1_000_000;
 
-    // let print_better = |ref bv, ref by| println!("BETTER: {:?}\n   {:?}", &bv, &by);
-
     for i in 1.. {
         if i % write_each == 0 {
             let new_chrono = PreciseTime::now();
             let secs = chrono.to(new_chrono).num_microseconds().unwrap() as f32 / 1_000_000.0;
-            println!("\rtranstacts/sec {:?}", (write_each as f32) / secs);
+            println!("\rtranstacts/sec {:?}  total transc: {:?}",
+                     (write_each as f32) / secs,
+                     (i as f32) / (write_each as f32));
             chrono = new_chrono;
-            // print_better();
         }
         let new_year = get_random_year(machines);
         let new_value = calculate_value_year(&new_year);
