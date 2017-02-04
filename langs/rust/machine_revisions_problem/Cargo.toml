@@ -5,3 +5,4 @@ authors = ["josé luis <jleahred@gmail.com>"]
 
 [dependencies]
 rand="*"
+time = "0.1"
