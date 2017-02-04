@@ -73,7 +73,7 @@ fn main() {
         { "m9",  [( 8, 15), ( 2, 20), ( 2, 30)] },
         { "m10", [( 8, 12), ( 2, 15), ( 2, 28)] },
         { "m11", [( 8, 15), ( 2, 20), ( 2, 30)] },
-        { "m11", [( 8, 12), ( 2, 15), ( 2, 28)] }
+        { "m12", [( 8, 12), ( 2, 15), ( 2, 28)] }
     };
 
 
@@ -91,17 +91,15 @@ fn find_best_year(machines: &LinkedList<Machine>) -> () {
     let mut best_year;
     let mut best_value = u16::max_value();
     let mut chrono = PreciseTime::now();
-    let write_each = 1_000_000;
+    let write_each = 1_000_000u64;
 
     for i in 1.. {
         if i % write_each == 0 {
             let new_chrono = PreciseTime::now();
-            let secs = chrono.to(new_chrono).num_microseconds().unwrap() as f32 / 1_000_000.0;
-            println!("\rtranstacts/sec {:?}  total transc: {:?} mill",
-                     (write_each as f32) / secs,
-                     i / write_each);
-            chrono = new_chrono;
+            chrono = update_chrono(chrono, new_chrono, i, write_each);
         }
+
+
         let new_year = get_random_year(machines);
         let new_value = calculate_value_year(&new_year);
         if new_value < best_value {
@@ -117,6 +115,7 @@ fn print_better(best_value: &u16, best_year: &Vec<(String, LinkedList<(u16, u16)
     for &(ref machine, ref year) in best_year {
         println!("{:?} {:?}", machine, year);
     }
+    println!("Cost per interval: {:?}", cost_per_interval(best_year));
     println!("");
 }
 
@@ -188,4 +187,16 @@ fn calculate_value_month_cost(mc: &Vec<u16>) -> u16 {
 
 fn calculate_value_year(year: &Vec<(String, LinkedList<(u16, u16)>)>) -> u16 {
     calculate_value_month_cost(&cost_per_interval(year))
+}
+
+fn update_chrono(chrono: PreciseTime,
+                 new_chrono: PreciseTime,
+                 iteration: u64,
+                 write_each: u64)
+                 -> PreciseTime {
+    let secs = chrono.to(new_chrono).num_microseconds().unwrap() as f32 / 1_000_000.0;
+    println!("\rtransacts/sec {:?}  total transc: {:?} mill",
+             (write_each as f32) / secs,
+             iteration / write_each);
+    new_chrono
 }

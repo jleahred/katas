@@ -1,17 +1,17 @@
-# Machine check work distribution
+# Machines check work distribution
 
 ## The problem
 
 We have _n_ machines
 
-Each one, has to be checked with different procedures
+Each one, has to be checked with different procedures (more than one)
 
-Each procedure/machine require different time
+Each procedure/machine requires different time
 
 We need to distribute all the checks (machine/period/kind)
 
-A distribution _A_ is better than another _B_ if _A_ requires more similar times
-per period than _B_
+A distribution _X_ is better than another _Y_ if _X_ requires more similar times
+per period than _Y_
 
 Possible configuration
 
@@ -31,12 +31,15 @@ Possible configuration
 
 
 All machines requires 12 checks, therefore we will distribute on 12 periods
+(could be months)
 
-You can insert a new check type like _Z_ with cost 0 if different quantity of checks
+You can insert a new check type like _ZERO_ with cost 0 if different quantity of checks
 are required
 
 Machines can have different types and quantity of _check kinds_. In this example,
 for simplicity we will use _A, B, C_ for all machines
+
+This example is loaded in the program with next code (Rust)...
 
 ```rust
     let machines = machine_list!{
@@ -52,6 +55,30 @@ for simplicity we will use _A, B, C_ for all machines
         { "m9",  [( 8, 15), ( 2, 20), ( 2, 30)] },
         { "m10", [( 8, 12), ( 2, 15), ( 2, 28)] },
         { "m11", [( 8, 15), ( 2, 20), ( 2, 30)] },
-        { "m11", [( 8, 12), ( 2, 15), ( 2, 28)] }
+        { "m12", [( 8, 12), ( 2, 15), ( 2, 28)] }
     };
 ```
+
+As you can see, you configure the machine name, and a list with number of checks
+and time per check
+
+Next is also al valid configuration...
+
+```rust
+    let machines = machine_list!{
+        //  machine_code, [ (num_visits, minut_visits), (num_visits, minut_visits), ...]
+        { "m1",  [( 12, 15)] },
+        { "m2",  [( 2, 20), ( 3, 30), ( 2, 50), ( 2, 12), ( 1, 15), ( 2, 28)] },
+        { "m3",  [( 6, 25), ( 4, 35), ( 2, 55)] },
+        { "m4",  [( 8, 15), ( 2, 20), ( 2, 30)] },
+        { "m5",  [( 8, 12), ( 2, 15), ( 2, 28)] },
+        { "m6",  [( 8, 15), ( 2, 20), ( 2, 30)] },
+        { "m7",  [( 7, 20), ( 3, 30), ( 2, 50)] }
+    };
+```
+
+You can enjoy (as I did) solving the problem, and you can also see my solution
+and Rust implementation to compare or just for curiosity.
+
+I will solve it on different languages to compare performance and
+enjoining level during coding
