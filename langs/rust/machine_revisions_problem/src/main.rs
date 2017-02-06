@@ -164,7 +164,7 @@ fn get_random_distribution(machines: &LinkedList<Machine>)
 }
 
 fn cost_per_interval(distribution: &Vec<(String, LinkedList<(u16, u16)>)>) -> Vec<u16> {
-    let mut result = vec![1; 12];
+    let mut result = vec![1; distribution.len()];
 
     for &(ref _mcode, ref mdistribution) in distribution {
         for (i, &(_idx, cost)) in mdistribution.iter().enumerate() {
