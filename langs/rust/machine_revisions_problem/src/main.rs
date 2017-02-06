@@ -83,12 +83,12 @@ fn main() {
     println!("Number of groups: {:?}", n_visits);
 
 
-    find_best_year(&machines);
+    find_best_distribution(&machines);
 }
 
 
-fn find_best_year(machines: &LinkedList<Machine>) -> () {
-    let mut best_year;
+fn find_best_distribution(machines: &LinkedList<Machine>) -> () {
+    let mut best_distribution;
     let mut best_value = u16::max_value();
     let mut chrono = PreciseTime::now();
     let write_each = 1_000_000u64;
@@ -100,22 +100,23 @@ fn find_best_year(machines: &LinkedList<Machine>) -> () {
         }
 
 
-        let new_year = get_random_year(machines);
-        let new_value = calculate_value_year(&new_year);
+        let new_distribution = get_random_distribution(machines);
+        let new_value = calculate_value_distribution(&new_distribution);
         if new_value < best_value {
-            best_year = new_year;
+            best_distribution = new_distribution;
             best_value = new_value;
-            print_better(&best_value, &best_year);
+            print_better(&best_value, &best_distribution);
         }
     }
 }
 
-fn print_better(best_value: &u16, best_year: &Vec<(String, LinkedList<(u16, u16)>)>) {
+fn print_better(best_value: &u16, best_distribution: &Vec<(String, LinkedList<(u16, u16)>)>) {
     println!("BETTER: {:?}", best_value);
-    for &(ref machine, ref year) in best_year {
-        println!("{:?} {:?}", machine, year);
+    for &(ref machine, ref distribution) in best_distribution {
+        println!("{:?} {:?}", machine, distribution);
     }
-    println!("Cost per interval: {:?}", cost_per_interval(best_year));
+    println!("Cost per interval: {:?}",
+             cost_per_interval(best_distribution));
     println!("");
 }
 
@@ -157,22 +158,23 @@ impl Machine {
 
 
 
-fn get_random_year(machines: &LinkedList<Machine>) -> Vec<(String, LinkedList<(u16, u16)>)> {
+fn get_random_distribution(machines: &LinkedList<Machine>)
+                           -> Vec<(String, LinkedList<(u16, u16)>)> {
     machines.iter().map(|m| (m.code.clone(), m.get_random_visits())).collect::<Vec<_>>()
 }
 
-fn cost_per_interval(year: &Vec<(String, LinkedList<(u16, u16)>)>) -> Vec<u16> {
-    let mut result = vec![0; 12];
+fn cost_per_interval(distribution: &Vec<(String, LinkedList<(u16, u16)>)>) -> Vec<u16> {
+    let mut result = vec![1; 12];
 
-    for &(ref _mcode, ref myear) in year {
-        for (i, &(_idx, cost)) in myear.iter().enumerate() {
+    for &(ref _mcode, ref mdistribution) in distribution {
+        for (i, &(_idx, cost)) in mdistribution.iter().enumerate() {
             result[i] += cost;
         }
     }
     result
 }
 
-fn calculate_value_month_cost(mc: &Vec<u16>) -> u16 {
+fn calculate_value_period_cost(mc: &Vec<u16>) -> u16 {
     let (mut min, mut max) = (u16::max_value(), 0);
     for item in mc {
         if *item < min {
@@ -185,8 +187,8 @@ fn calculate_value_month_cost(mc: &Vec<u16>) -> u16 {
     max - min
 }
 
-fn calculate_value_year(year: &Vec<(String, LinkedList<(u16, u16)>)>) -> u16 {
-    calculate_value_month_cost(&cost_per_interval(year))
+fn calculate_value_distribution(distribution: &Vec<(String, LinkedList<(u16, u16)>)>) -> u16 {
+    calculate_value_period_cost(&cost_per_interval(distribution))
 }
 
 fn update_chrono(chrono: PreciseTime,
