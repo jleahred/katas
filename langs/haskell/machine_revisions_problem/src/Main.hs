@@ -1,8 +1,7 @@
 module Main where
 
-import System.Random (randomRIO, next, mkStdGen, randomIO, randomR)
+import System.Random 
 import Data.List
-import System.Time
 
 
 
@@ -13,15 +12,17 @@ import System.Time
 
 main :: IO ()
 main = do
-        --seed <- getClockTime >>= (\(TOD sec _) -> return sec)
         if not $ allMachinesSameVisits machines  then
           error "Different number of total visits on machines."
         else
           print "Number of visits OK"
 
-        let schedule = generateSchedule
+        seed <- newStdGen
+        let schedule = generateSchedule seed
         let sum_periods = sumPeriods schedule
         let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
+        print schedule
+        print sum_periods
         print estimation
 
         findSolutions (schedule, sum_periods, estimation)
@@ -30,7 +31,8 @@ main = do
 
 
 findSolutions (prev_schedule, prev_sum_periods, prev_estimation) = do
-        let schedul = generateSchedule 
+        seed <- newStdGen
+        let schedul = generateSchedule seed
         let sum_periods = sumPeriods schedul
         let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
 
@@ -85,22 +87,22 @@ maxMin l = foldl (\(mi, ma) x -> (min mi x, max ma x)) (head l, head l) l
 
 
 
-randomizeList l = l 
-                     |>  zip randomList
-                     |>  sort
-                     |>  map  snd
+randomizeList seed l = l
+                  |> zip (rndList seed)
+                  |> sort
+                  |> map snd
 
 
 
-randomList = rnds $ mkStdGen 0
+rndList  = rnds
         where rnds = unfoldr (Just . next) 
 
 
 
 
-randomVisitMachine :: MachineInfo -> (String, [(Int, Int)])
-randomVisitMachine (m, visits) = 
-        (m, randomizeList $ expandVisitInfo visits)
+randomVisitMachine :: StdGen -> MachineInfo -> (String, [(Int, Int)])
+randomVisitMachine seed (m, visits) = 
+        (m, randomizeList seed $ expandVisitInfo visits)
         where expandVisitInfo visits = foldl (\acc visit -> 
                                               acc ++ expandVisit visit) 
                                            []
@@ -108,7 +110,7 @@ randomVisitMachine (m, visits) =
               expandVisit (idx, (n, t)) = replicate n (idx, t)
 
 
-generateSchedule =  map randomVisitMachine  machines
+generateSchedule seed =  map (randomVisitMachine seed)  machines
 
 sumPeriods s =  s 
                 |> map snd
