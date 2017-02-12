@@ -1,11 +1,58 @@
 module Main where
 
+import System.Random (randomRIO, next, mkStdGen, randomIO, randomR)
+import Data.List
+import System.Time
+
+
+
+(|>) x f =  f x
+
+
+
+
 main :: IO ()
-main = putStrLn "Hello, Haskell!"
+main = do
+        --seed <- getClockTime >>= (\(TOD sec _) -> return sec)
+        if not $ allMachinesSameVisits machines  then
+          error "Different number of total visits on machines."
+        else
+          print "Number of visits OK"
+
+        let schedule = generateSchedule
+        let sum_periods = sumPeriods schedule
+        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
+        print estimation
+
+        findSolutions (schedule, sum_periods, estimation)
 
 
 
-machines :: (Num n) => [(String, [(n, n)])]
+
+findSolutions (prev_schedule, prev_sum_periods, prev_estimation) = do
+        let schedul = generateSchedule 
+        let sum_periods = sumPeriods schedul
+        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
+
+        if prev_estimation > estimation then do
+                print schedul
+                print sum_periods
+                print estimation
+                findSolutions (schedul, sum_periods, estimation)
+        else
+                findSolutions (prev_schedule, prev_sum_periods, prev_estimation)
+        
+
+
+
+
+
+
+
+type VisitInfo = (Int, Int)
+type MachineInfo = (String, [VisitInfo])
+
+machines :: [MachineInfo]
 machines = [
         ("m1",  [( 8, 15), ( 2, 20), ( 2, 30)]),
         ("m2",  [( 7, 20), ( 3, 30), ( 2, 50)]),
@@ -21,5 +68,51 @@ machines = [
         ("m12", [( 8, 12), ( 2, 15), ( 2, 28)])]
 
 
--- getMachineVisits lmachines = foldl (\acc (n, _) -> acc + n) 0 visit_list
--- getMachineVisits = sum $ snd $ sum fst
+allMachinesSameVisits ml = mx == mn
+        where (mx, mn) = maxMin $ getMachVisits machines
+              --  returns a list with number of visit per machine
+              getMachVisits lmach = lmach 
+                                |> map snd
+                                |> map (map fst)
+                                |> map sum
+
+
+--  returns the maximun and minim values on a list
+maxMin :: Ord a => [a] -> (a, a)
+maxMin l = foldl (\(mi, ma) x -> (min mi x, max ma x)) (head l, head l) l
+
+
+
+
+
+randomizeList l = l 
+                     |>  zip randomList
+                     |>  sort
+                     |>  map  snd
+
+
+
+randomList = rnds $ mkStdGen 0
+        where rnds = unfoldr (Just . next) 
+
+
+
+
+randomVisitMachine :: MachineInfo -> (String, [(Int, Int)])
+randomVisitMachine (m, visits) = 
+        (m, randomizeList $ expandVisitInfo visits)
+        where expandVisitInfo visits = foldl (\acc visit -> 
+                                              acc ++ expandVisit visit) 
+                                           []
+                                           (zip [1..] visits)
+              expandVisit (idx, (n, t)) = replicate n (idx, t)
+
+
+generateSchedule =  map randomVisitMachine  machines
+
+sumPeriods s =  s 
+                |> map snd
+                |> map (map snd)
+                |> transpose
+                |> map sum
+
