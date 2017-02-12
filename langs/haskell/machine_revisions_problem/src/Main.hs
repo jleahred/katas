@@ -2,6 +2,7 @@ module Main where
 
 import System.Random 
 import Data.List
+--import Control.Monad
 
 
 
@@ -17,20 +18,22 @@ main = do
         else
           print "Number of visits OK"
 
-        seed <- newStdGen
-        let schedule = generateSchedule seed
+        s0 <- newStdGen
+        let (r, s1) = next s0
+        let (r, s2) = next s1
+        let schedule = generateSchedule s2
         let sum_periods = sumPeriods schedule
         let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
         print schedule
         print sum_periods
         print estimation
 
-        findSolutions (schedule, sum_periods, estimation)
+        -- findSolutions  schedule sum_periods estimation
 
 
 
 
-findSolutions (prev_schedule, prev_sum_periods, prev_estimation) = do
+findSolutions prev_schedule prev_sum_periods prev_estimation = do
         seed <- newStdGen
         let schedul = generateSchedule seed
         let sum_periods = sumPeriods schedul
@@ -40,9 +43,9 @@ findSolutions (prev_schedule, prev_sum_periods, prev_estimation) = do
                 print schedul
                 print sum_periods
                 print estimation
-                findSolutions (schedul, sum_periods, estimation)
+                findSolutions  schedul sum_periods estimation
         else
-                findSolutions (prev_schedule, prev_sum_periods, prev_estimation)
+                findSolutions  prev_schedule prev_sum_periods prev_estimation
         
 
 
