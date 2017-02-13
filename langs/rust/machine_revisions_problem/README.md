@@ -82,3 +82,7 @@ and Rust implementation to compare or just for curiosity.
 
 I will solve it on different languages to compare performance and
 enjoining level during coding
+
+[rust solution](https://github.com/jleahred/katas/tree/master/langs/rust/machine_revisions_problem)
+
+[haskell solution](https://github.com/jleahred/katas/tree/master/langs/haskell/machine_revisions_problem)
