@@ -4,7 +4,9 @@
 
 We have _n_ machines
 
-Each one, has to be checked with different procedures (more than one)
+Each one, has to be checked with different procedures
+
+On each machine, it's necessary to check n times with procedure A, m times with procedure B...
 
 Each procedure/machine requires different time
 
@@ -30,7 +32,7 @@ Possible configuration
     // 12	    8	2	2	12	        15	        28
 
 
-All machines requires 12 checks, therefore we will distribute on 12 periods
+In this configuration, all machines requires 12 checks, therefore we will distribute on 12 periods
 (could be months)
 
 You can insert a new check type like _ZERO_ with cost 0 if different quantity of checks
@@ -43,7 +45,7 @@ This example is loaded in the program with next code (Rust)...
 
 ```rust
     let machines = machine_list!{
-        //  machine_code, [ (num_visits, minut_visits), (num_visits, minut_visits), ...]
+        //  machine_code, [ (num_visits, minut_visit), (num_visits, minut_visit), ...]
         { "m1",  [( 8, 15), ( 2, 20), ( 2, 30)] },
         { "m2",  [( 7, 20), ( 3, 30), ( 2, 50)] },
         { "m3",  [( 6, 25), ( 4, 35), ( 2, 55)] },
@@ -66,7 +68,7 @@ Next is also al valid configuration...
 
 ```rust
     let machines = machine_list!{
-        //  machine_code, [ (num_visits, minut_visits), (num_visits, minut_visits), ...]
+        //  machine_code, [ (num_visits, minut_visit), (num_visits, minut_visit), ...]
         { "m1",  [( 12, 15)] },
         { "m2",  [( 2, 20), ( 3, 30), ( 2, 50), ( 2, 12), ( 1, 15), ( 2, 28)] },
         { "m3",  [( 6, 25), ( 4, 35), ( 2, 55)] },
@@ -77,8 +79,8 @@ Next is also al valid configuration...
     };
 ```
 
-You can enjoy (as I did) solving the problem, and you can also see my solution
-and Rust implementation to compare or just for curiosity.
+You can enjoy (as I did) solving the problem, and you can also see my solution 
+and implementation (Rust or Haskell) to compare or just for curiosity.
 
 I will solve it on different languages to compare performance and
 enjoining level during coding

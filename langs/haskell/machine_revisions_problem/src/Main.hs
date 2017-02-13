@@ -88,15 +88,13 @@ maxMin l = foldl (\(mi, ma) x -> (min mi x, max ma x)) (head l, head l) l
 
 
 
-mapRnd f xs seed = 
-    foldl (\(ys, nwseed) y -> ((f y nwseed):ys, snd $ next nwseed))  ([], seed)  xs  
-
-
 
 clutterList::  Ord a =>  StdGen -> [a] -> ([a], StdGen)
 clutterList seed xs =  do
         let (zrl, newseed) = mapRnd  (\ x seed -> (fst $ next seed, x)) xs seed
         (zrl |> sort |> map snd, newseed)
+        where mapRnd f xs seed = 
+                foldl (\(ys, nwseed) y -> ((f y nwseed):ys, snd $ next nwseed))  ([], seed)  xs  
 
 
 
@@ -114,7 +112,7 @@ rdnVisitsMach seed (m, visits) = do
 
 
 
-
+genSchedule :: [MachInf] -> StdGen -> ([(String, [(Int, Int)])], StdGen)
 genSchedule [] seed = ([], seed)
 genSchedule (m:ms) seed = do
         let (rvm, nwseed) = rdnVisitsMach seed m
