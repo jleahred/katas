@@ -11,53 +11,10 @@ import Data.List
 
 
 
-main :: IO ()
-main = do
-        if not $ allMachinesSameVisits machines  then
-          error "Different number of total visits on machines."
-        else
-          print "Number of visits OK"
-
-        s0 <- newStdGen
-        let (r, s1) = next s0
-        let (r, s2) = next s1
-        let schedule = generateSchedule s2
-        let sum_periods = sumPeriods schedule
-        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
-        print schedule
-        print sum_periods
-        print estimation
-
-        -- findSolutions  schedule sum_periods estimation
-
-
-
-
-findSolutions prev_schedule prev_sum_periods prev_estimation = do
-        seed <- newStdGen
-        let schedul = generateSchedule seed
-        let sum_periods = sumPeriods schedul
-        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
-
-        if prev_estimation > estimation then do
-                print schedul
-                print sum_periods
-                print estimation
-                findSolutions  schedul sum_periods estimation
-        else
-                findSolutions  prev_schedule prev_sum_periods prev_estimation
-        
-
-
-
-
-
-
-
 type VisitInfo = (Int, Int)
-type MachineInfo = (String, [VisitInfo])
+type MachInf = (String, [VisitInfo])
 
-machines :: [MachineInfo]
+machines :: [MachInf]
 machines = [
         ("m1",  [( 8, 15), ( 2, 20), ( 2, 30)]),
         ("m2",  [( 7, 20), ( 3, 30), ( 2, 50)]),
@@ -71,6 +28,49 @@ machines = [
         ("m10", [( 8, 12), ( 2, 15), ( 2, 28)]),
         ("m11", [( 8, 15), ( 2, 20), ( 2, 30)]),
         ("m12", [( 8, 12), ( 2, 15), ( 2, 28)])]
+
+
+
+
+
+main :: IO ()
+main = do
+        if not $ allMachinesSameVisits machines  then
+          error "Different number of total visits on machines."
+        else
+          print "Number of visits OK"
+
+        seed <- newStdGen
+        let (schedule, nwseed) = genSchedule machines seed
+        let sum_periods = sumPeriods schedule
+        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
+        print schedule
+        print sum_periods
+        print estimation
+
+        findSolutions  1 schedule sum_periods estimation  nwseed
+
+
+
+
+findSolutions niter prev_schedule prev_sum_periods prev_estimation seed = do
+        let (schedule, nwseed) = genSchedule machines seed
+        let sum_periods = sumPeriods schedule
+        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
+
+        if prev_estimation > estimation then do
+                print $ "Iteration " ++ show niter
+                print schedule
+                print sum_periods
+                print estimation
+                findSolutions  (niter+1) schedule sum_periods estimation  nwseed
+        else
+                findSolutions  (niter+1) prev_schedule prev_sum_periods prev_estimation  nwseed
+        
+
+
+
+
 
 
 allMachinesSameVisits ml = mx == mn
@@ -88,24 +88,24 @@ maxMin l = foldl (\(mi, ma) x -> (min mi x, max ma x)) (head l, head l) l
 
 
 
-
-
-randomizeList seed l = l
-                  |> zip (rndList seed)
-                  |> sort
-                  |> map snd
+mapRnd f xs seed = 
+    foldl (\(ys, nwseed) y -> ((f y nwseed):ys, snd $ next nwseed))  ([], seed)  xs  
 
 
 
-rndList  = rnds
-        where rnds = unfoldr (Just . next) 
+clutterList::  Ord a =>  StdGen -> [a] -> ([a], StdGen)
+clutterList seed xs =  do
+        let (zrl, newseed) = mapRnd  (\ x seed -> (fst $ next seed, x)) xs seed
+        (zrl |> sort |> map snd, newseed)
 
 
 
 
-randomVisitMachine :: StdGen -> MachineInfo -> (String, [(Int, Int)])
-randomVisitMachine seed (m, visits) = 
-        (m, randomizeList seed $ expandVisitInfo visits)
+
+rdnVisitsMach :: StdGen -> MachInf -> ((String, [(Int, Int)]), StdGen)
+rdnVisitsMach seed (m, visits) = do
+        let (cl, nwseed) = clutterList seed $ expandVisitInfo visits
+        ((m, cl), nwseed)
         where expandVisitInfo visits = foldl (\acc visit -> 
                                               acc ++ expandVisit visit) 
                                            []
@@ -113,11 +113,22 @@ randomVisitMachine seed (m, visits) =
               expandVisit (idx, (n, t)) = replicate n (idx, t)
 
 
-generateSchedule seed =  map (randomVisitMachine seed)  machines
+
+
+genSchedule [] seed = ([], seed)
+genSchedule (m:ms) seed = do
+        let (rvm, nwseed) = rdnVisitsMach seed m
+        let (msGenSche, nwseed') = genSchedule ms nwseed
+        (rvm:msGenSche, nwseed')
+
+
+
+
 
 sumPeriods s =  s 
                 |> map snd
                 |> map (map snd)
                 |> transpose
                 |> map sum
+
 
