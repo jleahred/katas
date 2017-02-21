@@ -39,13 +39,6 @@ struct Machine {
 
 
 fn main() {
-    // let machines = machine_list!{
-    //     //  machine_code, [ (num_visits, minut_visits), (num_visits, minut_visits), ...]
-    //     { "m1", [( 6, 15), ( 2, 8), ( 4, 12)] },
-    //     { "m2", [( 5, 15), ( 4, 8), ( 3, 12)] }
-    // };
-
-
     // machine  A	B	C	time A	    time B	    time C
     // 1        8	2	2	15	        20	        30
     // 2	    7	3	2	20	        30	        50
@@ -83,11 +76,11 @@ fn main() {
     println!("Number of groups: {:?}", n_visits);
 
 
-    find_best_distribution(&machines);
+    find_best_distribution(&machines, n_visits);
 }
 
 
-fn find_best_distribution(machines: &LinkedList<Machine>) -> () {
+fn find_best_distribution(machines: &LinkedList<Machine>, n_visits: u16) -> () {
     let mut best_distribution;
     let mut best_value = u16::max_value();
     let mut chrono = PreciseTime::now();
@@ -101,22 +94,25 @@ fn find_best_distribution(machines: &LinkedList<Machine>) -> () {
 
 
         let new_distribution = get_random_distribution(machines);
-        let new_value = calculate_value_distribution(&new_distribution);
+        let new_value = calculate_value_distribution(&new_distribution, n_visits);
         if new_value < best_value {
             best_distribution = new_distribution;
             best_value = new_value;
-            print_better(&best_value, &best_distribution);
+            print_better(&best_value, &best_distribution, n_visits);
         }
     }
 }
 
-fn print_better(best_value: &u16, best_distribution: &Vec<(String, LinkedList<(u16, u16)>)>) {
-    println!("BETTER: {:?}", best_value);
+fn print_better(best_value: &u16,
+                best_distribution: &Vec<(String, LinkedList<(u16, u16)>)>,
+                n_visits: u16) {
+    println!("\n---------------------------------------");
     for &(ref machine, ref distribution) in best_distribution {
         println!("{:?} {:?}", machine, distribution);
     }
+    println!("BETTER: {:?}", best_value);
     println!("Cost per interval: {:?}",
-             cost_per_interval(best_distribution));
+             cost_per_interval(best_distribution, n_visits));
     println!("");
 }
 
@@ -163,8 +159,10 @@ fn get_random_distribution(machines: &LinkedList<Machine>)
     machines.iter().map(|m| (m.code.clone(), m.get_random_visits())).collect::<Vec<_>>()
 }
 
-fn cost_per_interval(distribution: &Vec<(String, LinkedList<(u16, u16)>)>) -> Vec<u16> {
-    let mut result = vec![1; distribution.len()];
+fn cost_per_interval(distribution: &Vec<(String, LinkedList<(u16, u16)>)>,
+                     n_visits: u16)
+                     -> Vec<u16> {
+    let mut result = vec![0; n_visits as usize];
 
     for &(ref _mcode, ref mdistribution) in distribution {
         for (i, &(_idx, cost)) in mdistribution.iter().enumerate() {
@@ -187,8 +185,10 @@ fn calculate_value_period_cost(mc: &Vec<u16>) -> u16 {
     max - min
 }
 
-fn calculate_value_distribution(distribution: &Vec<(String, LinkedList<(u16, u16)>)>) -> u16 {
-    calculate_value_period_cost(&cost_per_interval(distribution))
+fn calculate_value_distribution(distribution: &Vec<(String, LinkedList<(u16, u16)>)>,
+                                n_visits: u16)
+                                -> u16 {
+    calculate_value_period_cost(&cost_per_interval(distribution, n_visits))
 }
 
 fn update_chrono(chrono: PreciseTime,
