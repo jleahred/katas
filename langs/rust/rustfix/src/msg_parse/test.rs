@@ -6,6 +6,19 @@ use msg_parse::{ParsingInfo, add_char, errors, ParsingState};
 use test_diff;
 
 
+pub const MSG_TEST_WIKIPEDIA1: &'static str = "8=FIX.4.2|9=178|35=8|49=PHLX|56=PERS|52=20071123-05:\
+                                               30:00.000|11=ATOMNOCCC9990900|20=3|150=E|39=E|55=MSFT|167=CS|54=1|38=15|40=2|44=15|58=PHLX \
+                                               EQUITY TESTING|59=0|47=C|32=0|31=0|151=15|14=0|6=0|10=128|";
+
+pub const MSG_TEST_WIKIPEDIA2: &'static str = "8=FIX.4.2|9=65|35=A|49=SERVER|56=CLIENT|34=177|52=20090107-18:\
+                                               15:16|98=0|108=30|10=062|";
+
+pub const MSG_TEST: &'static str = "8=FIX.4.4|9=122|35=D|34=215|49=CLIENT12|52=20100225-19:41:57.\
+                                    316|56=B|1=Marcel|11=13346|21=1|40=2|44=5|54=1|59=0|60=20100225-19:\
+                                    39:52.020|10=072|";
+
+
+
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {{
          let mut map = ::std::collections::HashMap::new();
@@ -26,7 +39,7 @@ macro_rules! btree {
 fn add_chars(mut pi: ParsingInfo, s: &'static str) -> ParsingInfo {
     for ch in s.chars() {
         pi = add_char(pi,
-                      if ch == '^' {
+                      if ch == '^' || ch == '|' {
                           1u8 as char
                       } else {
                           ch
@@ -215,7 +228,7 @@ fn too_long_val() {
                        "123456=abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg");
 
     ass_eqdf!{
-        parser.parsed.orig_msg => 
+        parser.parsed.orig_msg =>
             "123456=abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefg"
             .to_string(),
         parser.parsed.msg_length => 77,
@@ -237,24 +250,37 @@ fn complete_field() {
 
     ass_eqdf!{
         parser.parsed.msg_map => btree![123456 => "abcdefg".to_string()],
-        parser.parsed.orig_msg => "123456=abcdefg^".to_string(),
+        parser.parsed.orig_msg => "123456=abcdefg|".to_string(),
         parser.parsed.msg_length => 15,
         parser.reading_tag => 0,
         parser.reading_val => "".to_string(),
-        parser.state => ParsingState::StReadingValue
+        parser.state => ParsingState::StReadingTag
     };
 }
 
 
 
 //  completed two fields
+#[test]
+fn complete_2field() {
+    let mut parser = ParsingInfo::new();
+    parser = add_chars(parser, "123456=abcdefg\u{01}123457=hijklmno\u{01}");
 
-//  check_body_length1
-//  2 fields
 
+    ass_eqdf!{
+        parser.parsed.msg_map =>
+            btree![
+                    123456 => "abcdefg".to_string(),
+                    123457 => "hijklmno".to_string()
+            ],
+        parser.parsed.orig_msg => "123456=abcdefg|123457=hijklmno|".to_string(),
+        parser.parsed.msg_length => 31,
+        parser.reading_tag => 0,
+        parser.reading_val => "".to_string(),
+        parser.state => ParsingState::StReadingTag
+    };
+}
 
-//  check_body_length1
-//  3 fields, one is tags::BODY_LENGTH
 
 
 // check position fields
@@ -272,8 +298,108 @@ fn complete_field() {
 //      after =
 
 
+
+
+
+
 //  detected end of message
+//      finished status
+//      check message body length
+//      check original message
+//      check checksum
+#[test]
+fn full_message() {
+    struct Checks {
+        message: &'static str,
+        body_length: usize,
+        check_sum: u16,
+    };
+
+    let check_message = |c: Checks| {
+        let mut parser = ParsingInfo::new();
+        parser = add_chars(parser, c.message);
+
+        ass_eqdf!{
+            parser.parsed.body_length => c.body_length,
+            parser.reading_tag => 0,
+            parser.reading_val => "".to_string(),
+            parser.state => ParsingState::StFinished,
+            parser.parsed.orig_msg => c.message,
+            parser.parsed.check_sum => c.check_sum
+        };
+    };
+
+
+    check_message(Checks {
+        message: MSG_TEST_WIKIPEDIA1,
+        body_length: 178,
+        check_sum: 128,
+    });
+    check_message(Checks {
+        message: MSG_TEST_WIKIPEDIA2,
+        body_length: 65,
+        check_sum: 62,
+    });
+    check_message(Checks {
+        message: MSG_TEST,
+        body_length: 122,
+        check_sum: 72,
+    });
+}
+
+
+
+
+//  detected end of message 3 consecutives
 //      finished status
 //      check message length
 //      check original message
 //      check checksum
+#[test]
+fn full_messages3_consecutives() {
+    struct Checks {
+        message: &'static str,
+        body_length: usize,
+        check_sum: u16,
+    };
+
+    let check_message = |mut parser, c: Checks| {
+        parser = add_chars(parser, c.message);
+
+        ass_eqdf!{
+            parser.parsed.body_length => c.body_length,
+            parser.reading_tag => 0,
+            parser.reading_val => "".to_string(),
+            parser.state => ParsingState::StFinished,
+            parser.parsed.orig_msg => c.message,
+            parser.parsed.check_sum => c.check_sum
+        };
+        parser
+    };
+
+
+    let mut parser = ParsingInfo::new();
+    parser = check_message(parser,
+                           Checks {
+                               message: MSG_TEST_WIKIPEDIA1,
+                               body_length: 178,
+                               check_sum: 128,
+                           });
+    parser = check_message(parser,
+                           Checks {
+                               message: MSG_TEST_WIKIPEDIA2,
+                               body_length: 65,
+                               check_sum: 62,
+                           });
+    check_message(parser,
+                  Checks {
+                      message: MSG_TEST,
+                      body_length: 122,
+                      check_sum: 72,
+                  });
+}
+
+
+
+
+//  process 3 messages, errors in second one
