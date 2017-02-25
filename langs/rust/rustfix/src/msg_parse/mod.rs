@@ -24,7 +24,7 @@ const VAL_LONG_LIMIT: usize = 50;
 
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ParsingState {
+enum ParsingState {
     StReadingTag,
     StReadingValue,
 }
@@ -49,7 +49,7 @@ pub struct Parsed {
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Parsing {
-    pub parsed: Parsed,
+    parsed: Parsed,
 
     state: ParsingState,
     reading_tag: u32, //  optimization
@@ -59,7 +59,7 @@ pub struct Parsing {
 
     current_field_error: Option<(u32, &'static str)>,
 
-    pub errors: LinkedList<(u32, &'static str)>, //  position, description
+    errors: LinkedList<(u32, &'static str)>, //  position, description
 }
 
 
@@ -115,8 +115,8 @@ impl Parsing {
         } else if ch == '=' {
             self.state = ParsingState::StReadingValue;
         } else {
-            self.current_field_error = Some((self.parsed.msg_length,
-                                             self::errors::TAG_INVALID_CHAR));
+            let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
+            self.set_current_field_error(error);
         }
         self
     }
@@ -145,11 +145,15 @@ impl Parsing {
             }
         } else {
             //  not end of field
-
-            self.reading_val.push(ch);
-            if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
-                let error = (self.parsed.msg_length, self::errors::VAL_TOO_LONG);
-                self.set_current_field_error(error);
+            match self.current_field_error {
+                None => {
+                    self.reading_val.push(ch);
+                    if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
+                        let error = (self.parsed.msg_length, self::errors::VAL_TOO_LONG);
+                        self.set_current_field_error(error);
+                    }
+                }
+                Some(_) => (),
             }
             ParsingResult::Parsing(self)
         }
@@ -162,6 +166,7 @@ impl Parsing {
             self.parsed.check_sum = self.reading_checksum;
         }
         self.update_body_length();
+        self.state = ParsingState::StReadingTag;
     }
 
     fn update_body_length(&mut self) {
