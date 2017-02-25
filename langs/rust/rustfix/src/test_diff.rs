@@ -5,7 +5,7 @@ use self::difference::Difference;
 
 
 #[macro_export]
-macro_rules!  assert_eq_dif {
+macro_rules!  ass_eqdf1 {
     ($f:expr, $s:expr)  => (
         if $f != $s {
             let (fs, ss) = (format!("{:?}", $f), format!("{:?}", $s));
@@ -13,6 +13,17 @@ macro_rules!  assert_eq_dif {
         }
         assert!($f == $s);
     );
+}
+
+#[macro_export]
+macro_rules!  ass_eqdf {
+    ($($f:expr => $s:expr),*)  => ($(
+        if $f != $s {
+            let (fs, ss) = (format!("{:?}", $f), format!("{:?}", $s));
+            test_diff::print_diff(fs, ss);
+        }
+        assert!($f == $s);
+    )*);
 }
 
 pub fn print_diff(text1: String, text2: String) {

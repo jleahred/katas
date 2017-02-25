@@ -36,8 +36,8 @@ impl Default for ParsingState {
 }
 
 
-#[derive(Debug, Default, Eq, PartialEq, Clone)]
-pub struct ParsingInfo {
+#[derive(Debug, Default, Eq, PartialEq)]
+pub struct Parsed {
     pub msg_map: BTreeMap<u32, String>,
     pub body_length: u32,
     pub check_sum: u16,
@@ -45,6 +45,12 @@ pub struct ParsingInfo {
     pub orig_msg: String,
     pub errors: LinkedList<(u32, &'static str)>, //  position, description
     pub msg_length: u32,
+}
+
+
+#[derive(Debug, Default, Eq, PartialEq)]
+pub struct ParsingInfo {
+    pub parsed: Parsed,
 
     state: ParsingState,
     reading_tag: u32,
@@ -56,8 +62,8 @@ pub struct ParsingInfo {
 
 
 pub fn add_char(mut pi: ParsingInfo, ch: char) -> ParsingInfo {
-    pi.msg_length += 1;
-    pi.orig_msg.push(tranf_ch_01(ch));
+    pi.parsed.msg_length += 1;
+    pi.parsed.orig_msg.push(tranf_ch_01(ch));
 
     pi.reading_checksum += ch as u16;
     pi.reading_checksum %= 256;
@@ -83,13 +89,13 @@ impl ParsingInfo {
                     self.reading_tag *= 10;
                     self.reading_tag += ch as u32 - '0' as u32;
                     if self.reading_tag > TAG_MAX_VALUE {
-                        self.current_field_error = Some((self.msg_length,
+                        self.current_field_error = Some((self.parsed.msg_length,
                                                          self::errors::TAG_TOO_LONG));
                     }
                 } else if ch == '=' {
                     self.state = ParsingState::StReadingValue;
                 } else {
-                    self.current_field_error = Some((self.msg_length,
+                    self.current_field_error = Some((self.parsed.msg_length,
                                                      self::errors::TAG_INVALID_CHAR));
                 }
             }
@@ -105,7 +111,7 @@ impl ParsingInfo {
                 } else {
                     self.reading_val.push(ch);
                     if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
-                        self.current_field_error = Some((self.msg_length,
+                        self.current_field_error = Some((self.parsed.msg_length,
                                                          self::errors::VAL_TOO_LONG));
                     }
                 }
@@ -115,13 +121,13 @@ impl ParsingInfo {
 
     fn process_tag_val(&mut self) {
         match self.current_field_error {
-            Some(error) => self.errors.push_back(error),
+            Some(error) => self.parsed.errors.push_back(error),
             None => (),
         }
 
-        self.msg_map.insert(self.reading_tag, self.reading_val.clone());
+        self.parsed.msg_map.insert(self.reading_tag, self.reading_val.clone());
 
-        self.check_sum = self.reading_checksum;
+        self.parsed.check_sum = self.reading_checksum;
         self.update_body_length();
 
         self.reading_tag = 0;
@@ -131,12 +137,16 @@ impl ParsingInfo {
     fn update_body_length(&mut self) {
         let tag = self.reading_tag;
         if tag != tags::BEGIN_STRING && tag != tags::BODY_LENGTH && tag != tags::CHECK_SUM {
-            self.body_length += 1;
+            self.parsed.body_length += 1;
         }
     }
 }
 
 
 fn tranf_ch_01(ch: char) -> char {
-    if ch == 1u8 as char { '^' } else { ch }
+    if ch == 1u8 as char {
+        '^'
+    } else {
+        ch
+    }
 }
