@@ -14,7 +14,7 @@ mod tags {
     pub const BEGIN_STRING: u32 = 8;
     pub const BODY_LENGTH: u32 = 9;
     pub const CHECK_SUM: u32 = 10;
-    pub const MESSAGE_TYPE: u32 = 35;
+    // pub const MESSAGE_TYPE: u32 = 35;
 }
 
 
@@ -27,7 +27,6 @@ const VAL_LONG_LIMIT: usize = 50;
 pub enum ParsingState {
     StReadingTag,
     StReadingValue,
-    StFinished,
 }
 
 impl Default for ParsingState {
@@ -44,13 +43,12 @@ pub struct Parsed {
     pub check_sum: u16,
     pub num_tags: u32,
     pub orig_msg: String,
-    pub errors: LinkedList<(u32, &'static str)>, //  position, description
     pub msg_length: u32,
 }
 
 
 #[derive(Debug, Default, Eq, PartialEq)]
-pub struct ParsingInfo {
+pub struct Parsing {
     pub parsed: Parsed,
 
     state: ParsingState,
@@ -60,94 +58,110 @@ pub struct ParsingInfo {
     reading_checksum: u16,
 
     current_field_error: Option<(u32, &'static str)>,
+
+    pub errors: LinkedList<(u32, &'static str)>, //  position, description
 }
 
 
-pub fn add_char(mut pi: ParsingInfo, ch: char) -> ParsingInfo {
-    pi.parsed.msg_length += 1;
-    pi.parsed.orig_msg.push(tranf_ch_01(ch));
 
-    pi.reading_checksum += ch as u16;
-    pi.reading_checksum %= 256;
-
-    match pi.state {
-        ParsingState::StReadingTag => pi.add_char_reading_tag(ch),
-        ParsingState::StReadingValue => pi.add_char_reading_val(ch),
-        ParsingState::StFinished => {
-            pi = ParsingInfo::new();
-            pi = add_char(pi, ch)
-        }
-    }
-    pi
+pub enum ParsingResult {
+    Parsing(Parsing),
+    ParsedOK(Parsed),
+    ParsedErrors {
+        parsed: Parsed,
+        errors: LinkedList<(u32, &'static str)>,
+    }, //  position, description,
 }
 
-impl ParsingInfo {
-    pub fn new() -> ParsingInfo {
-        ParsingInfo { ..Default::default() }
+
+pub fn add_char(mut parsing: Parsing, ch: char) -> ParsingResult {
+    parsing.parsed.msg_length += 1;
+    parsing.parsed.orig_msg.push(tranf_ch_01(ch));
+
+    parsing.reading_checksum += ch as u16;
+    parsing.reading_checksum %= 256;
+
+    match parsing.state {
+        ParsingState::StReadingTag => ParsingResult::Parsing(parsing.add_char_reading_tag(ch)),
+        ParsingState::StReadingValue => parsing.add_char_reading_val(ch),
+    }
+}
+
+impl Parsing {
+    pub fn new() -> Parsing {
+        Parsing { ..Default::default() }
     }
 
-    fn add_char_reading_tag(&mut self, ch: char) {
-        match self.current_field_error {
-            Some(_) => (),
-            None => {
-                if ch >= '0' && ch <= '9' {
-                    self.reading_tag *= 10;
-                    self.reading_tag += ch as u32 - '0' as u32;
-                    self.reading_tag_len += 1;
-                    if self.reading_tag > TAG_MAX_VALUE {
-                        self.current_field_error = Some((self.parsed.msg_length,
-                                                         self::errors::TAG_TOO_LONG));
-                    }
-                } else if ch == '=' {
-                    self.state = ParsingState::StReadingValue;
-                } else {
-                    self.current_field_error = Some((self.parsed.msg_length,
-                                                     self::errors::TAG_INVALID_CHAR));
-                }
+    fn reset_reading_tag(&mut self) {
+        self.reading_tag = 0;
+        self.reading_tag_len = 0;
+        self.reading_val.clear();
+    }
+
+    fn set_current_field_error(&mut self, error: (u32, &'static str)) {
+        self.current_field_error = Some(error);
+        self.state = ParsingState::StReadingValue;
+    }
+
+    fn add_char_reading_tag(mut self, ch: char) -> Parsing {
+        if ch >= '0' && ch <= '9' {
+            self.reading_tag *= 10;
+            self.reading_tag += ch as u32 - '0' as u32;
+            self.reading_tag_len += 1;
+            if self.reading_tag > TAG_MAX_VALUE {
+                let error = (self.parsed.msg_length, self::errors::TAG_TOO_LONG);
+                self.set_current_field_error(error);
             }
+        } else if ch == '=' {
+            self.state = ParsingState::StReadingValue;
+        } else {
+            self.current_field_error = Some((self.parsed.msg_length,
+                                             self::errors::TAG_INVALID_CHAR));
         }
+        self
     }
 
-    fn add_char_reading_val(&mut self, ch: char) {
-        match self.current_field_error {
-            Some(_) => (),
-            None => {
-                if ch == 1u8 as char {
-                    self.process_tag_val();
-                } else {
-                    self.reading_val.push(ch);
-                    if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
-                        self.current_field_error = Some((self.parsed.msg_length,
-                                                         self::errors::VAL_TOO_LONG));
+    fn add_char_reading_val(mut self, ch: char) -> ParsingResult {
+        //  end of field
+        if ch == 1u8 as char {
+            self.process_tag_val();
+
+            //  last tag
+            if self.reading_tag == tags::CHECK_SUM {
+                match self.current_field_error {
+                    Some(error) => {
+                        self.errors.push_back(error);
+
+                        ParsingResult::ParsedErrors {
+                            parsed: self.parsed,
+                            errors: self.errors,
+                        }
                     }
+                    None => ParsingResult::ParsedOK(self.parsed),
                 }
+            } else {
+                self.reset_reading_tag();
+                ParsingResult::Parsing(self)
             }
+        } else {
+            //  not end of field
+
+            self.reading_val.push(ch);
+            if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
+                let error = (self.parsed.msg_length, self::errors::VAL_TOO_LONG);
+                self.set_current_field_error(error);
+            }
+            ParsingResult::Parsing(self)
         }
     }
 
     fn process_tag_val(&mut self) {
-        match self.current_field_error {
-            Some(error) => self.parsed.errors.push_back(error),
-            None => (),
-        }
-
         self.parsed.msg_map.insert(self.reading_tag, self.reading_val.clone());
 
         if self.reading_tag != tags::CHECK_SUM {
             self.parsed.check_sum = self.reading_checksum;
         }
         self.update_body_length();
-
-
-        self.state = if self.reading_tag == tags::CHECK_SUM {
-            ParsingState::StFinished
-        } else {
-            ParsingState::StReadingTag
-        };
-
-        self.reading_tag = 0;
-        self.reading_tag_len = 0;
-        self.reading_val = "".to_string();
     }
 
     fn update_body_length(&mut self) {
