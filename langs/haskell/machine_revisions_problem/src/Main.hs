@@ -6,7 +6,7 @@ import Data.List
 
 
 
-(|>) x f =  f x
+(|>) = flip ($)
 
 
 
