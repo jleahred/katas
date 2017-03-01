@@ -1,11 +1,12 @@
 module Main where
 
-import System.Random 
+import System.Random
 import Data.List
---import Control.Monad
+import Control.Monad
 
 
 
+-- (|>) x f =  f x
 (|>) = flip ($)
 
 
@@ -40,43 +41,49 @@ main = do
         else
           print "Number of visits OK"
 
-        seed <- newStdGen
+        gen <- newStdGen
+        findSolutions  1  1000000  gen
+
+
+
+-- It will generate a new schedule (solution candidate)
+-- if better -> print it
+-- repeat for ever  (tail recursion)
+findSolutions:: Int -> Int -> StdGen -> IO ()
+findSolutions   niter
+                prev_estimation seed
+                = do
         let (schedule, nwseed) = genSchedule machines seed
         let sum_periods = sumPeriods schedule
-        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
-        print schedule
-        print sum_periods
-        print estimation
+        let nw_estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
+        let best_estimation = min  prev_estimation  nw_estimation
 
-        findSolutions  1 schedule sum_periods estimation  nwseed
+        when (best_estimation /= prev_estimation)
+                -- found better, print it
+                (printSolutionCandidate niter best_estimation sum_periods schedule)
+
+        findSolutions  (niter+1)  best_estimation  nwseed
 
 
-
-
-findSolutions niter prev_schedule prev_sum_periods prev_estimation seed = do
-        let (schedule, nwseed) = genSchedule machines seed
-        let sum_periods = sumPeriods schedule
-        let estimation = (\(mn, mx) -> mx-mn) $ maxMin sum_periods
-
-        if prev_estimation > estimation then do
-                print $ "Iteration " ++ show niter
-                print schedule
-                print sum_periods
-                print estimation
-                findSolutions  (niter+1) schedule sum_periods estimation  nwseed
-        else
-                findSolutions  (niter+1) prev_schedule prev_sum_periods prev_estimation  nwseed
-        
+printSolutionCandidate:: Show b => Int -> Int -> [Int] -> b -> IO ()
+printSolutionCandidate  niter
+                        estim
+                        sum_periods
+                        schedule
+                        = do
+                                print $ "Iteration " ++ show niter
+                                print schedule
+                                print sum_periods
+                                print estim
 
 
 
-
-
-
-allMachinesSameVisits ml = mx == mn
+--  check configuration. All machines has to have the same quantity of visits
+--  you can introduce phony visits with time =0 it you need it
+allMachinesSameVisits  ml  =     mx == mn
         where (mx, mn) = maxMin $ getMachVisits machines
               --  returns a list with number of visit per machine
-              getMachVisits lmach = lmach 
+              getMachVisits lmach = lmach
                                 |> map snd
                                 |> map (map fst)
                                 |> map sum
@@ -88,45 +95,43 @@ maxMin l = foldl (\(mi, ma) x -> (min mi x, max ma x)) (head l, head l) l
 
 
 
-
+-- given a list, clutter it (randomize)
 clutterList::  Ord a =>  StdGen -> [a] -> ([a], StdGen)
-clutterList seed xs =  do
+clutterList  seed  xs =  do
         let (zrl, newseed) = mapRnd  (\ x seed -> (fst $ next seed, x)) xs seed
         (zrl |> sort |> map snd, newseed)
-        where mapRnd f xs seed = 
-                foldl (\(ys, nwseed) y -> ((f y nwseed):ys, snd $ next nwseed))  ([], seed)  xs  
+        where mapRnd f xs seed =
+                foldl (\(ys, nwseed) y -> ((f y nwseed):ys, snd $ next nwseed))  ([], seed)  xs
 
 
 
 
-
-rdnVisitsMach :: StdGen -> MachInf -> ((String, [(Int, Int)]), StdGen)
-rdnVisitsMach seed (m, visits) = do
+-- get a random visits info for a machine
+rdnVisitsMach :: MachInf -> StdGen -> ((String, [(Int, Int)]), StdGen)
+rdnVisitsMach  (m, visits)  seed = do
         let (cl, nwseed) = clutterList seed $ expandVisitInfo visits
         ((m, cl), nwseed)
-        where expandVisitInfo visits = foldl (\acc visit -> 
-                                              acc ++ expandVisit visit) 
+        where expandVisitInfo visits = foldl (\acc visit ->
+                                              acc ++ expandVisit visit)
                                            []
                                            (zip [1..] visits)
               expandVisit (idx, (n, t)) = replicate n (idx, t)
 
 
-
+-- generate a random Schedule for all machines
 genSchedule :: [MachInf] -> StdGen -> ([(String, [(Int, Int)])], StdGen)
 genSchedule [] seed = ([], seed)
 genSchedule (m:ms) seed = do
-        let (rvm, nwseed) = rdnVisitsMach seed m
-        let (msGenSche, nwseed') = genSchedule ms nwseed
-        (rvm:msGenSche, nwseed')
+        let (rvm, nwseed) = rdnVisitsMach  m  seed
+        let (msSchedules, nwseed') = genSchedule ms nwseed
+        (rvm:msSchedules, nwseed')
 
 
 
-
-
-sumPeriods s =  s 
+-- get a list with the sum per period (perhaps months) of all machines
+sumPeriods:: [(String, [(Int, Int)])] -> [Int]
+sumPeriods s =  s
                 |> map snd
                 |> map (map snd)
                 |> transpose
                 |> map sum
-
-
