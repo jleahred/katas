@@ -3,10 +3,11 @@ module Main where
 import System.Random
 import Data.List
 import Control.Monad
-
+import Control.Monad.Random
 
 
 -- (|>) x f =  f x
+(|>) :: a -> (a->b) -> b
 (|>) = flip ($)
 
 
@@ -36,7 +37,7 @@ machines = [
 
 main :: IO ()
 main = do
-        if not $ allMachinesSameVisits machines  then
+        if not  allMachinesSameVisits  then
           error "Different number of total visits on machines."
         else
           print "Number of visits OK"
@@ -80,7 +81,8 @@ printSolutionCandidate  niter
 
 --  check configuration. All machines has to have the same quantity of visits
 --  you can introduce phony visits with time =0 it you need it
-allMachinesSameVisits  ml  =     mx == mn
+allMachinesSameVisits :: Bool
+allMachinesSameVisits   =     mx == mn
         where (mx, mn) = maxMin $ getMachVisits machines
               --  returns a list with number of visit per machine
               getMachVisits lmach = lmach
