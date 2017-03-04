@@ -5,6 +5,7 @@
 
 
 use msg_parse::{ParsingResult, Parsing, add_char, errors, ParsingState};
+use std::collections::LinkedList;
 
 use test_diff;
 
@@ -319,9 +320,76 @@ fn complete_2field() {
 }
 
 
+//  received field  0x01 ERROR
 
-// check position fields
-//  ...
+//      0x01  at the beginning of tag
+#[test]
+fn field_01_beginning_tag() {
+    let parser = Parsing::new();
+
+    match add_char(parser, conv_separator('\u{01}')) {
+        ParsingResult::Parsing(_) => panic!("Expected error parsing 01"),
+        ParsingResult::ParsedErrors { parsed: p, errors: e } => {
+            let mut errors = LinkedList::new();
+            errors.push_back((1, errors::TAG_INVALID_CHAR));
+            ass_eqdf!{
+                p.msg_map.len() => 0,
+                p.orig_msg => "|".to_string(),
+                p.msg_length => 1,
+                e => errors
+            };
+        }
+        ParsingResult::ParsedOK(_) => panic!("Expected error parsing 01"),
+    }
+
+}
+
+//      reading tag
+//      0x01  at the beginning of tag
+#[test]
+fn field_01_reading_tag() {
+    let mut parser = Parsing::new();
+    parser = add_chars_incomplete(parser, "1234");
+
+    match add_char(parser, conv_separator('\u{01}')) {
+        ParsingResult::Parsing(_) => panic!("Expected error parsing 01"),
+        ParsingResult::ParsedErrors { parsed: p, errors: e } => {
+            let mut errors = LinkedList::new();
+            errors.push_back((5, errors::TAG_INVALID_CHAR));
+            ass_eqdf!{
+                p.msg_map.len() => 0,
+                p.orig_msg => "1234|".to_string(),
+                p.msg_length => 5,
+                e => errors
+            };
+        }
+        ParsingResult::ParsedOK(_) => panic!("Expected error parsing 01"),
+    }
+
+}
+
+
+
+//      after =
+#[test]
+fn field_01_after_eq() {
+    let mut parser = Parsing::new();
+    parser = add_chars_incomplete(parser, "123456=\u{01}123457=hijklmno\u{01}");
+
+
+    ass_eqdf!{
+        parser.parsed.msg_map =>
+            btree![
+                    123456 => "".to_string(),
+                    123457 => "hijklmno".to_string()
+            ],
+        parser.parsed.orig_msg => "123456=|123457=hijklmno|".to_string(),
+        parser.parsed.msg_length => 24,
+        parser.reading_tag => 0,
+        parser.reading_val => "".to_string(),
+        parser.state => ParsingState::StReadingTag
+    };
+}
 
 
 
@@ -329,10 +397,14 @@ fn complete_2field() {
 
 
 
-//  received field  0x01 ERROR
-//      at the beginning of tag
-//      reading tag
-//      after =
+// check position fields
+//  ...
+
+
+
+
+
+
 
 
 
@@ -387,60 +459,3 @@ fn full_message() {
         check_sum: 72,
     });
 }
-
-
-
-
-// //  detected end of message 3 consecutives
-// //      finished status
-// //      check message length
-// //      check original message
-// //      check checksum
-// #[test]
-// fn full_messages3_consecutives() {
-//     struct Checks {
-//         message: &'static str,
-//         body_length: usize,
-//         check_sum: u16,
-//     };
-
-//     let check_message = |mut parser, c: Checks| {
-//         parser = add_chars(parser, c.message);
-
-//         ass_eqdf!{
-//             parser.parsed.body_length => c.body_length,
-//             parser.reading_tag => 0,
-//             parser.reading_val => "".to_string(),
-//             parser.state => ParsingState::StFinished,
-//             parser.parsed.orig_msg => c.message,
-//             parser.parsed.check_sum => c.check_sum
-//         };
-//         parser
-//     };
-
-
-//     let mut parser = Parsing::new();
-//     parser = check_message(parser,
-//                            Checks {
-//                                message: MSG_TEST_WIKIPEDIA1,
-//                                body_length: 178,
-//                                check_sum: 128,
-//                            });
-//     parser = check_message(parser,
-//                            Checks {
-//                                message: MSG_TEST_WIKIPEDIA2,
-//                                body_length: 65,
-//                                check_sum: 62,
-//                            });
-//     check_message(parser,
-//                   Checks {
-//                       message: MSG_TEST,
-//                       body_length: 122,
-//                       check_sum: 72,
-//                   });
-// }
-
-
-
-
-//  process 3 messages, errors in second one

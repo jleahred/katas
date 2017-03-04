@@ -82,7 +82,7 @@ pub fn add_char(mut parsing: Parsing, ch: char) -> ParsingResult {
     parsing.reading_checksum %= 256;
 
     match parsing.state {
-        ParsingState::StReadingTag => ParsingResult::Parsing(parsing.add_char_reading_tag(ch)),
+        ParsingState::StReadingTag => parsing.add_char_reading_tag(ch),
         ParsingState::StReadingValue => parsing.add_char_reading_val(ch),
     }
 }
@@ -103,22 +103,31 @@ impl Parsing {
         self.state = ParsingState::StReadingValue;
     }
 
-    fn add_char_reading_tag(mut self, ch: char) -> Parsing {
-        if ch >= '0' && ch <= '9' {
-            self.reading_tag *= 10;
-            self.reading_tag += ch as u32 - '0' as u32;
-            self.reading_tag_len += 1;
-            if self.reading_tag > TAG_MAX_VALUE {
-                let error = (self.parsed.msg_length, self::errors::TAG_TOO_LONG);
+    fn add_char_reading_tag(mut self, ch: char) -> ParsingResult {
+        if ch == 1u8 as char {
+            let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
+            self.errors.push_back(error);
+            ParsingResult::ParsedErrors {
+                parsed: self.parsed,
+                errors: self.errors,
+            }
+        } else {
+            if ch >= '0' && ch <= '9' {
+                self.reading_tag *= 10;
+                self.reading_tag += ch as u32 - '0' as u32;
+                self.reading_tag_len += 1;
+                if self.reading_tag > TAG_MAX_VALUE {
+                    let error = (self.parsed.msg_length, self::errors::TAG_TOO_LONG);
+                    self.set_current_field_error(error);
+                }
+            } else if ch == '=' {
+                self.state = ParsingState::StReadingValue;
+            } else {
+                let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
                 self.set_current_field_error(error);
             }
-        } else if ch == '=' {
-            self.state = ParsingState::StReadingValue;
-        } else {
-            let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
-            self.set_current_field_error(error);
+            ParsingResult::Parsing(self)
         }
-        self
     }
 
     fn add_char_reading_val(mut self, ch: char) -> ParsingResult {
