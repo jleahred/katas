@@ -322,13 +322,16 @@ fn complete_2field() {
 
 //  received field  0x01 ERROR
 
-//      0x01  at the beginning of tag
+//      0x01  at the beginning of first tag
 #[test]
-fn field_01_beginning_tag() {
+fn field_01_beginning_firsttag() {
     let mut parser = Parsing::new();
 
     parser = add_chars_incomplete(parser, "\u{01}123456=abcdefg\u{01}123457=hijklmno\u{01}");
 
+
+    let mut errors = LinkedList::new();
+    errors.push_back((1, errors::TAG_INVALID_CHAR));
     ass_eqdf!{
         parser.parsed.msg_map =>
             btree![
@@ -339,39 +342,41 @@ fn field_01_beginning_tag() {
         parser.parsed.msg_length => 32,
         parser.reading_tag => 0,
         parser.reading_val => "".to_string(),
-        parser.state => ParsingState::StReadingTag
-
-        missing errors chec
+        parser.state => ParsingState::StReadingTag,
+        parser.errors => errors
     };
 }
 
+
 //      reading tag
-//      0x01  at the beginning of tag
+//      0x01  at the middle of tag
 #[test]
-fn field_01_reading_tag() {
+fn field_01_middle_tag() {
     let mut parser = Parsing::new();
-    parser = add_chars_incomplete(parser, "1234");
 
-    match add_char(parser, conv_separator('\u{01}')) {
-        ParsingResult::Parsing(_) => panic!("Expected error parsing 01"),
-        ParsingResult::ParsedErrors { parsed: p, errors: e } => {
-            let mut errors = LinkedList::new();
-            errors.push_back((5, errors::TAG_INVALID_CHAR));
-            ass_eqdf!{
-                p.msg_map.len() => 0,
-                p.orig_msg => "1234|".to_string(),
-                p.msg_length => 5,
-                e => errors
-            };
-        }
-        ParsingResult::ParsedOK(_) => panic!("Expected error parsing 01"),
-    }
+    parser = add_chars_incomplete(parser, "123456=abcdefg\u{01}123\u{01}457=hijklmno\u{01}");
 
+
+    let mut errors = LinkedList::new();
+    errors.push_back((19, errors::TAG_INVALID_CHAR));
+    ass_eqdf!{
+        parser.parsed.msg_map =>
+            btree![
+                    123456 => "abcdefg".to_string(),
+                    123457 => "hijklmno".to_string()
+            ],
+        parser.parsed.orig_msg => "123456=abcdefg|123|457=hijklmno|".to_string(),
+        parser.parsed.msg_length => 32,
+        parser.reading_tag => 0,
+        parser.reading_val => "".to_string(),
+        parser.state => ParsingState::StReadingTag,
+        parser.errors => errors
+    };
 }
 
 
 
-//      after =
+//  01    after =
 #[test]
 fn field_01_after_eq() {
     let mut parser = Parsing::new();
@@ -446,33 +451,33 @@ fn full_message() {
 }
 
 
-//  completed message with 2 errors
-// #[test]
-// fn full_message_2_errors() {
-//     let msg = "8=FIX.4.2|9=178|35=8|=PHLX|56=PERS||52=20071123-05:30:00.\
-//                000|11=ATOMNOCCC9990900|20=3|15/0=E|39=E|55=MSFT|167=CS|54=1|38=15|40=2|44=15|58=PHLX \
-//                EQUITY TESTING|59=0|47=C|32=0|31=0|15|1=15|14=0|6=0|10=128|";
+//  completed message with 3 errors
+#[test]
+fn full_message_2_errors() {
+    let msg = "8=FIX.4.2|9=178|35=8|=PHLX|56=PERS||52=20071123-05:30:00.\
+               000|11=ATOMNOCCC9990900|20=3|15/0=E|39=E|55=MSFT|167=CS|54=1|38=15|40=2|44=15|58=PHLX \
+               EQUITY TESTING|59|=0|47=C|32=0|31=0|15|1=15|14=0|6=0|10=128|";
 
 
-//     let parser = Parsing::new();
+    let parser = Parsing::new();
 
-//     let (parsed, errors) = match add_chars_full_message(parser, msg) {
-//         ParsingResult::ParsedOK(_) => panic!("Full message with errors parsed OK"),
-//         ParsingResult::Parsing(_) => panic!("Incomplete parsing on full message"),
-//         ParsingResult::ParsedErrors { parsed, errors } => (parsed, errors),
-//     };
+    let (parsed, errors) = match add_chars_full_message(parser, msg) {
+        ParsingResult::ParsedOK(_) => panic!("Full message with errors parsed OK"),
+        ParsingResult::Parsing(_) => panic!("Incomplete parsing on full message"),
+        ParsingResult::ParsedErrors { parsed, errors } => (parsed, errors),
+    };
 
-//     let mut exp_errors = LinkedList::new();
-//     exp_errors.push_back((36, errors::TAG_INVALID_CHAR));
-//     exp_errors.push_back((36, errors::TAG_INVALID_CHAR));
-//     exp_errors.push_back((36, errors::TAG_INVALID_CHAR));
+    let mut exp_errors = LinkedList::new();
+    exp_errors.push_back((36, errors::TAG_INVALID_CHAR));
+    exp_errors.push_back((161, errors::TAG_INVALID_CHAR));
+    exp_errors.push_back((182, errors::TAG_INVALID_CHAR));
 
-//     ass_eqdf!{
-//             parsed.body_length => 11,
-//             parsed.orig_msg => "8=FIX.4.2|9=178|35=8|=PHLX|56=PERS||",
-//             errors => exp_errors
-//         };
-// }
+    ass_eqdf!{
+            parsed.body_length => 88,
+            parsed.orig_msg => msg,
+            errors => exp_errors
+        };
+}
 
 
 
