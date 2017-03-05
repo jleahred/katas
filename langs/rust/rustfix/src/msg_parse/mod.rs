@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod test;
 
+use std::cmp::min;
 use std::collections::BTreeMap;
 use std::collections::LinkedList;
 
@@ -47,6 +48,14 @@ pub struct Parsed {
 }
 
 
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
+pub struct ErrorInf {
+    pub pos: u32,
+    pub message: &'static str,
+    pub context: String,
+}
+
+
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Parsing {
     parsed: Parsed,
@@ -57,9 +66,9 @@ pub struct Parsing {
     reading_val: String, //  optimization
     reading_checksum: u16,
 
-    current_field_error: Option<(u32, &'static str)>,
+    current_field_error: Option<ErrorInf>,
 
-    errors: LinkedList<(u32, &'static str)>, //  position, description
+    errors: LinkedList<ErrorInf>, //  position, description
 }
 
 
@@ -69,7 +78,7 @@ pub enum ParsingResult {
     ParsedOK(Parsed),
     ParsedErrors {
         parsed: Parsed,
-        errors: LinkedList<(u32, &'static str)>,
+        errors: LinkedList<ErrorInf>,
     }, //  position, description,
 }
 
@@ -98,55 +107,80 @@ impl Parsing {
         self.reading_val.clear();
     }
 
-    fn set_current_field_error(&mut self, error: (u32, &'static str)) {
-        self.current_field_error = Some(error);
-        self.state = ParsingState::StReadingValue;
+    fn set_current_field_error(&mut self, msg: &'static str) {
+        match &mut self.current_field_error {
+            &mut Some(_) => (),
+            &mut None => {
+                self.current_field_error = Some(self.get_error_inf(msg));
+            }
+        }
+    }
+
+
+    fn get_error_inf(&self, msg: &'static str) -> ErrorInf {
+        let back = min(7, self.parsed.orig_msg.len());
+        let context: String = self.parsed.orig_msg[self.parsed.orig_msg.len() - back..].to_string();
+        ErrorInf {
+            pos: self.parsed.msg_length,
+            message: msg,
+            context: format!("parsing... {:?}", context),
+        }
     }
 
     fn add_char_reading_tag(mut self, ch: char) -> Parsing {
         if ch == 1u8 as char {
-            let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
+            self.reset_reading_tag();
+            let error = self.get_error_inf(errors::TAG_INVALID_CHAR);
             self.errors.push_back(error);
-        } else {
-            if ch >= '0' && ch <= '9' {
-                self.reading_tag *= 10;
-                self.reading_tag += ch as u32 - '0' as u32;
-                self.reading_tag_len += 1;
-                if self.reading_tag > TAG_MAX_VALUE {
-                    let error = (self.parsed.msg_length, self::errors::TAG_TOO_LONG);
-                    self.set_current_field_error(error);
+            self.update_body_length();
+        } else if ch >= '0' && ch <= '9' {
+            //  if error reading tag, ignore res
+            match self.current_field_error {
+                Some(_) => (),
+                None => {
+                    if self.reading_tag > TAG_MAX_VALUE {
+                        self.set_current_field_error(errors::TAG_TOO_LONG);
+                    } else {
+                        self.reading_tag *= 10;
+                        self.reading_tag += ch as u32 - '0' as u32;
+                        self.reading_tag_len += 1;
+                    }
                 }
-            } else if ch == '=' {
-                if self.reading_tag == 0 {
-                    let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
-                    self.set_current_field_error(error);
-                }
-                self.state = ParsingState::StReadingValue;
-            } else {
-                let error = (self.parsed.msg_length, self::errors::TAG_INVALID_CHAR);
-                self.set_current_field_error(error);
             }
+        } else if ch == '=' {
+            if self.reading_tag == 0 {
+                self.set_current_field_error(errors::TAG_INVALID_CHAR);
+                self.state = ParsingState::StReadingValue;
+            }
+            self.state = ParsingState::StReadingValue;
+        } else {
+            self.set_current_field_error(errors::TAG_INVALID_CHAR);
         }
         self
     }
 
     fn add_char_reading_val(mut self, ch: char) -> ParsingResult {
+        match &self.current_field_error {
+            &Some(ref error) => {
+                self.errors.push_back(error.clone());
+            }
+            &None => (),
+        }
+        self.current_field_error = None;
+
         //  end of field
         if ch == 1u8 as char {
             self.process_tag_val();
 
             //  last tag
             if self.reading_tag == tags::CHECK_SUM {
-                match self.current_field_error {
-                    Some(error) => {
-                        self.errors.push_back(error);
-
-                        ParsingResult::ParsedErrors {
-                            parsed: self.parsed,
-                            errors: self.errors,
-                        }
+                if self.errors.is_empty() {
+                    ParsingResult::ParsedOK(self.parsed)
+                } else {
+                    ParsingResult::ParsedErrors {
+                        parsed: self.parsed,
+                        errors: self.errors,
                     }
-                    None => ParsingResult::ParsedOK(self.parsed),
                 }
             } else {
                 self.reset_reading_tag();
@@ -154,15 +188,11 @@ impl Parsing {
             }
         } else {
             //  not end of field
-            match self.current_field_error {
-                None => {
-                    self.reading_val.push(ch);
-                    if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
-                        let error = (self.parsed.msg_length, self::errors::VAL_TOO_LONG);
-                        self.set_current_field_error(error);
-                    }
-                }
-                Some(_) => (),
+            if self.reading_val.len() + 1 > VAL_LONG_LIMIT {
+                self.set_current_field_error(errors::VAL_TOO_LONG);
+            } else {
+                self.reading_val.push(ch);
+
             }
             ParsingResult::Parsing(self)
         }

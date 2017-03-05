@@ -1,10 +1,9 @@
 //  move tags and errors to different files
 //  check fields position
 //  test external to module
-//  test more than one message
 
 
-use msg_parse::{ParsingResult, Parsing, add_char, errors, ParsingState};
+use msg_parse::{ParsingResult, Parsing, ErrorInf, add_char, errors, ParsingState};
 use std::collections::LinkedList;
 
 use test_diff;
@@ -141,7 +140,9 @@ fn invalid_chars_2errors() {
         parser.parsed.msg_length => 3,
         parser.reading_tag => 1,
         parser.current_field_error =>
-                    Some((2, errors::TAG_INVALID_CHAR))
+                    Some(ErrorInf{ pos: 2
+                            , message: errors::TAG_INVALID_CHAR
+                            , context: "parsing... \"1a\"".to_string()})
     };
 }
 
@@ -155,7 +156,9 @@ fn invalid_chars_2errors_andvalids() {
         parser.parsed.msg_length => 6,
         parser.reading_tag => 12,
         parser.current_field_error =>
-                    Some((3, errors::TAG_INVALID_CHAR))
+                    Some(ErrorInf{ pos:3
+                            , message: errors::TAG_INVALID_CHAR
+                            , context: "parsing... \"12a\"".to_string()})
     };
 }
 
@@ -170,7 +173,9 @@ fn invalid_chars_2errors_and_valids_non_consecutives() {
         parser.parsed.msg_length => 7,
         parser.reading_tag => 12,
         parser.current_field_error =>
-                    Some((3, errors::TAG_INVALID_CHAR))
+                    Some(ErrorInf{ pos:3
+                            , message: errors::TAG_INVALID_CHAR
+                            , context: "parsing... \"12a\"".to_string()})
     };
 }
 
@@ -187,7 +192,10 @@ fn too_long_tag() {
         parser.parsed.orig_msg => "1234567890".to_string(),
         parser.parsed.msg_length =>  10,
         parser.reading_tag =>  123_456_7,
-        parser.current_field_error => Some((7, errors::TAG_TOO_LONG))
+        parser.current_field_error =>
+                    Some(ErrorInf{ pos:8
+                            , message: errors::TAG_TOO_LONG
+                            , context: "parsing... \"2345678\"".to_string()})
     };
 }
 
@@ -201,7 +209,10 @@ fn too_long_tag_ignore_excess() {
         parser.parsed.orig_msg => "123456789012345".to_string(),
         parser.parsed.msg_length => 15,
         parser.reading_tag => 123_456_7,
-        parser.current_field_error => Some((7, errors::TAG_TOO_LONG))
+        parser.current_field_error =>
+                    Some(ErrorInf{ pos:8
+                            , message: errors::TAG_TOO_LONG
+                            , context: "parsing... \"2345678\"".to_string()})
     };
 }
 
@@ -273,7 +284,10 @@ fn too_long_val() {
         parser.reading_tag => 123_456,
         parser.reading_val => "abcdefgabcdefgabcdefgabcdefgabcdefgabcdefgabcdefga".to_string(),
         parser.state => ParsingState::StReadingValue,
-        parser.current_field_error => Some((57, errors::VAL_TOO_LONG))
+        parser.current_field_error =>
+                    Some(ErrorInf{ pos: 77
+                            , message: errors::VAL_TOO_LONG
+                            , context: "parsing... \"abcdefg\"".to_string()})
     };
 }
 
@@ -331,7 +345,12 @@ fn field_01_beginning_firsttag() {
 
 
     let mut errors = LinkedList::new();
-    errors.push_back((1, errors::TAG_INVALID_CHAR));
+    errors.push_back(ErrorInf {
+        pos: 1,
+        message: errors::TAG_INVALID_CHAR,
+        context: "parsing... \"|\"".to_string(),
+    });
+
     ass_eqdf!{
         parser.parsed.msg_map =>
             btree![
@@ -358,12 +377,16 @@ fn field_01_middle_tag() {
 
 
     let mut errors = LinkedList::new();
-    errors.push_back((19, errors::TAG_INVALID_CHAR));
+    errors.push_back(ErrorInf {
+        pos: 19,
+        message: errors::TAG_INVALID_CHAR,
+        context: "parsing... \"fg|123|\"".to_string(),
+    });
     ass_eqdf!{
         parser.parsed.msg_map =>
             btree![
                     123456 => "abcdefg".to_string(),
-                    123457 => "hijklmno".to_string()
+                    457 => "hijklmno".to_string()
             ],
         parser.parsed.orig_msg => "123456=abcdefg|123|457=hijklmno|".to_string(),
         parser.parsed.msg_length => 32,
@@ -454,9 +477,9 @@ fn full_message() {
 //  completed message with 3 errors
 #[test]
 fn full_message_2_errors() {
-    let msg = "8=FIX.4.2|9=178|35=8|=PHLX|56=PERS||52=20071123-05:30:00.\
-               000|11=ATOMNOCCC9990900|20=3|15/0=E|39=E|55=MSFT|167=CS|54=1|38=15|40=2|44=15|58=PHLX \
-               EQUITY TESTING|59|=0|47=C|32=0|31=0|15|1=15|14=0|6=0|10=128|";
+    let msg = "8=FIX.4.2|9=178|35=8|49=PHLX||56=PERS|52=20071123-05:30:00.\
+               000|11=ATOMNOCCC9990900|2/0=3|150=E|39=E|55=MSFT|167=CS|54=1|38=15|40=2|44=15|58=PHLX \
+               EQUITY TESTING|5|9=0|47=C|32=0|31=0|151=15|14=0|6=0|10=128|";
 
 
     let parser = Parsing::new();
@@ -468,14 +491,26 @@ fn full_message_2_errors() {
     };
 
     let mut exp_errors = LinkedList::new();
-    exp_errors.push_back((36, errors::TAG_INVALID_CHAR));
-    exp_errors.push_back((161, errors::TAG_INVALID_CHAR));
-    exp_errors.push_back((182, errors::TAG_INVALID_CHAR));
+    exp_errors.push_back(ErrorInf {
+        pos: 30,
+        message: errors::TAG_INVALID_CHAR,
+        context: "parsing... \"=PHLX||\"".to_string(),
+    });
+    exp_errors.push_back(ErrorInf {
+        pos: 85,
+        message: errors::TAG_INVALID_CHAR,
+        context: "parsing... \"0900|2/\"".to_string(),
+    });
+    exp_errors.push_back(ErrorInf {
+        pos: 162,
+        message: errors::TAG_INVALID_CHAR,
+        context: "parsing... \"TING|5|\"".to_string(),
+    });
 
     ass_eqdf!{
-            parsed.body_length => 88,
+            errors => exp_errors,
             parsed.orig_msg => msg,
-            errors => exp_errors
+            parsed.msg_map[&31u32] => "0".to_string()
         };
 }
 
