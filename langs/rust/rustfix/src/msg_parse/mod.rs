@@ -9,13 +9,14 @@ mod errors {
     pub const TAG_INVALID_CHAR: &'static str = "Invalid char in tag";
     pub const TAG_TOO_LONG: &'static str = "Tag too long";
     pub const VAL_TOO_LONG: &'static str = "Value too long";
+    pub const TAG_INVALID_POS: &'static str = "Tag invalid pos";
 }
 
 mod tags {
     pub const BEGIN_STRING: u32 = 8;
     pub const BODY_LENGTH: u32 = 9;
     pub const CHECK_SUM: u32 = 10;
-    // pub const MESSAGE_TYPE: u32 = 35;
+    pub const MESSAGE_TYPE: u32 = 35;
 }
 
 
@@ -198,9 +199,24 @@ impl Parsing {
         }
     }
 
-    fn process_tag_val(&mut self) {
-        self.parsed.msg_map.insert(self.reading_tag, self.reading_val.clone());
+    fn check_tag_pos(&mut self) {
+        if self.parsed.num_tags == 1 && self.reading_tag != tags::BEGIN_STRING {
+            let error = self.get_error_inf(errors::TAG_INVALID_POS);
+            self.errors.push_back(error);
+        } else if self.parsed.num_tags == 2 && self.reading_tag != tags::BODY_LENGTH {
+            let error = self.get_error_inf(errors::TAG_INVALID_POS);
+            self.errors.push_back(error);
+        }
+        if self.parsed.num_tags == 3 && self.reading_tag != tags::MESSAGE_TYPE {
+            let error = self.get_error_inf(errors::TAG_INVALID_POS);
+            self.errors.push_back(error);
+        }
+    }
 
+    fn process_tag_val(&mut self) {
+        self.parsed.num_tags += 1;
+        self.check_tag_pos();
+        self.parsed.msg_map.insert(self.reading_tag, self.reading_val.clone());
         if self.reading_tag != tags::CHECK_SUM {
             self.parsed.check_sum = self.reading_checksum;
         }
