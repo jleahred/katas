@@ -1,5 +1,6 @@
 //  move tags and errors to different files
 //  test external to module
+//  check missing fields
 
 
 use msg_parse::{ParsingResult, Parsing, ErrorInf, add_char, errors, ParsingState};
