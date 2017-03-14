@@ -3,6 +3,7 @@ module Lib
     , sufuri
     , ijayo
     , moja
+    , uliopita
     , jumla
     ) where
 
@@ -25,5 +26,5 @@ uliopita :: Idadi -> Idadi
 uliopita (():i) = i
 
 jumla :: Idadi -> Idadi -> Idadi
-jumla i1 sufuri = i1
+jumla i1 [] = i1
 jumla i1 i2 = jumla (ijayo i1) (uliopita i2)
