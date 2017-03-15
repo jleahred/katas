@@ -28,6 +28,18 @@ main = hspec $
       jumla k k2 `shouldBe` [(), (), (), (), (), ()]
     it "jumla k k2  ==  jumla k2 k" $
       jumla k k2 `shouldBe` jumla k2 k
+    it "bidhaa k k2  ==  [(), (), (), (), (), (), (), ()]" $
+      bidhaa k k2 `shouldBe` [(), (), (), (), (), (), (), ()]
+    it "bidhaa k k2  ==  bidhaa k2 k" $
+      bidhaa k k2 `shouldBe` bidhaa k2 k
+    it "bidhaa k k2  ==  bidhaa2 k k2" $
+      bidhaa k k2 `shouldBe` bidhaa2 k k2
+    it "jumla k k2 == jumla2 k k2" $
+      jumla k k2 `shouldBe` jumla2 k k2
+    it "int2idadi 4 == k" $
+      int2idadi 4 `shouldBe` k
+    it "idadi2int k == 4" $
+      idadi2int k `shouldBe` 4
     where k = [(), (), (), ()]
           k2 = [(), ()]
 
