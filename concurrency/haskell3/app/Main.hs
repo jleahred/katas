@@ -10,18 +10,11 @@ main = do
     b
 
 
-paral = runEval $ do
-    a <- rpar (out 'a')
-    b <- rpar (out '.')
-    rseq b
-    rseq a
-    return a
-
 paral2 = runEval $ do
-    a <- rpar out2
+    a <- rpar $ out '.'
     b <- rpar out2
-    rseq a
     rseq b
+    rseq a
     return (a, b)
 
 
@@ -33,6 +26,6 @@ out a = out' a 1000
 
 
 out2 = do
-    putStrLn "Insert char"
+    putStrLn "insert char.............   "
     c <- getChar
     out c
