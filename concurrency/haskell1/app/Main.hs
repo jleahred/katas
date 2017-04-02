@@ -3,7 +3,7 @@ module Main where
 import Lib
 import Control.Parallel.Strategies
 import System.IO
--- import Control.Concurrent
+-- import Control.Concurrentq
 
 main :: IO ()
 main = do 
