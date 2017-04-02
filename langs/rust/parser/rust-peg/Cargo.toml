@@ -1,0 +1,10 @@
+[package]
+name = "rust-peg"
+version = "0.1.0"
+authors = ["maiquel <jleahred@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+
+[build-dependencies]
+peg = { version = "0.5" }
