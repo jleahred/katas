@@ -1,5 +1,5 @@
 extern crate peg;
 
 fn main() {
-    peg::cargo_build("src/test_grammar.rustpeg");
+    peg::cargo_build("src/calculator.rustpeg");
 }

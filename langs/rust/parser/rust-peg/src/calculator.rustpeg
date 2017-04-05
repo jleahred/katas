@@ -1,0 +1,39 @@
+pub expr -> f64
+	=  ssum
+
+
+sign -> f64
+	= "+"    {  1.0 }
+	/ "-"    { -1.0 }
+
+ssum -> f64
+	= l:snum "+" r:sum { l+r }
+	/ l:snum "-" r:sum { l-r }
+	/ snum
+
+sum -> f64
+	= l:num "+" r:sum { l+r }
+	/ l:num "-" r:sum { l-r }
+	/ num
+
+num -> f64
+	= n:$([0-9]+ ("." [0-9]+)?)   { n.parse::<f64>().unwrap() }
+
+snum -> f64
+	= s:sign  n:num  {s*n}
+    / num
+
+/*
+sum -> f64
+	= l:product "+" r:product { l+r }
+	/ product
+product -> f64
+	= l:atom "*" r:atom { l*r }
+	/ atom
+atom -> f64
+	= number
+	/ "(" v:sum ")" { v }
+    / expression
+number -> f64
+	= n:$([0-9]+ "." [0-9]+) { n.parse().unwrap() }
+*/
