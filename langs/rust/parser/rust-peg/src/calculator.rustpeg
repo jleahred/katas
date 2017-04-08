@@ -2,12 +2,13 @@ pub expr -> f64
     =  sum
     /  sexpr        //  signed expresion  +1-2
 
+
 sexpr -> f64
-    =	s:sign v:(par / atom)  "*"  r:sum  	{ s*v * r}
-    /	s:sign v:(par / atom)  "/"  r:sum  	{ s*v / r}
-    /	s:sign v:(par / atom)  "+"  r:sum  	{ s*v + r}
-    /	s:sign v:(par / atom)  "-"  r:sum  	{ s*v - r}
-    /	s:sign v:(par / atom)   			{ s*v }
+    =	s:sign v:(par / atom)  "*"  r:fact  e:sexpr?    { s*v * r + e.unwrap_or(0.0)}
+    /	s:sign v:(par / atom)  "/"  r:fact  e:sexpr?    { s*v / r + e.unwrap_or(0.0)}
+    /	s:sign v:(par / atom)  "+"  r:sum  	    { s*v + r }
+    /	s:sign v:(par / atom)  "-"  r:sum  	    { s*v - r }
+    /	s:sign v:(par / atom)   			    { s*v     }
 
 
 sign -> f64
@@ -20,8 +21,8 @@ sum -> f64
     /  fact
 
 fact -> f64
-    =  l:par "*" r:par { l * r }
-    /  l:par "/" r:par { l / r }
+    =  l:par "*" r:fact { l * r }
+    /  l:par "/" r:fact { l / r }
     /  par
 
 par -> f64
