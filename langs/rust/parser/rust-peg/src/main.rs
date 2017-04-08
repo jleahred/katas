@@ -33,13 +33,28 @@ mod calc {
 
     #[test]
     fn prod() {
+        assert!(expr("5*2") == Ok(10.0));
         assert!(expr("+1*8") == Ok(8.0));
         assert!(expr("-2.0*0.5") == Ok(-1.0));
-        assert!(expr("5*2") == Ok(10.0));
+        assert!(expr("4*2*3") == Ok(24.0));
+        assert!(expr("4*2*3*10") == Ok(240.0));
         assert!(expr("1+2*3") == Ok(7.0));
-        println!("{:?}", expr("4*2*3-5"));
         assert!(expr("4*2*3-5") == Ok(19.0));
+        assert!(expr("4*2*3-5*2") == Ok(14.0));
         assert!(expr("-4*2-3*5") == Ok(-23.0));
+    }
+
+    #[test]
+    fn parenthesis() {
+        assert!(expr("(1+2)*3") == Ok(9.0));
+        assert!(expr("(5*2)") == Ok(10.0));
+        // assert!(expr("+1*8") == Ok(8.0));
+        // assert!(expr("-2.0*0.5") == Ok(-1.0));
+        assert!(expr("4*(2*3)") == Ok(24.0));
+        assert!(expr("((4*2)*((3))*10)") == Ok(240.0));
+        assert!(expr("4*2*(3-5)") == Ok(-16.0));
+        assert!(expr("(4*2)*(3-5)*2") == Ok(-32.0));
+        // assert!(expr("-4*2-3*5") == Ok(-23.0));
     }
 
 }

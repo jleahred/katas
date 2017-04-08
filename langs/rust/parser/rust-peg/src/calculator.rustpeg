@@ -1,50 +1,84 @@
 pub expr -> f64
-	=  ssum
+    =  sum
+    /  sexpr        //  signed expresion  +1-2
+
+sexpr -> f64
+    =	s:sign v:(par / atom)  "*"  r:sum  	{ s*v * r}
+    /	s:sign v:(par / atom)  "/"  r:sum  	{ s*v / r}
+    /	s:sign v:(par / atom)  "+"  r:sum  	{ s*v + r}
+    /	s:sign v:(par / atom)  "-"  r:sum  	{ s*v - r}
+    /	s:sign v:(par / atom)   			{ s*v }
 
 
 sign -> f64
-	= "+"    {  1.0 }
-	/ "-"    { -1.0 }
-
-ssum -> f64
-	= l:snum "+" r:prod { l+r }
-	/ l:snum "-" r:prod { l-r }
-	/ sprod
+    = "+"    {  1.0 }
+    / "-"    { -1.0 }
 
 sum -> f64
-	= l:num "+" r:prod { l+r }
-	/ l:num "-" r:prod { l-r }
-	/ prod
+    =  l:fact "+" r:sum { l + r }
+    /  l:fact "-" r:sum { l - r }
+    /  fact
+
+fact -> f64
+    =  l:par "*" r:par { l * r }
+    /  l:par "/" r:par { l / r }
+    /  par
+
+par -> f64
+    = "(" e:expr ")"   { e }
+    / atom
+
+atom -> f64
+    = num
+
+num -> f64
+    = n:$([0-9]+ ("." [0-9]+)?)   { n.parse::<f64>().unwrap() }
+
+
+/*
+sign -> f64
+    = "+"    {  1.0 }
+    / "-"    { -1.0 }
+
+ssum -> f64
+    = l:snum "+" r:prod { l+r }
+    / l:snum "-" r:prod { l-r }
+    / sprod
+
+sum -> f64
+    = l:num "+" r:prod { l+r }
+    / l:num "-" r:prod { l-r }
+    / prod
 
 prod -> f64
-	= l:num "*" r:sum { l*r }
-	/ l:num "/" r:sum { l/r }
-	/ num
+    = l:num "*" r:sum { l*r }
+    / l:num "/" r:sum { l/r }
+    / num
 
 sprod -> f64
-	= l:snum "*" r:sum { l*r }
-	/ l:snum "/" r:sum { l/r }
-	/ snum
+    = l:snum "*" r:sum { l*r }
+    / l:snum "/" r:sum { l/r }
+    / snum
 
 
 num -> f64
-	= n:$([0-9]+ ("." [0-9]+)?)   { n.parse::<f64>().unwrap() }
+    = n:$([0-9]+ ("." [0-9]+)?)   { n.parse::<f64>().unwrap() }
 
 snum -> f64
-	= s:sign  n:num  {s*n}
+    = s:sign  n:num  {s*n}
     / num
-
+*/
 /*
 sum -> f64
-	= l:product "+" r:product { l+r }
-	/ product
+    = l:product "+" r:product { l+r }
+    / product
 product -> f64
-	= l:atom "*" r:atom { l*r }
-	/ atom
+    = l:atom "*" r:atom { l*r }
+    / atom
 atom -> f64
-	= number
-	/ "(" v:sum ")" { v }
+    = number
+    / "(" v:sum ")" { v }
     / expression
 number -> f64
-	= n:$([0-9]+ "." [0-9]+) { n.parse().unwrap() }
+    = n:$([0-9]+ "." [0-9]+) { n.parse().unwrap() }
 */
