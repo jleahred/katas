@@ -58,6 +58,25 @@ mod calc {
         assert!(expr("+(-4*2)-(+3*5)") == Ok(-23.0));
     }
 
+
+    #[test]
+    fn simple_function() {
+        assert!(expr("1+pow(2,3)") == Ok(9.0));
+        assert!(expr("1+pow(1+1, 2+1)") == Ok(9.0));
+    }
+
+    #[test]
+    fn spaces() {
+        assert!(expr(" ( 1 + 2 ) * 3   ") == Ok(9.0));
+        assert!(expr("+1 *  8 ") == Ok(8.0));
+        assert!(expr("  (  (  4  *  2  )  *  (  (  3  )  )  *  10  )  ") == Ok(240.0));
+        assert!(expr("  (  (  4  *  2  )  *  (  (  3  )  )  *  10  )  // this is a comment") ==
+                Ok(240.0));
+        assert!(expr("  (  (  4  *  2 /* comment */ )  *  (  (  3  )  )  *  10  )  // this \
+                      is a comment") == Ok(240.0));
+        assert!(expr(" 1 + pow ( 2 , 3 ) ") == Ok(9.0));
+    }
+
     #[test]
     fn incorrect_formats() {
         assert!(expr("1+2**3").is_err());
@@ -71,11 +90,9 @@ mod calc {
         assert!(expr("(1+2*)*(3)").is_err());
         assert!(expr("(1+2*)/").is_err());
         assert!(expr("(1+2*)+").is_err());
-    }
-
-    #[test]
-    fn simple_function() {
-        assert!(expr("1+pow(2,3)") == Ok(9.0));
+        assert!(expr("*1+2").is_err());
+        assert!(expr("+ 1+2").is_err());
+        assert!(expr("1+pow(2)").is_err());
     }
 
 }
