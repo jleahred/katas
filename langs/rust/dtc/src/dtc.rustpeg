@@ -1,0 +1,74 @@
+/*
+pub expr -> f64
+    =  _ s:sum _    {s}
+    /  _ e:sexpr _  {e}     //  signed expresion  +1-2
+
+
+
+//  signed expressions
+//  trick on  e:sexpr?
+sexpr -> f64
+    =   _ s:sign v:(par / atom) _  "*" _  r:fact  e:sexpr?  { s*v * r + e.unwrap_or(0.0)}
+    /   _ s:sign v:(par / atom) _  "/" _  r:fact  e:sexpr?  { s*v / r + e.unwrap_or(0.0)}
+    /   _ s:sign v:(par / atom) _  "+" _  r:sum             { s*v + r }
+    /   _ s:sign v:(par / atom) _  "-" _  r:sum             { s*v - r }
+    /   _ s:sign v:(par / atom)                             { s*v     }
+
+
+sign -> f64
+    = "+"    {  1.0 }
+    / "-"    { -1.0 }
+
+sum -> f64
+    =  l:fact _ "+" _ r:sum   { l + r }
+    /  l:fact _ "-" _ r:sum   { l - r }
+    /  fact
+
+fact -> f64
+    =  l:par _ "*" _ r:fact   { l * r }
+    /  l:par _ "/" _ r:fact   { l / r }
+    /  par
+
+par -> f64
+    = _ "(" _  e:expr _  ")" _   { e }
+    / atom
+
+atom -> f64
+    = num
+    / fn
+
+//  number cannot have sign
+num -> f64
+    = n:$([0-9]+ ("." [0-9]+)?)   { n.parse::<f64>().unwrap() }
+
+
+fn -> f64
+    = "pow" _ "(" _ b:expr _ "," _ e:expr _ ")"  { b.powf(e) }
+*/
+
+
+//  ------------------------------------------------------------
+//  spaces and comments
+_ = #quiet<(whitespace / eol / comment)*>
+
+/* Modeled after ECMA-262, 5th ed., 7.4. */
+comment
+  = "//" (!eolChar .)*
+  / "/*" (!"*/" .)* "*/"
+
+/* Modeled after ECMA-262, 5th ed., 7.3. */
+eol
+  = "\n"
+  / "\r\n"
+  / "\r"
+  / "\u{2028}"
+  / "\u{2029}"
+
+eolChar
+  = [\n\r\u{2028}\u{2029}]
+
+/* Modeled after ECMA-262, 5th ed., 7.2. */
+whitespace
+  = [ \t\u{00A0}\u{FEFF}\u{1680}\u{180E}\u{2000}-\u{200A}\u{202F}\u{205F}\u{3000}] // \v\f removed
+//  spaces and comments
+//  ------------------------------------------------------------

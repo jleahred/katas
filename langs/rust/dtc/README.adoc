@@ -1,0 +1,108 @@
+= Dynamic Text Compiler
+
+Grammar and rules to transform text dynamically
+
+You could generate code for any programming language with nice format from an external DSL.
+
+
+The program is composed of commands to define grammar and templates to transform the text.
+
+The templates will be stored on vars.
+
+The grammar will define the input syntax and params to be applied on templates.
+
+The typical sequence will be:
+
+. Load grammar
+. Load input
+. Generate AST
+. Apply templates
+    .. Define templates
+    .. Run AST
+    .. Define templates
+    .. Run AST
+    .. ...
+
+The process will be defined on a document with the sequence of commands to execute.
+
+== Commands
+Commands are indentation sensitive.
+
+
+grammar:: Grammar defined in peg format
++
+The start rule has to be called main
++
+You can define the template name to be applied per rule
+
+push:: You can define variables grouped and push them in the system
++
+<var_name> = <string_value>::  To define variables
++
+The templates defined in grammar, will be found on variables
++
+When no template is defined for a rule, the system will keep the text applied on
+this rule
++
+You can redefine a template
++
+It will write the result on output
++
+On input var we have to write the text to be parsed and transformed
+
+pop:: It will remove last pushed vars
+
+run:: Execute the AST with the input
+
+include <file_name>:: The content of <file_name> will be added to current file
+
+write:: Just write the text
+
+comments:: `//` and `/* \*/` just at the beginning of line
+
+
+
+.Commands file struct
+----
+push
+    input =
+        this is an example
+        of input
+
+grammar
+    main
+        =   a1:"a" . . a2:"aa"  c*     ->  main
+        /   "empty"
+
+    c    =   "c"*
+
+push
+    var1 = hi
+    var2 = world
+
+
+push
+    main =
+        $(a1), $(a2)  $(var1)  $(var2)
+
+run
+
+----
+
+----
+grammar
+    main
+        =   a1:"a" . . a2:"aa"  c*     ->  main
+        /   "empty"
+
+    c    =   "c"*
+----
+
+On rule definition, after ++->++ is defined the template to be executed
+
+++a1++ and  ++a2++ are parameters. When calling the template, this variables will contain the text
+matched
+
+When applying a template, the params will be injected pushing them as variables.
+
+When template application finish, the params will be poped
