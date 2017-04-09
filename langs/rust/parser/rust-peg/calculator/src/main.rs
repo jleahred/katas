@@ -55,12 +55,33 @@ mod calc {
         assert!(expr("((4*2)*((3))*10)") == Ok(240.0));
         assert!(expr("4*2*(3-5)") == Ok(-16.0));
         assert!(expr("(4*2)*(3-5)*2") == Ok(-32.0));
-        assert!(expr("-4*2-3*5") == Ok(-23.0));
+        assert!(expr("+(-4*2)-(+3*5)") == Ok(-23.0));
+    }
+
+    #[test]
+    fn incorrect_formats() {
+        assert!(expr("1+2**3").is_err());
+        assert!(expr("1++2*3").is_err());
+        assert!(expr("++1+2*3").is_err());
+        assert!(expr("-+1+2*3").is_err());
+        assert!(expr("+-1+2*3").is_err());
+        assert!(expr("(1+2)()*3").is_err());
+        assert!(expr("(1+2)*(3))").is_err());
+        assert!(expr("(1+2+)*(3)").is_err());
+        assert!(expr("(1+2*)*(3)").is_err());
+        assert!(expr("(1+2*)/").is_err());
+        assert!(expr("(1+2*)+").is_err());
+    }
+
+    #[test]
+    fn simple_function() {
+        assert!(expr("1+pow(2,3)") == Ok(9.0));
     }
 
 }
 
 
 fn main() {
-    println!("Hello, world!");
+    println!("{:?}", calc::expr("1+2*3"));
+    println!("{:?}", calc::expr("2*(1+pow(2,3))"));
 }

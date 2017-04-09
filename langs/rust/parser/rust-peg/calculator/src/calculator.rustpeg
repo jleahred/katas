@@ -1,0 +1,43 @@
+pub expr -> f64
+    =  sum
+    /  sexpr        //  signed expresion  +1-2
+
+//  signed expressions 
+//  trick on  e:sexpr?
+sexpr -> f64
+    =    s:sign v:(par / atom)  "*"  r:fact  e:sexpr?   { s*v * r + e.unwrap_or(0.0)}
+    /    s:sign v:(par / atom)  "/"  r:fact  e:sexpr?   { s*v / r + e.unwrap_or(0.0)}
+    /    s:sign v:(par / atom)  "+"  r:sum              { s*v + r }
+    /    s:sign v:(par / atom)  "-"  r:sum              { s*v - r }
+    /    s:sign v:(par / atom)                          { s*v     }
+
+
+sign -> f64
+    = "+"    {  1.0 }
+    / "-"    { -1.0 }
+
+sum -> f64
+    =  l:fact "+" r:sum { l + r }
+    /  l:fact "-" r:sum { l - r }
+    /  fact
+
+fact -> f64
+    =  l:par "*" r:fact { l * r }
+    /  l:par "/" r:fact { l / r }
+    /  par
+
+par -> f64
+    = "(" e:expr ")"   { e }
+    / atom
+
+atom -> f64
+    = num
+    / fn
+
+//  number cannot have sign
+num -> f64
+    = n:$([0-9]+ ("." [0-9]+)?)   { n.parse::<f64>().unwrap() }
+
+
+fn -> f64
+    = "pow" "(" b:expr "," e:expr ")"  { b.powf(e) }
