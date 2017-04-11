@@ -1,0 +1,7 @@
+[package]
+name = "indent_tokenizer"
+version = "0.1.0"
+authors = ["jlesteban <jlesteban>"]
+
+[dependencies]
+unindent = "^0.1"
