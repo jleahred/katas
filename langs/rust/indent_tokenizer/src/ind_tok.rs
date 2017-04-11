@@ -4,7 +4,8 @@
 //     s.lines()
 // }
 
-
+const INDENT_CHAR: char = '|';
+const EOL_CHAR: char = '|';
 
 #[derive(Eq, PartialEq)]
 struct LineInfo {
@@ -21,7 +22,7 @@ fn process_line(line: &String) -> Option<LineInfo> {
         if located_start_indent == false {
             if c == ' ' {
                 indent += 1;
-            } else if c == '|' {
+            } else if c == INDENT_CHAR {
                 indent += 1;
                 located_start_indent = true;
             } else {
@@ -35,7 +36,7 @@ fn process_line(line: &String) -> Option<LineInfo> {
     if lresult.is_empty() && !located_start_indent {
         None
     } else {
-        if lresult.chars().rev(). == "|" {
+        if lresult.chars().last() == Some(EOL_CHAR) {
             lresult.pop();
         }
 
@@ -112,10 +113,17 @@ fn test_process_line() {
         content: "abcdef  ".to_string(),
     }));
 
-    // assert!(process_line(&"    |  |".to_string()) ==
-    //         Some(LineInfo {
-    //     indent: 4,
-    //     content: "  ".to_string(),
-    // }));
+    assert!(process_line(&"   |  |".to_string()) ==
+            Some(LineInfo {
+        indent: 4,
+        content: "  ".to_string(),
+    }));
+
+    //  pipe end of line ---------------------------
+    assert!(process_line(&"    abcdef  ||".to_string()) ==
+            Some(LineInfo {
+        indent: 4,
+        content: "abcdef  |".to_string(),
+    }));
 
 }
