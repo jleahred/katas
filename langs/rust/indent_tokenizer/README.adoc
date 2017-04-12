@@ -114,21 +114,21 @@ It is usefull when you need to start with spaces.
 ----
 
 
-When a line is empty or has only spaces, the line is ignored.
+A line is empty when there are no content or it only has spaces.
 
 
-.Empty lines are ignored
+.Empty lines
 ----
 .....
     .....
     .....
     .....
-    .....     next line is ignored
+    .....     next line is empty
 
-    .....     next line is ignored
+    .....     next line is empty
 
 .....
-.....         next line is ignored
+.....         next line is empty
 
 ----
 
@@ -221,6 +221,41 @@ But I could need a pipe `|` at end of line
 |.....   <- This is redundant, but more clear
  
 ----
+
+
+== Tokens
+
+* Each change of leven represent an end of token.
+* An empty line, is used to separate tokens on same level
+* A token contain lines and a list of tokens
+
+
+.Tokens
+----
+This is the first token
+    This is another token, because it's on a different level
+        And another token
+    This is also a different token
+
+A token can contain
+multiple lines
+    This is another token
+    with three
+    lines
+
+Empty lines can be used to
+separate tokens
+    This is a token,
+    that continues
+    here. Next empty line define
+    a token division
+
+    And this is a different one
+    with a couple of lines
+----
+
+
+
 
 == Identation tokenizer API
 pending
