@@ -2,16 +2,18 @@
 
 Grammar and rules to transform text dynamically
 
-You could generate code for any programming language with nice format from an external DSL.
+You could generate code for any programming language with nice format
+
+You can create external DSL.
+
+== Inputs
+
+Text to convert:: Your DSL or text to process
+Grammar:: Set of rules (something peg style) to parse the input and generate AST
+Templates:: Script to process combined with AST to produce the result.
 
 
-The program is composed of commands to define grammar and templates to transform the text.
-
-The templates will be stored on vars.
-
-The grammar will define the input syntax and params to be applied on templates.
-
-The typical sequence will be:
+== Main process
 
 . Load grammar
 . Load input
@@ -23,86 +25,244 @@ The typical sequence will be:
     .. Run AST
     .. ...
 
-The process will be defined on a document with the sequence of commands to execute.
 
-== Commands
-Commands are indentation sensitive.
+== Let's see by example
 
+The templates will be stored on vars.
 
-grammar:: Grammar defined in peg format
-+
-The start rule has to be called main
-+
-You can define the template name to be applied per rule
+The grammar will define the input syntax and params to be applied on templates.
 
-push:: You can define variables grouped and push them in the system
-+
-<var_name> = <string_value>::  To define variables
-+
-The templates defined in grammar, will be found on variables
-+
-When no template is defined for a rule, the system will keep the text applied on
-this rule
-+
-You can redefine a template
-+
-It will write the result on output
-+
-On input var we have to write the text to be parsed and transformed
+=== Grammar
 
-pop:: It will remove last pushed vars
-
-run:: Execute the AST with the input
-
-include <file_name>:: The content of <file_name> will be added to current file
-
-write:: Just write the text
-
-comments:: `//` and `/* \*/` just at the beginning of line
-
-
-
-.Commands file struct
-----
-push
-    input =
-        this is an example
-        of input
-
-grammar
-    main
-        =   a1:"a" . . a2:"aa"  c*     ->  main
-        /   "empty"
-
-    c    =   "c"*
-
-push
-    var1 = hi
-    var2 = world
-
-
-push
-    main =
-        $(a1), $(a2)  $(var1)  $(var2)
-
-run
+todo: pending
 
 ----
+main
+    =   a1:"a" . . a2:"aa"  c*     ->  main
+    /   "empty"
 
-----
-grammar
-    main
-        =   a1:"a" . . a2:"aa"  c*     ->  main
-        /   "empty"
-
-    c    =   "c"*
+c    =   "c"*
 ----
 
-On rule definition, after ++->++ is defined the template to be executed
+We can define the "template" to be applyed per rule with `->`
 
-++a1++ and  ++a2++ are parameters. When calling the template, this variables will contain the text
-matched
 
-When applying a template, the params will be injected pushing them as variables.
 
-When template application finish, the params will be poped
+=== Template script
+
+todo: pending completion and adding details
+
+The format is indentation sensitive (using https://github.com/jleahred/katas/tree/master/langs/rust/indent_tokenizer[indent_tokenizer])
+
+.Template example
+----
+set FRAME_TYPE
+    set
+        TYPE_OPTIONAL          jle::optional<$(BASIC_TYPE)>
+        TYPE_RECOMENDED        jle::optional<$(BASIC_TYPE)>
+        TYPE_LIST              jle::list<$(BASIC_TYPE)>
+        TYPE_WITH_DEFAULT_DATE $(BASIC_TYPE)
+        TYPE_WITH_DEFAULT      $(BASIC_TYPE)
+        COMP_TYPE_NO_END       $(id)::$(COMPOSED_TYPE)
+        COMP_TYPE_END          $(id)
+    run
+    write  $(TYPE)
+
+
+
+set H_FORWARD_FILE
+    write
+        __BEGIN_FILE__::$(__file_name__)_forward.h
+        //  generated on $(__date_time__)
+
+
+    set
+        MODULE      $(MODULE_CODE)
+        RECORD      struct $(id);$(__endl__)
+        TUPLE       struct $(id);$(__endl__)
+        ENUMERATION enum class $(id);$(__endl__)
+        UNION       struct $(id);$(__endl__)
+
+    run
+
+
+    write $(FRAMES)
+    write
+        |
+        |
+        |
+
+
+
+
+
+
+set H_FILE
+    write
+        __BEGIN_FILE__::$(__file_name__).h
+        |     //  generated on $(__date_time__)
+
+
+
+
+        #include <cstdint>
+        #include <string>
+        #include "core/tuple.hpp"
+        #include "core/optional.hpp"
+        #include "core/dbl.h"
+        #include "core/cont/list.hpp"
+
+
+
+
+    set
+        MODULE      $(MODULE_CODE)
+        RECORD      $(RECORD_H)
+        TUPLE       $(TUPLE_H)
+        ENUMERATION $(ENUMERATION_H)
+        UNION       $(UNION_H)
+    run
+
+
+    write
+        $(FRAMES)
+        |
+        |
+        |
+
+
+write
+    $(H_FORWARD_FILE)
+    $(H_FILE)
+    $(CPP_FILE)
+
+
+----
+
+
+
+
+predefined templates
+
+----
+__date__
+__date_time__
+__none__
+__endl__
+----
+
+
+
+Another example
+
+----
+set RECORD_CPP
+    write
+        //-----------------------------------------------------------------
+        //-----------------------------------------------------------------
+        //
+        //    (record)   $(id)
+        //
+        //-----------------------------------------------------------------
+        //-----------------------------------------------------------------
+
+
+        $(id)::$(id) (
+
+    set
+        FNAMED_NOEND $(FULL_TYPE) _$(id),$(__endl__)$(FNAMED)
+        FNAMED_END   $(FULL_TYPE) _$(id)
+        |
+
+    run
+
+    write
+        |   $(RECORD_FIELDS)
+        )  :
+
+    set
+        FNAMED_NOEND
+            $(id)(_$(id)),
+            $(FNAMED)
+
+        FNAMED_END   $(id)(_$(id))
+    run
+
+    write
+        |   $(RECORD_FIELDS)
+        {}
+
+
+
+
+        //  comparison
+        bool $(id)::operator==(const $(id)& r) const
+        {
+
+    set
+        FNAMED_NOEND $(id) == r.$(id)  &&$(__endl__)$(FNAMED)
+        FNAMED_END   $(id) == r.$(id)
+
+    run
+
+    write
+        if(
+            |   $(RECORD_FIELDS)
+        )     return true;
+        else  return false;
+        }
+
+
+        bool $(id)::operator< (const $(id)& r) const
+        {
+
+    set
+        FNAMED_NOEND $(id),$(__endl__)$(FNAMED)
+        FNAMED_END   $(id)
+
+    run
+
+    write
+        |   if(std::tie(
+                $(RECORD_FIELDS))
+            <
+            std::tie(
+
+    set
+        FNAMED_NOEND r.$(id),$(__endl__)$(FNAMED)
+        FNAMED_END   r.$(id)
+
+    run
+
+    write
+        |   $(RECORD_FIELDS)
+        )     return true;
+        else  return false;
+
+
+        }
+
+
+        std::ostream& operator<< (std::ostream& os, const $(id)& t)
+        {
+    set
+        FNAMED_NOEND << "$(id): " << t.$(id) << ", "$(__endl__)$(FNAMED)
+        FNAMED_END   << "$(id): " << t.$(id)
+
+    run
+
+    write
+        os  << " $(id) { "
+            |$(RECORD_FIELDS)
+            << " }";
+        return os;
+        }
+        |
+        |
+        |
+----
+
+
+
+
+
