@@ -42,8 +42,8 @@ use process_line::{LineInfo, process_line};
 #[derive(Debug)]
 pub struct Token {
     // level: u32,
-    lines: Vec<String>,
-    tokens: Vec<Token>,
+    pub lines: Vec<String>,
+    pub tokens: Vec<Token>,
 }
 
 
