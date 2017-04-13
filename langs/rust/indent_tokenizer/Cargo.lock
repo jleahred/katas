@@ -1,14 +1,4 @@
 [root]
 name = "indent_tokenizer"
 version = "0.1.0"
-dependencies = [
- "unindent 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
-[[package]]
-name = "unindent"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[metadata]
-"checksum unindent 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3508be0ce1bacc38d579b69bffb4b8d469f5af0c388ff4890b2b294e61671ffe"

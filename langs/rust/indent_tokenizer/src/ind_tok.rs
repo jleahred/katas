@@ -5,11 +5,6 @@
 //
 
 
-// pub fn split_lines(s: &String) -> Lines {
-//     s.lines()
-// }
-
-
 // This is the first token
 //     This is another token, because it's on a different level
 //         And another token
@@ -33,7 +28,6 @@
 
 
 
-// use std::str::Lines;
 use process_line::{LineInfo, process_line};
 
 
@@ -79,9 +73,6 @@ impl Token {
             tokens: Vec::new(),
         }
     }
-    // fn is_empty(&self) -> bool {
-    //     self.lines.is_empty()
-    // }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -93,20 +84,20 @@ struct PrevLevels {
 #[derive(Debug)]
 struct ParsingTokens {
     prevs: Vec<PrevLevels>,
-    tokens_content: Vec<Vec<String>>,
+    tokens_and_lines: Vec<Vec<String>>,
 }
 
 impl ParsingTokens {
     fn new() -> ParsingTokens {
         ParsingTokens {
             prevs: Vec::new(),
-            tokens_content: Vec::new(), // current_token: Token::new(),
+            tokens_and_lines: Vec::new(),
         }
     }
 
     fn get_tokens(self) -> Vec<Token> {
         let mut result = Vec::new();
-        for content in self.tokens_content {
+        for content in self.tokens_and_lines {
             if content.len() > 0 {
                 let mut token = Token::new();
                 token.lines = content;
@@ -118,18 +109,23 @@ impl ParsingTokens {
 
 
     fn add_empty_token(mut self) -> ParsingTokens {
-        match self.prevs.last_mut().map(|v| *v) {
+        self.tokens_and_lines.push(Vec::new());
+        let new_prev = match self.prevs.last_mut() {
             None => {
-                self.prevs.push(PrevLevels {
+                Some(PrevLevels {
                     indent: 0,
                     index: 0,
                 })
             }
-            Some(ref mut last_prev) => 
-                last_prev.index = last_prev.index + 1
+            Some(ref mut last_prev) => {
+                last_prev.index = last_prev.index + 1;
+                None
             }
+        };
+        match new_prev {
+            None => (),
+            Some(np) => self.prevs.push(np),
         }
-        self.tokens_content.push(Vec::new());
         self
     }
 
@@ -145,7 +141,7 @@ impl ParsingTokens {
 
         // let last_indent: Option<u32> = *self.prev_indents.last();
 
-        match self.prevs.last().map(|v| *v) {
+        match self.prevs.last().cloned() {
             None => Ok(self.add_line_new_token_root(l)),
             Some(last_prev) => {
                 use std::cmp::Ordering::{Equal, Greater, Less};
@@ -161,7 +157,7 @@ impl ParsingTokens {
     fn add_line_new_token_root(mut self, l: &LineInfo) -> ParsingTokens {
         let mut new_content = Vec::new();
         new_content.push(l.content.clone());
-        self.tokens_content.push(new_content);
+        self.tokens_and_lines.push(new_content);
         let index = self.prevs.len();
         self.prevs.push(PrevLevels {
             indent: l.indent,
@@ -173,22 +169,22 @@ impl ParsingTokens {
     fn add_line_new_token_deep(mut self, l: &LineInfo) -> ParsingTokens {
         let mut new_content = Vec::new();
         new_content.push(l.content.clone());
-        self.tokens_content.push(new_content);
+        self.tokens_and_lines.push(new_content);
         self
     }
 
     fn add_line_token_idx(mut self, idx: usize, lcontent: &String) -> ParsingTokens {
-        self.tokens_content[idx].push(lcontent.clone());
+        self.tokens_and_lines[idx].push(lcontent.clone());
         self
     }
 
-    fn remove_prev_indents_till(&mut self, pindent: u32) {
+    fn remove_prev_indents_till(&mut self, indent: u32) {
         //  look for previous ident level
         while self.prevs.len() > 0 {
-            match self.prevs.last().map(|v| *v) {
+            match self.prevs.last().cloned() {
                 None => break,
-                Some(PrevLevels { indent, index }) => {
-                    if pindent > indent {
+                Some(prev) => {
+                    if indent > prev.indent {
                         self.prevs.pop();
                     }
                 }
@@ -200,7 +196,7 @@ impl ParsingTokens {
         self.prevs.pop();
         self.remove_prev_indents_till(l.indent);
 
-        match self.prevs.last().map(|v| *v) {
+        match self.prevs.last().cloned() {
             None => Ok(self.add_line_new_token_root(l)),
             Some(PrevLevels { indent, index }) => {
                 use std::cmp::Ordering::{Equal, Greater, Less};
