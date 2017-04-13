@@ -17,11 +17,15 @@ mod tests {
         assert!(result[0].lines.len() == 1);
     }
 
+
+
     #[test]
     fn empty_input() {
         let result = ind_tok::tokenize("").unwrap();
         assert!(result.len() == 0);
     }
+
+
 
     #[test]
     fn empty_lines() {
@@ -37,6 +41,8 @@ mod tests {
             .unwrap();
         assert!(result.len() == 0);
     }
+
+
 
     #[test]
     fn some_lines_one_token() {
@@ -56,14 +62,16 @@ mod tests {
         assert!(result[0].lines.len() == 4);
     }
 
+
+
     #[test]
-    fn some_tokens_root_level() {
+    fn some_tokens_root_level_empty_line_separator() {
         let result = ind_tok::tokenize("1111
 
 2222
 
 3333
-")
+    ")
             .unwrap();
         assert!(result.len() == 3);
         assert!(result[0].lines[0] == "1111");
@@ -82,11 +90,12 @@ mod tests {
 13
 
 20
-21
+    \
+30
 
-")
+    ")
             .unwrap();
-        assert!(result.len() == 3);
+        assert!(result.len() == 4);
         assert!(result[0].lines[0] == "00");
         assert!(result[0].lines[1] == "01");
         assert!(result[0].lines[2] == "02");
@@ -95,6 +104,38 @@ mod tests {
         assert!(result[1].lines[2] == "12");
         assert!(result[1].lines[3] == "13");
         assert!(result[2].lines[0] == "20");
-        assert!(result[2].lines[1] == "21");
+        assert!(result[3].lines[0] == "30");
     }
+
+
+
+    //     #[test]
+    //     fn nested_indent() {
+    //         let result = ind_tok::tokenize("0
+    //     01
+    //     02
+    // 1
+    //     11
+    //     12
+    //         120
+    //         121
+    //         122
+    //     13
+
+    // 2
+    //     21
+
+    // ")
+    //             .unwrap();
+    //         assert!(result.len() == 3);
+    //         assert!(result[0].lines[0] == "00");
+    //         assert!(result[0].lines[1] == "01");
+    //         assert!(result[0].lines[2] == "02");
+    //         assert!(result[1].lines[0] == "10");
+    //         assert!(result[1].lines[1] == "11");
+    //         assert!(result[1].lines[2] == "12");
+    //         assert!(result[1].lines[3] == "13");
+    //         assert!(result[2].lines[0] == "20");
+    //         assert!(result[2].lines[1] == "21");
+    //     }
 }
