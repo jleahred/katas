@@ -1,10 +1,10 @@
 const INDENT_CHAR: char = '|';
 const EOL_CHAR: char = '|';
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub struct LineInfo {
-    indent: usize,
-    content: String,
+    pub indent: u32,
+    pub content: String,
 }
 
 
