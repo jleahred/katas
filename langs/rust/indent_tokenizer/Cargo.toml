@@ -1,6 +1,0 @@
-[package]
-name = "indent_tokenizer"
-version = "0.1.0"
-authors = ["jlesteban <jlesteban>"]
-
-[dependencies]
