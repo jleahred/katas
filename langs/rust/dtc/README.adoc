@@ -52,7 +52,7 @@ We can define the "template" to be applyed per rule with `->`
 
 todo: pending completion and adding details
 
-The format is indentation sensitive (using https://github.com/jleahred/katas/tree/master/langs/rust/indent_tokenizer[indent_tokenizer])
+The format is indentation sensitive (using https://github.com/jleahred/indent_tokenizer[indent_tokenizer])
 
 .Template example
 ----
