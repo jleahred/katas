@@ -1,0 +1,213 @@
+= Mini-kata compare lists
+
+Given two lists, `a` and `b`. You have to verify that the list containing 
+the square of the elements of `a`, has the same elements of `b`.
+
+OK
+
+----
+a = [1,2,3,4]
+b = [1,4,9,8]
+----
+
+OK
+
+----
+a = [2,3,1,4]
+b = [8,4,9,1]
+----
+
+
+WRONG
+
+----
+a = [1,2,3,4]
+b = [1,4,9]
+----
+
+Let's try to solve in different programming languages.
+
+I will try to choose idiomatic solutions per language.
+
+The most important thing is to be real style code.
+
+
+Lets start
+
+== Haskell
+
+[source, haskell]
+----
+comp a b = sort(square a) == sort b
+           where square = map (\x->x*x) 
+----
+
+Ups!!! Thats all???
+
+Small, concise, clean...
+
+I love to put the definition of the internal
+functions at the end. This is the right way.
+
+
+== F#
+
+[source, fsharp]
+----
+module AreTheySame = 
+    let comp a b = 
+     let newa = a |> List.map (fun x -> x*x) |> List.sort
+     let newb = b |> List.sort
+     newa = newb
+----
+
+ML syntax
+
+
+== C++
+
+[source, cpp]
+----
+#include <vector>
+#include <algorithm>
+
+template<typename T>
+bool comp(T a, T b)
+{
+    auto sort = [] (auto&& c) { std::sort(c.begin(), c.end()); return c; };
+    auto square = [] (auto&& c) { for(auto& e:c) e = e*e; return c; };
+
+    return sort(square(a))==sort(b);
+}
+----
+
+Not bad.
+
+Types are... where they have to be.
+
+It's generic on types, the container and the content type.
+
+It makes a copy of both parameters. (Yeah, you can trick this code to run
+incorrectly, but it would be not clear code)
+
+Adding `&` on signature, we could mutate the params and make it more efficient,
+but less clear to use.
+
+[source, cpp]
+----
+bool comp(T& a, T& b)
+----
+
+In previous Haskell solution, the compiler could detect that, in some cases
+he could work mutating for performance.
+
+Therefore, Haskell is more clean, concise, easy to read and... better performance.
+
+[NOTE]
+No!!! performance is not about running a small piece of code with few data faster, is about
+to produce faster code in heavy situations.
+
+
+== Rust
+
+[source, rust]
+----
+fn comp(mut a: Vec<i32>, mut b: Vec<i32>) -> bool {
+    for mut e in &mut a {
+        *e = *e * *e;
+    }
+    a.sort();
+    b.sort();
+    a == b
+}
+----
+
+As it's clearly declared, the code mutate the parameters.
+
+Good for performance, but, mutating parameters ofuscates the code, it's
+difficult to reason.
+
+
+You could use the code like...
+
+[source, rust]
+----
+    let a = vec![3, 1, 2];
+    let b = vec![1, 4, 9];
+
+    println!("{}", comp(a, b));
+----
+
+Something is wrong here!!!
+
+We pass two parameters NOT mutable to a function that mutate them.
+
+But it's not wrong. This is safe code, no possibility of mistakes about mutability here.
+
+After calling `comp`, you cannot use `a` neither `b` anymore. Problem gone.
+
+What if I want?
+
+Just call...
+
+[source, rust]
+----
+    println!("{}", comp(a.clone(), b.clone()));
+----
+
+Safe solution, good for performance. Thanks to explicit performance design defined
+on signature.
+
+Better than `C++` because we don't need to pay for copies if it's not necessary.
+
+But this solution is for a kind of container (`Vec`) and a concrete integer type.
+
+It's not generic. I don't think it's terrible because we have to reduce coding
+with non specific types.
+
+A very generic solution could be with methaprogramming:
+
+[source, rust]
+----
+macro_rules! comp {
+    ($a:expr, $b:expr) => {
+        {
+            let mut nwa = $a.clone();
+            let mut nwb = $b.clone();
+            for mut e in &mut nwa {
+                *e = *e * *e;
+            };
+            nwa.sort();
+            nwb.sort();
+            nwa == nwb
+        }
+    };
+}
+----
+
+
+You could use like
+
+[source, rust]
+----
+    let a = [3, 1, 2];
+    let b = [1, 4, 9];
+
+    println!("{}", comp!(a, b));
+
+    let va = vec![3, 1, 2];
+    let vb = vec![1, 4, 9];
+
+    println!("{}", comp!(va, vb));
+----
+
+First, it's not a vector, it's a slice. Second, with a vector.
+
+This solution and code is less honest
+
+
+== C#
+
+[source, csharp]
+----
+----
