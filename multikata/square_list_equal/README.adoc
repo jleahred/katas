@@ -25,6 +25,25 @@ a = [1,2,3,4]
 b = [1,4,9]
 ----
 
+OK
+
+----
+a = [1,2,3,4,4]
+b = [1,4,9,16,16]
+----
+
+WRONG
+
+----
+a = [1,2,3,4,4]
+b = [1,4,9,16]
+----
+
+
+
+
+
+
 Let's try to solve in different programming languages.
 
 I will try to choose idiomatic solutions per language.
