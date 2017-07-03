@@ -338,3 +338,39 @@ def comp(a, b)
 end
 ----
 
+Danger!!!
+
+It will modify the parameters!!!
+
+To avoid it, you could...
+
+
+[source, ruby]
+----
+def comp(a, b)
+  a.dup.sort.map { |x| x*x } == b.dup.sort
+end
+----
+
+
+== Elixir
+
+[source, elixir]
+----
+def comp(a, b) do
+  Enum.sort(a) |> Enum.map(&(&1*&1)) == Enum.sort(b)
+end
+----
+
+For documentation, you could specify the signature.
+
+Don't forget, Elixir has dynamic typing, but you can check a lot related with types with dialyzer
+
+
+[source, elixir]
+----
+@spec comp([integer], [integer]) :: boolean
+def comp(a, b) do
+  Enum.sort(a) |> Enum.map(&(&1*&1)) == Enum.sort(b)
+end
+----
