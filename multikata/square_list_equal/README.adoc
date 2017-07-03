@@ -266,3 +266,30 @@ is to verbose.
 
 We have to deal with `null`, the billion dollar error. https://en.wikipedia.org/wiki/Tony_Hoare
 
+== Scala
+
+[source, scala]
+----
+object Solution {
+  def comp(a: List[Int], b: List[Int]): Boolean = {
+    a.sorted.map(scala.math.pow(_, 2).toInt) == b.sorted
+  }
+}
+----
+
+This version was just tested on the Scala REPL. You can start do the same as follows:
+
+[source, console]
+----
+scala> :load solution.scala
+Loading solution.scala...
+defined object Solution
+
+scala> Solution.comp(List(1,2,3,4), List(1,4,9))
+res10: Boolean = false
+
+scala> Solution.comp(List(1,2,3,4), List(1,4,9,16))
+res11: Boolean = true
+
+scala> Solution.comp(List(2,3,1,4), List(16,4,9,1))
+res12: Boolean = true
