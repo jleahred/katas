@@ -315,4 +315,14 @@ res11: Boolean = true
 
 scala> Solution.comp(List(2,3,1,4), List(16,4,9,1))
 res12: Boolean = true
+----
+
+== Python
+
+[source, python]
+----
+def comp(a, b):
+     square_a = map(lambda x: x**2, a)
+     return sorted(square_a) == sorted(b)
+----
 
