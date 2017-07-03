@@ -328,6 +328,12 @@ def comp(a, b):
      return sorted(square_a) == sorted(b)
 ----
 
+[WARNING]
+No `a.sort()`  or `b.sort()` +
+It makes inplace sort and it will modify the values on the caller. Too awful!!!
+
+
+
 == Ruby
 
 
