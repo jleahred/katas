@@ -328,3 +328,13 @@ def comp(a, b):
      return sorted(square_a) == sorted(b)
 ----
 
+== Ruby
+
+
+[source, ruby]
+----
+def comp(a, b)
+  a.sort.map { |x| x*x } == b.sort
+end
+----
+
