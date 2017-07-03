@@ -374,3 +374,23 @@ def comp(a, b) do
   Enum.sort(a) |> Enum.map(&(&1*&1)) == Enum.sort(b)
 end
 ----
+
+
+
+== Java Script
+
+[source, javascript]
+----
+comp = function(a, b) { a.sort().map(function(x) { x*x }) == b.sort() }
+----
+
+It works OK, but it's dangerous and therefore, not a good solution.
+
+.sort makes an in place modification, thus a modification of values of caller. Too dangerous
+
+To avoid this risk...
+
+[source, javascript]
+----
+comp = function(a, b) { a.map(function(x) { x*x }).sort() == b.slice().sort() }
+----
