@@ -266,6 +266,28 @@ is to verbose.
 
 We have to deal with `null`, the billion dollar error. https://en.wikipedia.org/wiki/Tony_Hoare
 
+== Racket
+
+[source, racket]
+----
+#lang racket/base
+
+(define (comp a b)
+  (let ([sqr (lambda (x) (* x x))])
+    (equal? (sort (map sqr a) <) (sort b <))))
+----
+
+The solution file contains tests. You can run them as follows:
+
+[source, console]
+----
+$ raco test racket/solution.rkt
+raco test: (submod "racket/solution.rkt" test)
+6 tests passed
+----
+
+
+
 == Scala
 
 [source, scala]
@@ -293,3 +315,4 @@ res11: Boolean = true
 
 scala> Solution.comp(List(2,3,1,4), List(16,4,9,1))
 res12: Boolean = true
+
