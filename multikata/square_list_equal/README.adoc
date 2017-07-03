@@ -57,6 +57,8 @@ Lets start
 
 [source, haskell]
 ----
+import Data.List (sort)
+
 comp a b = sort(square a) == sort b
            where square = map (\x->x*x) 
 ----
