@@ -70,6 +70,7 @@ Small, concise, clean...
 I love to put the definition of the internal
 functions at the end. This is the right way.
 
+Yes, Haskell has a static and very strong typing, but also a wonderful full type inference.
 
 == F#
 
@@ -77,12 +78,12 @@ functions at the end. This is the right way.
 ----
 module AreTheySame = 
     let comp a b = 
-     let newa = a |> List.map (fun x -> x*x) |> List.sort
-     let newb = b |> List.sort
-     newa = newb
+      let newa = a |> List.map (fun x -> x*x) |> List.sort
+      let newb = b |> List.sort
+      newa = newb
 ----
 
-ML syntax
+ML syntax, concise, clear, pipe operator, great type inference...
 
 
 == C++
@@ -112,7 +113,7 @@ It makes a copy of both parameters. (Yeah, you can trick this code to run
 incorrectly, but it would be not clear code)
 
 Adding `&` on signature, we could mutate the params and make it more efficient,
-but less clear to use.
+but less clear to use. Mutating parameters, usually is a very bad design.
 
 [source, cpp]
 ----
@@ -263,17 +264,14 @@ namespace CodeWarsCSharp
 }
 ----
 
-Fat arrows (a kind of syntax for lambdas) and linq are interesting, but the solution is to
-is to verbose.
+Fat arrows (a kind of syntax for lambdas) and linq are interesting, but the solution is too verbose.
 
 We have to deal with `null`, the billion dollar error. https://en.wikipedia.org/wiki/Tony_Hoare
 
-== Racket
+== Racket base (LISP family)
 
 [source, racket]
 ----
-#lang racket/base
-
 (define (comp a b)
   (let ([sqr (lambda (x) (* x x))])
     (equal? (sort (map sqr a) <) (sort b <))))
