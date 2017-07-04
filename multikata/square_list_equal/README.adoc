@@ -299,7 +299,7 @@ object Solution {
 }
 ----
 
-This version was just tested on the Scala REPL. You can start do the same as follows:
+This version was just tested on the Scala REPL. You can do the same as follows:
 
 [source, console]
 ----
@@ -397,4 +397,54 @@ To avoid this risk...
 [source, javascript]
 ----
 comp = function(a, b) { a.map(function(x) { x*x }).sort() == b.slice().sort() }
+----
+
+== Common Lisp
+
+[source, lisp]
+----
+(defun comp (a b)
+  (defun sqr (x) (* x x))
+  (equal (sort (mapcar #'sqr a) #'<) (sort b #'<)))
+----
+
+This solution was just tested on the Lisp REPL. You can do the same as follows:
+
+[source, console]
+----
+$ sbcl --load clisp/solution.cl
+This is SBCL 1.3.19, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+* (defparameter *a* '(1 2 3 4))
+
+*A*
+* (defparameter *b* '(1 4 9 16))
+
+*B*
+* (comp *a* *b*)
+
+T
+* (defparameter *a* '(2 3 1 4))
+
+*A*
+* (defparameter *b* '(16 4 9 1))
+
+*B*
+* (comp *a* *b*)
+
+T
+* (defparameter *a* '(1 2 3 4))
+
+*A*
+* (defparameter *b* '(1 4 9))
+
+*B*
+* (comp *a* *b*)
+
+NIL
 ----
