@@ -79,21 +79,16 @@ functions at the end. This is the right way.
 Yes, Haskell has a static and very strong typing, but also a wonderful full type inference.
 
 
-But, what if We won to stop as soon as possible. Imagine we compare while calculating squares and we finish as soon as we detect a difference.
-
-Well, this optimization is not enormous. The asintotic cost continues the same. But it's an optimization, how could we do it in Haskell... Solution:
+A more Haskell solution is...
 
 [source, haskell]
 ----
 import Data.List (sort)
 
-comp a b = square(sort a) == sort b
-           where square = map (\x->x*x) 
+comp a b = (map (^2) . sort) a == sort b
 ----
 
-Thank's to lazy evaluation, Haskell will optimize the code without needed to ofuscate it. GREAT!!!
 
-Try to do it with other programmin language.
 
 
 
