@@ -315,7 +315,7 @@ raco test: (submod "racket/solution.rkt" test)
 ----
 object Solution {
   def comp(a: List[Int], b: List[Int]): Boolean = {
-    a.sorted.map(scala.math.pow(_, 2).toInt) == b.sorted
+    a.map(scala.math.pow(_, 2).toInt).sorted == b.sorted
   }
 }
 ----
