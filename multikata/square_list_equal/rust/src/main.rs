@@ -68,23 +68,24 @@ fn sol3() {
 use std::collections::HashMap;
 
 fn comp_hm(a: &[i32], b: &[i32]) -> bool {
-    let mut ha = HashMap::new();
-    let mut hb = HashMap::new();
+    let square_a = {
+        let mut s = vec![];
+        for e in a {
+            s.push(e * e);
+        }
+        s
+    };
 
-    let mut sa = vec![];
-    for e in a {
-        sa.push(e * e);
-    }
-
-    let fill_hm = |c, hm: &mut HashMap<i32, i32>| {
+    let fill_hm = |c, mut hm: HashMap<i32, i32>| {
         for &e in c {
             let count = hm.entry(e).or_insert(0);
             *count += 1;
         }
+        hm
     };
 
-    fill_hm(b, &mut hb);
-    fill_hm(&sa, &mut ha);
+    let hb = fill_hm(b, HashMap::new());
+    let ha = fill_hm(&square_a, HashMap::new());
 
     ha == hb
 }
