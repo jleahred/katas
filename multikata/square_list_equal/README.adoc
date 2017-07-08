@@ -493,3 +493,50 @@ T
 
 NIL
 ----
+
+
+
+== Haskell O(n) solution
+
+In order to have a solution with O(n) cost, we can use `hashTables`.
+
+On HT, inserting and reading values, has a cost of O(1).
+
+We can generate a HT with elements and number of repetitions of them.
+
+Then, we can compare the HT.
+
+
+[source, haskell]
+----
+import qualified Data.HashTable.IO as H
+import Data.Maybe
+
+type HashTable k v = H.BasicHashTable k v
+newHT :: IO (HashTable Int Int)
+newHT = H.new
+
+
+main = do
+    check (comp [1,2,3,4]   [4,1,16,9])  True
+    check (comp [1,-2,3,-4] [4,1,16,9])  True
+    check (comp [1,2,3]     [4,1,16,9])  False
+    check (comp [1,1,1,1]   [4,0,0,0])   False
+    
+    where check c r = 
+            c >>= \rc -> if rc == r 
+                            then putStrLn "OK" 
+                            else putStrLn "ERROR"
+
+comp l1 l2 = do
+    lcr1 <- lcr $ map (^2)  l1
+    lcr2 <- lcr l2
+    return $ lcr1 == lcr2
+
+    where   lcr l = newHT >>= fillLC l >>= H.toList
+            fillLC [] ht  = return ht
+            fillLC (x:xs) ht = do
+                f <- H.lookup ht x
+                H.insert ht x (1 + fromMaybe 0 f)
+                fillLC xs ht
+----
