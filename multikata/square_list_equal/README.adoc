@@ -315,6 +315,21 @@ raco test: (submod "racket/solution.rkt" test)
 6 tests passed
 ----
 
+== TYPED Racket base (LISP family)
+
+[source, racket]
+----
+(module supersecure typed/racket/base
+  (provide comp)
+
+  (: comp (-> (Listof Integer) (Listof Integer) Boolean))
+  (define (comp a b)
+    (: sqr (-> Integer Integer))
+    (define (sqr x) (* x x))
+    (equal? (sort (map sqr a) <) (sort b <))))
+----
+
+
 
 
 == Scala
