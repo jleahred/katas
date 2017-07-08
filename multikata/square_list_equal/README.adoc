@@ -573,3 +573,36 @@ object Solution {
     }
 }
 ----
+
+
+=== Rust
+
+Very easy to write, quite fast to write
+
+
+[source, rust]
+----
+use std::collections::HashMap;
+
+fn comp_hm(a: &[i32], b: &[i32]) -> bool {
+    let mut ha = HashMap::new();
+    let mut hb = HashMap::new();
+
+    let mut sa = vec![];
+    for e in a {
+        sa.push(e * e);
+    }
+
+    let fill_hm = |c, hm: &mut HashMap<i32, i32>| {
+        for &e in c {
+            let count = hm.entry(e).or_insert(0);
+            *count += 1;
+        }
+    };
+
+    fill_hm(b, &mut hb);
+    fill_hm(&sa, &mut ha);
+
+    ha == hb
+}
+----
