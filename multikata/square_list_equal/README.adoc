@@ -540,3 +540,6 @@ comp l1 l2 = do
                 H.insert ht x (1 + fromMaybe 0 f)
                 fillLC xs ht
 ----
+
+There we have a trick on this code.
+To simplifiy the comparision of HT, I've produced list and I've compared the lists.
