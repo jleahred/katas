@@ -379,6 +379,20 @@ Very, very sort and concise
 
 == Python
 
+
+[source, python]
+----
+def comp(a, b):
+   return sorted([a*a for a in a]) == sorted(b)
+----
+
+[WARNING]
+No `a.sort()`  or `b.sort()` +
+It makes inplace sort and it will modify the values on the caller. Too awful!!!
+
+
+Less pythonic...
+
 [source, python]
 ----
 def comp(a, b):
@@ -386,9 +400,6 @@ def comp(a, b):
      return sorted(square_a) == sorted(b)
 ----
 
-[WARNING]
-No `a.sort()`  or `b.sort()` +
-It makes inplace sort and it will modify the values on the caller. Too awful!!!
 
 
 
