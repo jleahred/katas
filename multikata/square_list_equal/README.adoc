@@ -541,5 +541,5 @@ comp l1 l2 = do
                 fillLC xs ht
 ----
 
-There we have a trick on this code.
+Here we have a trick on this code.
 To simplifiy the comparision of HT, I've produced list and I've compared the lists.
