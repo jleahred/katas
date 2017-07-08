@@ -510,14 +510,15 @@ NIL
 ----
 
 
+== O(n) solutions
 
-== Haskell O(n) solution
+=== Haskell
 
 In order to have a solution with O(n) cost, we can use `hashTables`.
 
 On HT, inserting and reading values, has a cost of O(1).
 
-We can generate a HT with elements and number of repetitions of them.
+We can generate a HT with elements as key (therefore no repeated) and number of repetitions of them as value.
 
 Then, we can compare the HT.
 
@@ -556,5 +557,19 @@ comp l1 l2 = do
                 fillLC xs ht
 ----
 
-Here we have a trick on this code.
-To simplifiy the comparision of HT, I've produced list and I've compared the lists.
+
+
+=== Scala
+
+[source, scala]
+----
+object Solution {
+
+    def ehist[T](s: Seq[T]): Map[T, Int] =
+        (Map.empty[T, Int] /: s) { (c, x) => c + (x -> (c.getOrElse(x, 0)+1)) }
+
+    def comp(a: List[Int], b: List[Int]): Boolean = {
+        ehist(a.map(x => x*x)) == ehist(b)
+    }
+}
+----
