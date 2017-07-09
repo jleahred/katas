@@ -604,7 +604,8 @@ fn comp_hm(a: &[i32], b: &[i32]) -> bool {
         s
     };
 
-    let fill_hm = |c, mut hm: HashMap<i32, i32>| {
+    let get_hm_count = |c| {
+        let mut hm = HashMap::new();
         for &e in c {
             let count = hm.entry(e).or_insert(0);
             *count += 1;
@@ -612,8 +613,8 @@ fn comp_hm(a: &[i32], b: &[i32]) -> bool {
         hm
     };
 
-    let hb = fill_hm(b, HashMap::new());
-    let ha = fill_hm(&square_a, HashMap::new());
+    let hb = get_hm_count(b);
+    let ha = get_hm_count(&square_a);
 
     ha == hb
 }
