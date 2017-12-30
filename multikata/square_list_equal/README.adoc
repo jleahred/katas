@@ -1,6 +1,6 @@
-= Mini-kata compare lists
+= Mini-kata compare sets
 
-Given two lists, `a` and `b`. You have to verify that the list containing 
+Given two sets, `a` and `b`. You have to verify that the set containing 
 the square of the elements of `a`, has the same elements of `b`.
 
 OK
@@ -567,6 +567,10 @@ comp l1 l2 = do
                 H.insert ht x (1 + fromMaybe 0 f)
                 fillLC xs ht
 ----
+
+Well, this example is not complete. It' using a not documented feature, therefore... I will fix it.
+
+In any case, It's an interesting example
 
 
 
