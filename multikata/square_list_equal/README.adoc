@@ -627,3 +627,31 @@ fn comp_hm(a: &[i32], b: &[i32]) -> bool {
 The mutability is quite contained in very small scopes.
 
 There is no mutability pollution across the code, and it doesn't have performance cost.
+
+
+=== Rust (more idiomatic)
+
+Almost I prefer this kind of code, looks more functional
+
+
+[source, rust]
+----
+fn comp_hm(a: &[i32], b: &[i32]) -> bool {
+    use std::collections::HashMap;
+
+    fn item_count<I>(items: I) -> HashMap<i32, i32>
+        where I: std::iter::Iterator<Item = i32>
+    {
+        items.fold(HashMap::new(), |mut acc, item: i32| {
+            *acc.entry(item).or_insert(0) += 1;
+            acc
+        })
+    }
+
+    item_count(a.iter().map(|x| x * x)) == item_count(b.iter().map(|x| *x))
+}
+----
+
+There is no mutability pollution across the code, and it doesn't have performance cost.
+
+Mutation is inside of a closure that, only mutes it.
