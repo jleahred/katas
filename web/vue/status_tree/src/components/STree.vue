@@ -73,7 +73,7 @@ export default {
       } else if (this.stree[index].status === "WARNING") {
         return "orange";
       } else {
-        return "gray";
+        return "grey";
       }
     }
   }
@@ -100,7 +100,8 @@ li {
 }
 .green,
 .red,
-.orange {
+.orange,
+.grey {
   border-radius: 30px;
   width: 0.8em;
   height: 0.8em;
@@ -120,6 +121,10 @@ li {
 
 .orange {
   background: orange;
+}
+
+.grey {
+  background: grey;
 }
 
 /* a {

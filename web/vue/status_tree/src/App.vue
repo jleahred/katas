@@ -5,6 +5,7 @@
 </template>
 
 <script>
+import VueTimers from "vue-timers/mixin";
 import STree from "./components/STree.vue";
 
 var stree = [
@@ -52,13 +53,13 @@ var stree = [
     ]
   },
   {
-    status: "OK",
+    status: "ERROR",
     description: "Another option",
     stree: []
   },
   {
     id: "3",
-    status: "OK",
+    status: "???",
     description: "Even more",
     stree: []
   }
@@ -69,10 +70,27 @@ export default {
   components: {
     STree
   },
+  created: function() {},
   data: function() {
     return {
-      stree: stree
+      stree: stree,
+      counter: 0
     };
+  },
+  methods: {
+    log() {
+      this.counter += 1;
+      if (this.counter % 2 === 0) {
+        this.stree[0].status = "ERROR";
+      } else {
+        this.stree[0].status = "OK";
+      }
+    }
+  },
+  beforeDestroy() {},
+  mixins: [VueTimers],
+  timers: {
+    log: { time: 1000, autostart: true, repeat: true, callback: this.log }
   }
 };
 </script>
