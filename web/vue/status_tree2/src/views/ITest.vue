@@ -1,6 +1,6 @@
 <template>
   <div class="test">
-    <textarea class="big" v-model="stree_text_edit">
+    <textarea class="big" v-model="stree_text_edit" v-on:keydown.13.prevent="update()">
     </textarea>
     <button @click="update()">Update</button>
     <STree :stree="stree_data"/>
@@ -86,17 +86,6 @@ export default {
     update() {
       this.stree_data = JSON.parse(this.stree_text_edit);
     }
-  },
-  computed: {
-    // stree_text: {
-    //   get: function() {
-    //     // `this` points to the vm instance
-    //     return JSON.stringify(this.stree, null, 2);
-    //   },
-    //   set: function(new_value) {
-    //     this.stree_text_edit = new_value;
-    //   }
-    // }
   },
   beforeDestroy() {}
 };

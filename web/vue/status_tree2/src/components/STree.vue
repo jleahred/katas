@@ -40,6 +40,9 @@ export default {
     return {};
   },
   methods: {
+    test: function() {
+      console.log("Updating...");
+    },
     switchExpanded: function(index) {
       if (this.stree[index].expanded === true) {
         this.stree[index].expanded = false;
@@ -70,15 +73,16 @@ export default {
       return result;
     },
     semaphoreColor: function(index) {
-      if (this.stree[index].status === "OK") {
-        return "green";
-      } else if (this.stree[index].status === "ERROR") {
-        return "red";
-      } else if (this.stree[index].status === "WARNING") {
-        return "orange";
-      } else {
-        return "grey";
-      }
+      return this.stree[index].status.toLowerCase();
+      // if (this.stree[index].status === "OK") {
+      //   return "ok";
+      // } else if (this.stree[index].status === "ERROR") {
+      //   return "error";
+      // } else if (this.stree[index].status === "WARNING") {
+      //   return "warning";
+      // } else {
+      //   return "unknown";
+      // }
     }
   }
 };
@@ -95,6 +99,7 @@ ul {
 }
 li {
   padding-left: 30px;
+  color: gray;
 }
 .liHand {
   cursor: pointer;
@@ -115,22 +120,22 @@ li {
   margin-top: 0.1em;
 } */
 
-.red {
+.error {
   /* background: red; */
   color: red;
 }
 
-.green {
+.ok {
   color: green;
 }
 
-.orange {
-  color: orange;
+.warning {
+  color: chocolate;
 }
 
-.grey {
+/* .unknown {
   color: grey;
-}
+} */
 
 /* a {
   color: #42b983;
