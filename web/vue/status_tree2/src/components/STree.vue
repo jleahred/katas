@@ -21,7 +21,9 @@
           {{status.description}}
 
           <div v-if="status.expanded">
-            <STree :stree="status.stree"/>
+            <STree :stree="status.stree" 
+                   :level="level + status.description + '/'"
+                   :globalStatus="globalStatus"/>
           </div>
         </li>
       </span>
@@ -34,7 +36,12 @@
 export default {
   name: "STree",
   props: {
-    stree: Array
+    stree: Array,
+    level: {
+      default: "/",
+      type: String
+    },
+    globalStatus: Object
   },
   data: function() {
     return {};
@@ -44,6 +51,11 @@ export default {
       console.log("Updating...");
     },
     switchExpanded: function(index) {
+      console.log(this.stree[index].description);
+      this.globalStatus.expandeds.add(
+        this.level + this.stree[index].description
+      );
+      console.log(JSON.stringify(this.globalStatus.expandeds));
       if (this.stree[index].expanded === true) {
         this.stree[index].expanded = false;
         this.$set(this.stree, index, this.stree[index]);

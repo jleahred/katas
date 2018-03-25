@@ -3,7 +3,7 @@
     <textarea class="big" v-model="stree_text_edit" v-on:keydown.13.prevent="update()">
     </textarea>
     <button @click="update()">Update</button>
-    <STree :stree="stree_data"/>
+    <STree :stree="stree_data" :globalStatus="this.initGlobalStatus()"/>
   </div>
 </template>
 
@@ -87,7 +87,10 @@ export default {
       this.stree_data = JSON.parse(this.stree_text_edit);
     }
   },
-  beforeDestroy() {}
+  beforeDestroy() {},
+  initGlobalStatus() {
+    return { expandeds: new Set() };
+  }
 };
 </script>
 
