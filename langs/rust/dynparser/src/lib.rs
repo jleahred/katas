@@ -1,18 +1,20 @@
 // #![feature(external_doc)]
 // #![doc(include = "../README.md")]
 
-use std::collections::HashMap;
+// use std::collections::HashMap;
+
+mod parser;
 
 // mod atom;
 // pub mod grammar;
-mod expression;
-use expression::Expression;
+// mod expression;
+// use expression::Expression;
 
-pub mod ast;
-mod parser;
+// pub mod ast;
+// mod parser;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 // -------------------------------------------------------------------------------------
 //  T Y P E S
@@ -33,11 +35,31 @@ pub struct Text2Parse(String);
 //     Text2Parse(txt.to_owned())
 // }
 
-type Rules = HashMap<Symbol, Expression>;
+// type Rules = HashMap<Symbol, Expression>;
+
+#[derive(PartialEq, Clone)]
+pub struct Possition {
+    /// char position parsing
+    pub n: usize,
+    /// row parsing row
+    pub row: usize,
+    /// parsing col
+    pub col: usize,
+}
+
+impl Possition {
+    fn init() -> Self {
+        Self {
+            n: 0,
+            row: 0,
+            col: 0,
+        }
+    }
+}
 
 // #[derive(Debug, PartialEq, Clone)]
 pub struct Error {
-    pub pos: parser::Possition,
+    pub pos: Possition,
     pub descr: String,
     pub line_text: String,
 }
@@ -45,29 +67,29 @@ pub struct Error {
 //  T Y P E S
 // -------------------------------------------------------------------------------------
 
-/// Returns a person with the name given them
-///
-/// # Examples
-///
-/// ```
-///
-/// ```
-/// Another example
-///
-/// ```
-///
-///
-/// ```
+// / Returns a person with the name given them
+// /
+// / # Examples
+// /
+// / ```
+// /
+// / ```
+// / Another example
+// /
+// / ```
+// /
+// /
+// / ```
 
 // -------------------------------------------------------------------------------------
 //  A P I
-pub fn parse(
-    text2parse: &Text2Parse,
-    init_symbol: &Symbol,
-    rules: &Rules,
-) -> Result<ast::Node, Error> {
-    parser::parse(text2parse, init_symbol, rules)
-}
+// pub fn parse(
+//     text2parse: &Text2Parse,
+//     init_symbol: &Symbol,
+//     rules: &Rules,
+// ) -> Result<ast::Node, Error> {
+//     parser::parse(text2parse, init_symbol, rules)
+// }
 
 // pub fn parse(text2parse: &Text2Parse, symbol: &Symbol, rules: &Rules) -> Result<ast::Node, Error> {
 //     let config = parser::Config {
