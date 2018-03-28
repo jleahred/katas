@@ -1,36 +1,64 @@
 use Error;
-// use Error;
 use super::Status;
 
+//-----------------------------------------------------------------------
 #[allow(dead_code)]
-pub(super) fn parse_ch(status: Status, text2parse: &str, ch: char) -> Result<Status, Error> {
-    get_ch(status, &text2parse, ch)
+pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &str) -> Result<Status<'a>, Error> {
+    let mut new_status = status.set_parsing_desc(&format!("expected literal {}", literal));
+
+    for ch in literal.chars() {
+        new_status = parse_ch(new_status, ch)?
+    }
+    Ok(new_status)
 }
+
 #[test]
-fn test_parse_ch() {
-    let status_init = Status::init();
-    let status_end = Status::init();
-    assert!(parse_ch(status_init, "aaaabbbb", 'a').ok().unwrap() == status_end);
+fn test_parse_literal_ok() {
+    let status_init = Status::init("aaaaaaaaaaaaaaaa");
+    let status_end = parse_literal(status_init, "aaa").ok().unwrap();
+
+    assert!(status_end.pos.col == 3);
+    assert!(status_end.pos.n == 3);
+    assert!(status_end.pos.row == 0);
 }
 
-#[allow(dead_code)]
-pub(super) fn get_ch(status: Status, text2parse: &str, ch: char) -> Result<(char, &str), Error> {
-    let error_eof = |st: &Status| {
-        Err(Error {
-            pos: st.pos.clone(),
-            descr: format!("expected {} on EOF", ch),
-            line_text: st.curr_line.clone(),
-        })
-    };
+#[test]
+fn test_parse_literal_ok2() {
+    let status_init = Status::init("abcdefghij");
+    let status_end = parse_literal(status_init, "abc").ok().unwrap();
 
-    match text2parse.chars().next() {
-        None => error_eof(&status),
-        Some(ch) => Ok((ch, &text2parse[2..])),
+    assert_eq!(status_end.pos.col, 3);
+    assert_eq!(status_end.pos.n, 3);
+    assert_eq!(status_end.pos.row, 0);
+}
+
+#[test]
+fn test_parse_literal_fail() {
+    let status_init = Status::init("abcdefghij");
+    assert!(parse_literal(status_init, "bbb").is_err());
+}
+
+#[test]
+fn test_parse_literal_fail2() {
+    let status_init = Status::init("abcdefghij");
+    assert!(parse_literal(status_init, "abd").is_err());
+}
+
+//-----------------------------------------------------------------------
+#[allow(dead_code)]
+fn parse_ch(status: Status, ch: char) -> Result<Status, Error> {
+    let (got_ch, new_status) = status.next()?;
+    if got_ch == ch {
+        Ok(new_status)
+    } else {
+        Err(Error::from_status(&new_status))
     }
 }
 
-impl Status {
-    fn next(mut self, ch: char) -> Self {
+impl<'a> Status<'a> {
+    #[allow(dead_code)]
+    fn next(mut self) -> Result<(char, Status<'a>), Error> {
+        let ch = self.t2p_iterator.next().ok_or(Error::from_status(&self))?;
         self.pos.n += 1;
         match ch {
             '\n' => {
@@ -44,22 +72,6 @@ impl Status {
                 self.pos.col += 1;
             }
         }
-        self
+        Ok((ch, self))
     }
 }
-// #[allow(dead_code)]
-// pub(super) fn parse_literal(status: Status, _text2parse: &str, lit: &str) -> Result<Status, Error> {
-//     Ok(status)
-//     // Err(Error {
-//     //     pos: Possition::init(),
-//     //     descr: "description".to_owned(),
-//     //     line_text: "line".to_owned(),
-//     // })
-// }
-
-// #[test]
-// fn test_parse_literal() {
-//     let status_init = Status::init();
-//     let status_end = Status::init();
-//     assert!(parse_literal(status_init, "aaaabbbb", "aaa").ok().unwrap() == status_end);
-// }

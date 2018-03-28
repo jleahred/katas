@@ -37,7 +37,7 @@ pub struct Text2Parse(String);
 
 // type Rules = HashMap<Symbol, Expression>;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Possition {
     /// char position parsing
     pub n: usize,
@@ -61,7 +61,7 @@ impl Possition {
 pub struct Error {
     pub pos: Possition,
     pub descr: String,
-    pub line_text: String,
+    pub on_line: String,
 }
 
 //  T Y P E S
