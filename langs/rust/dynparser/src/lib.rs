@@ -22,20 +22,22 @@ mod parser;
 //  see ast.rs
 
 // #[derive(Debug, PartialEq, Eq, Hash, Default, Clone)]
-pub struct Symbol(String);
+// pub struct Symbol(String);
 
 // pub fn symbol(s: &str) -> Symbol {
 //     Symbol(s.to_owned())
 // }
 
 // #[derive(Debug, PartialEq, Default)]
-pub struct Text2Parse(String);
+// pub struct Text2Parse(String);
 
 // pub fn text2parse(txt: &str) -> Text2Parse {
 //     Text2Parse(txt.to_owned())
 // }
 
 // type Rules = HashMap<Symbol, Expression>;
+
+pub struct Text2Parse<'a>(&'a str);
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Possition {
@@ -61,7 +63,7 @@ impl Possition {
 pub struct Error {
     pub pos: Possition,
     pub descr: String,
-    pub on_line: String,
+    pub line: String,
 }
 
 //  T Y P E S

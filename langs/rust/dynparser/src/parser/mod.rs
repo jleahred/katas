@@ -1,10 +1,12 @@
+//  mod  parser
+
 mod atom;
 
 use {Error, Possition};
 use std::str;
 
-//pub(self)
-
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 #[derive(Debug)]
 pub struct Status<'a> {
     pos: Possition,
@@ -14,6 +16,7 @@ pub struct Status<'a> {
     t2p_iterator: str::Chars<'a>,
 }
 
+//-----------------------------------------------------------------------
 impl<'a> Status<'a> {
     #[allow(dead_code)]
     fn init(txt2prs: &'a str) -> Self {
@@ -32,12 +35,14 @@ impl<'a> Status<'a> {
     }
 }
 
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 impl Error {
     pub(crate) fn from_status(status: &Status) -> Self {
         Error {
             pos: status.pos.clone(),
             descr: status.parsing_desc.clone(),
-            on_line: status.curr_line.clone(),
+            line: status.curr_line.clone(),
         }
     }
 }
