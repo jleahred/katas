@@ -7,20 +7,24 @@ use super::Status;
 mod test;
 
 //-----------------------------------------------------------------------
-//  TYPES
+//-----------------------------------------------------------------------
+//
+//  T Y P E S
+//
+//-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
 pub(crate) struct Literal<'a>(&'a str);
+pub(crate) struct Symbol<'a>(&'a str);
 // pub(crate) struct Match(String, Vec<(char, char)>);
-// pub(crate) struct Symbol(String);
 
 //-----------------------------------------------------------------------
-//  API
 //-----------------------------------------------------------------------
-// #[allow(dead_code)]
-// fn lit(txt: &str) -> Literal {
-//     Literal(txt.to_owned())
-// }
+//
+//  A P I
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 
 #[allow(dead_code)]
 pub(crate) fn parse_literal<'a>(
@@ -36,6 +40,8 @@ pub(crate) fn parse_literal<'a>(
     Ok(new_status)
 }
 
+//-----------------------------------------------------------------------
+
 #[allow(dead_code)]
 pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<Status<'a>, Error> {
     let (_, result_status) = status
@@ -45,7 +51,9 @@ pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<Status<'a>, Error> {
 }
 
 //-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 //  local support
+
 #[allow(dead_code)]
 fn parse_ch(status: Status, ch: char) -> Result<Status, Error> {
     let (got_ch, new_status) = status.next()?;
