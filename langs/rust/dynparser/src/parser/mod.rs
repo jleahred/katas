@@ -13,7 +13,9 @@ pub struct Status<'a> {
     parsing_desc: String,
     curr_line: String,
     text2parse: &'a str,
+
     t2p_iterator: str::Chars<'a>,
+    curr_start_item: usize,
 }
 
 //-----------------------------------------------------------------------
@@ -26,12 +28,24 @@ impl<'a> Status<'a> {
             curr_line: "".to_owned(),
             text2parse: txt2prs,
             t2p_iterator: txt2prs.chars(),
+            curr_start_item: 0,
         }
     }
     #[allow(dead_code)]
     pub(crate) fn set_parsing_desc(mut self, desc: &str) -> Self {
         self.parsing_desc = desc.to_owned();
+        self.start_parsing_item()
+    }
+
+    #[allow(dead_code)]
+    fn start_parsing_item(mut self) -> Self {
+        self.curr_start_item = self.pos.n;
         self
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn get_last_item_parsed(&self) -> &'a str {
+        &self.text2parse[self.curr_start_item..self.pos.n]
     }
 }
 

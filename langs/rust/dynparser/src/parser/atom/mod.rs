@@ -2,6 +2,7 @@
 
 use Error;
 use super::Status;
+use std::result;
 
 #[cfg(test)]
 mod test;
@@ -13,6 +14,8 @@ mod test;
 //
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
+
+type Result<'a> = result::Result<Status<'a>, Error>;
 
 pub(crate) struct Literal<'a>(&'a str);
 pub(crate) struct Symbol<'a>(&'a str);
@@ -27,13 +30,9 @@ pub(crate) struct Symbol<'a>(&'a str);
 //-----------------------------------------------------------------------
 
 #[allow(dead_code)]
-pub(crate) fn parse_literal<'a>(
-    status: Status<'a>,
-    literal: &Literal,
-) -> Result<Status<'a>, Error> {
+pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &Literal) -> Result<'a> {
     let mut new_status = status.set_parsing_desc(&format!("expected literal {}", literal.0));
 
-    //  todo: pending try_fold
     for ch in literal.0.chars() {
         new_status = parse_ch(new_status, ch)?;
     }
@@ -43,7 +42,7 @@ pub(crate) fn parse_literal<'a>(
 //-----------------------------------------------------------------------
 
 #[allow(dead_code)]
-pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<Status<'a>, Error> {
+pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<'a> {
     let (_, result_status) = status
         .set_parsing_desc(&format!("expected any char"))
         .next()?;
@@ -51,11 +50,13 @@ pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<Status<'a>, Error> {
 }
 
 //-----------------------------------------------------------------------
+
+//-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 //  local support
 
 #[allow(dead_code)]
-fn parse_ch(status: Status, ch: char) -> Result<Status, Error> {
+fn parse_ch<'a>(status: Status, ch: char) -> result::Result<Status, Error> {
     let (got_ch, new_status) = status.next()?;
     if got_ch == ch {
         Ok(new_status)
@@ -66,7 +67,7 @@ fn parse_ch(status: Status, ch: char) -> Result<Status, Error> {
 
 impl<'a> Status<'a> {
     #[allow(dead_code)]
-    fn next(mut self) -> Result<(char, Status<'a>), Error> {
+    fn next(mut self) -> result::Result<(char, Status<'a>), Error> {
         let ch = self.t2p_iterator.next().ok_or(Error::from_status(&self))?;
         self.pos.n += 1;
         match ch {
