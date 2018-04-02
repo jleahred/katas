@@ -43,10 +43,23 @@ pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &Literal) -> Result
 
 #[allow(dead_code)]
 pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<'a> {
-    let (_, result_status) = status
-        .set_parsing_desc(&format!("expected any char"))
-        .next()?;
+    let (_, result_status) = status.set_parsing_desc("expected any char").get_char()?;
     Ok(result_status)
+}
+
+//-----------------------------------------------------------------------
+
+#[allow(dead_code)]
+pub(crate) fn parse_symbol<'a>(status: Status<'a>) -> Result<'a> {
+    let mut new_status = status.set_parsing_desc("expected symbol");
+
+    loop {
+        let (got_ch, new_status) = status.get_char()?;
+        match got_ch {
+            'a'...'b' => return Ok(new_status),
+            _ => break,
+        };
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -56,8 +69,8 @@ pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<'a> {
 //  local support
 
 #[allow(dead_code)]
-fn parse_ch<'a>(status: Status, ch: char) -> result::Result<Status, Error> {
-    let (got_ch, new_status) = status.next()?;
+fn parse_ch(status: Status, ch: char) -> Result {
+    let (got_ch, new_status) = status.get_char()?;
     if got_ch == ch {
         Ok(new_status)
     } else {
@@ -67,7 +80,7 @@ fn parse_ch<'a>(status: Status, ch: char) -> result::Result<Status, Error> {
 
 impl<'a> Status<'a> {
     #[allow(dead_code)]
-    fn next(mut self) -> result::Result<(char, Status<'a>), Error> {
+    fn get_char(mut self) -> result::Result<(char, Status<'a>), Error> {
         let ch = self.t2p_iterator.next().ok_or(Error::from_status(&self))?;
         self.pos.n += 1;
         match ch {
