@@ -50,7 +50,7 @@ pub struct Possition {
 }
 
 impl Possition {
-    fn init() -> Self {
+    pub(crate) fn init() -> Self {
         Self {
             n: 0,
             row: 0,

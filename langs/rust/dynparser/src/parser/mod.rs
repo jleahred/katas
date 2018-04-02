@@ -2,61 +2,71 @@
 
 mod atom;
 
-use {Error, Possition};
+use Possition;
 use std::str;
+use self::atom::ParsIterator;
 
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
-#[derive(Debug)]
+
 pub struct Status<'a> {
-    pos: Possition,
-    parsing_desc: String,
-    curr_line: String,
-    text2parse: &'a str,
+    // pub(super) pos: Possition,
+    // pub(super) parsing_desc: String,
+    // pub(super) curr_line: String,
+    pub(super) text2parse: &'a str,
 
-    t2p_iterator: str::Chars<'a>,
-    curr_start_item: usize,
+    iterator: ParsIterator<'a>,
+    // pub(super) t2p_iterator: str::Chars<'a>,
+    // pub(super) curr_start_item: usize,
 }
 
-//-----------------------------------------------------------------------
 impl<'a> Status<'a> {
     #[allow(dead_code)]
-    fn init(txt2prs: &'a str) -> Self {
+    pub(super) fn init(txt2prs: &'a str) -> Self {
         Status {
-            pos: Possition::init(),
-            parsing_desc: "".to_owned(),
-            curr_line: "".to_owned(),
+            // pos: Possition::init(),
+            // parsing_desc: "".to_owned(),
+            // curr_line: "".to_owned(),
             text2parse: txt2prs,
-            t2p_iterator: txt2prs.chars(),
-            curr_start_item: 0,
+            iterator: ParsIterator::init(Possition::init(), "", txt2prs),
         }
     }
-    #[allow(dead_code)]
-    pub(crate) fn set_parsing_desc(mut self, desc: &str) -> Self {
-        self.parsing_desc = desc.to_owned();
-        self.start_parsing_item()
-    }
+    // #[allow(dead_code)]
+    // pub(super) fn it(mut self, desc: &str) -> ParsIterator<'a> {
+    //     // self.parsing_desc = desc.to_owned();
+    //     self.iterator = ParsIterator::init(self.iterator.pos, desc, self.text2parse);
+    //     // ParsIterator {
+    //     //     pos: self.iterator.pos,
+    //     //     parsing_desc: desc.to_owned(),
+    //     //     text2parse_it: self.text2parse.chars(),
+    //     //     curr_start_item: self.iterator.pos.n,
+    //     // };
+    //     self.iterator
+    // }
 
-    #[allow(dead_code)]
-    fn start_parsing_item(mut self) -> Self {
-        self.curr_start_item = self.pos.n;
-        self
-    }
+    // #[allow(dead_code)]
+    // fn start_parsing_item(self) -> Self {
+    //     self.iterator.curr_start_item = self.pos.n;
+    //     self
+    // }
 
-    #[allow(dead_code)]
-    pub(crate) fn get_last_item_parsed(&self) -> &'a str {
-        &self.text2parse[self.curr_start_item..self.pos.n]
-    }
+    // #[allow(dead_code)]
+    // pub(super) fn get_last_item_parsed(&self) -> &'a str {
+    //     &self.text2parse[self.iterator.curr_start_item..self.pos.n]
+    // }
 }
 
 //-----------------------------------------------------------------------
+
 //-----------------------------------------------------------------------
-impl Error {
-    pub(crate) fn from_status(status: &Status) -> Self {
-        Error {
-            pos: status.pos.clone(),
-            descr: status.parsing_desc.clone(),
-            line: status.curr_line.clone(),
-        }
-    }
-}
+//-----------------------------------------------------------------------
+// impl Error {
+//     pub(crate) fn from_status(status: &Status) -> Self {
+//         Error {
+//             pos: status.iterator.pos.clone(),
+//             descr: status.iterator.parsing_desc.clone(),
+//             // line: status.iterator.curr_line.clone(),
+//             line: "todo".to_owned(),
+//         }
+//     }
+// }
