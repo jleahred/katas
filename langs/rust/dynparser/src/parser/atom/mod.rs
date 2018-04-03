@@ -54,10 +54,10 @@ pub(crate) fn parse_symbol<'a>(status: Status<'a>) -> Result<'a> {
     let mut new_status = status.set_parsing_desc("expected symbol");
 
     loop {
-        let (got_ch, new_status) = status.get_char()?;
+        let (got_ch, new_status) = new_status.get_char()?;
         match got_ch {
-            'a'...'b' => return Ok(new_status),
-            _ => break,
+            'a'...'b' => {}
+            _ => return Ok(new_status),
         };
     }
 }
