@@ -11,14 +11,12 @@
 mod atom;
 
 use {Error, Possition};
-// use std::str;
 
 //-----------------------------------------------------------------------
 #[derive(Debug)]
 pub struct Status<'a> {
     text2parse: &'a [u8],
     pos: Possition,
-    parsing_descr: String,
 }
 
 impl<'a> Status<'a> {
@@ -27,22 +25,15 @@ impl<'a> Status<'a> {
         Status {
             text2parse: t2p.as_bytes(),
             pos: Possition::init(),
-            parsing_descr: "".to_owned(),
         }
-    }
-
-    #[allow(dead_code)]
-    fn parsing_descr(mut self, parsing_descr: String) -> Self {
-        self.parsing_descr = parsing_descr;
-        self
     }
 }
 
 impl Error {
-    pub(crate) fn from_status(status: &Status) -> Self {
+    pub(crate) fn from_status(status: &Status, descr: &str) -> Self {
         Error {
             pos: status.pos.clone(),
-            descr: status.parsing_descr.clone(),
+            descr: descr.to_owned(),
             line: "pending".to_owned(),
         }
     }

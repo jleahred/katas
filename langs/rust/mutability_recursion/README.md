@@ -1,10 +1,9 @@
 # Rust mutability and recursion
 
-Como ya he comentado en alguna ocasión, la mutabilidad no es vírica y en Rust se puede diseñar un
-sistema que evite la copia de forma explícita combinándola con el _ownership_.
+Como ya he comentado en alguna ocasión, la mutabilidad no es vírica en Rust y se puede diseñar un sistema que evite la copia de forma explícita combinándola con el _ownership_.
 
 Este es un ejemplo de una función que recibe la propiedad de _status_ y lo
-declara como mutable.
+declara como mutable. Recuerda, no es vírico. Puesto que se obtiene la propiedad, la declaración de variable puede ser inmutable (muy recomendable)
 
 Luego utilzamos un bucle _for_
 
@@ -25,7 +24,7 @@ Quizá debería haber quitado los _lifetimes_ para dejar el ejemplo más sencill
 La mutabilidad es muy limitada (muy pocas líneas), no es vírica, el código es conciso,
 gestión de errores simplificado...
 
-No obstante, para un amante de la programación funcional, es inevitable tensar la cuerda
+Para un amante de la programación funcional, es inevitable tensar la cuerda
 tratando de quitar la mutabilidad.
 
 El primer intento lógico es, utilizando la recursión:
@@ -50,11 +49,11 @@ pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &'a Literal<'a>) ->
 }
 ```
 
-Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizada su elminación por el compilador ni LLVM :-(
+Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizada su eliminación por el compilador ni LLVM :-(
 
-No obstante, la sobrecarga de la recursión, incluso sin optimización de cola, no es significativa. Gracias al _ownership_ status no se copia, y los otros dos parámetros son referencias de estructuras sencillas. Uno de ellos es siempre la misma estructura, y el otro, sí se crea en la pila en cada contexto de llamada.
+No obstante, la sobrecarga de la recursión, incluso sin optimización de cola, no es grande. Gracias al _ownership_ status no se copia, y los otros dos parámetros son referencias de estructuras sencillas. Uno de ellos es siempre la misma estructura, y el otro, sí se crea en la pila en cada contexto de llamada.
 
-Ni Rust ni LLVM garantizan la recursión de cola, no obstante, es posible escribir un poco de código (20 líneas), para tener algo que parece un recursión de cola y hace cuack
+Ni Rust ni LLVM garantizan la recursión de cola, pero es posible escribir un poco de código (20 líneas), para tener algo que parece un recursión de cola y hace cuack
 
 Esta es la solución que "simula" la sintáxis de recursión de cola y utiliza un bucle (por debajo, nada feo que ver)
 
@@ -82,11 +81,11 @@ pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &'a Literal<'a>) ->
 
 ## Show me the data
 
-Y como siempre, las palabas están bien, pero muestráme las cifras...
+Y como siempre, las palabras están bien, pero muéstrame las cifras...
 
 Los datos siguientes son comparativos entre las diferentes soluciones, no entre las diferentes configuraciones (no sólo cambia al tamaño, también cambia el número de iteraciones)
 
-En las gráficas se indica el timepo invertido, lógicamente menos es mejor.
+En las gráficas se indica el tiempo invertido, lógicamente menos es mejor.
 
 ### Literal a procesar pequeño (5 caracteres)
 
@@ -108,7 +107,7 @@ Error inferior al 1.5%
 
 La recursión directa está entre 3 y 4 veces más lenta.
 
-La recursión con optimización de cola artifial, 1.17 veces más lenta.
+La recursión con optimización de cola artificial, 1.17 veces más lenta.
 
 ### Literal a procesar grande (1_000_000 caracteres)
 
@@ -118,12 +117,15 @@ La solución con recursión desborda la pila :-(
 
 Error inferior al 0.2%
 
-La recursión con optimización de cola artifial, 1.15 veces más lenta.
+La recursión con optimización de cola artificial, 1.15 veces más lenta.
 
 ## Conclusión
 
 No hay optimización de recursión de cola garantizada. IMPORTANTE
 
-Se puede utilizar una recusión de cola artificial. Esta evitará la sobrecarga de la pila sin incurrir en un coste significativo de cpu.
+Cuando el código sea más legible con recursión, se puede utilizar una _recursión de cola con optimización artifical_ sin incurrir significativamente en el rendimiento, además de que se evitará el desbordamiento de la pila para niveles muy profundos.
+
+Se puede utilizar la mutabilidad combinada con el ownership para evitar la infección vírica. Esta mutabilidad, puede quedar restringida a un ámbito muy pequeño y no tendrá un efecto negativo en el diseño del código, mientras se maximiza el rendimiento (incluso en ocasiones el código puede ser más legible)
 
 Código completo:
+[(aquí)](https://github.com/jleahred/katas/tree/master/langs/rust/mutability_recursion)
