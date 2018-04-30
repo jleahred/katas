@@ -4,8 +4,7 @@
 //
 //-----------------------------------------------------------------------
 use super::Status;
-use super::{parse_literal, Literal};
-// use super::{parse_dot, parse_literal, Literal};
+use super::{parse_dot, parse_literal, parse_match, Literal, Match};
 
 #[test]
 fn test_parse_literal_ok() {
@@ -71,22 +70,59 @@ a"
     );
 }
 
-// #[test]
-// fn test_parse_dot() {
-//     let status_init = Status::init("ab");
-//     let status1 = parse_dot(status_init).ok().unwrap();
+#[test]
+fn test_parse_dot() {
+    let status = Status::init("ab");
 
-//     assert!(status1.pos.col == 1);
-//     assert!(status1.pos.n == 1);
-//     assert!(status1.pos.row == 0);
-//     assert!(status1.get_last_item_parsed() == "a");
+    let (status, last_item_parsed) = parse_dot(status).ok().unwrap();
+    assert!(status.pos.col == 1);
+    assert!(status.pos.n == 1);
+    assert!(status.pos.row == 0);
+    assert!(last_item_parsed == "a");
 
-//     let status2 = parse_dot(status1).ok().unwrap();
+    let (status, last_item_parsed) = parse_dot(status).ok().unwrap();
+    assert!(status.pos.col == 2);
+    assert!(status.pos.n == 2);
+    assert!(status.pos.row == 0);
+    assert!(last_item_parsed == "b");
 
-//     assert!(status2.pos.col == 2);
-//     assert!(status2.pos.n == 2);
-//     assert!(status2.pos.row == 0);
-//     assert!(status2.get_last_item_parsed() == "b");
+    assert!(parse_dot(status).is_err());
+}
 
-//     assert!(parse_dot(status2).is_err());
-// }
+#[test]
+fn test_parse_match_ok() {
+    let status = Status::init("abc_de12345 fghi");
+
+    let match_rules = Match::new().with_chars("54321ed_cba");
+    let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
+    assert_eq!(status.pos.col, 11);
+    assert_eq!(status.pos.n, 11);
+    assert_eq!(status.pos.row, 0);
+    assert_eq!(last_item_parsed, "abc_de12345");
+
+    let (status, _last_item_parsed) = parse_dot(status).ok().unwrap();
+
+    let match_rules = Match::new().with_bound_chars(&vec![('f', 'g'), ('h', 'j')]);
+    let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
+    assert_eq!(status.pos.col, 16);
+    assert_eq!(status.pos.n, 16);
+    assert_eq!(status.pos.row, 0);
+    assert_eq!(last_item_parsed, "fghi");
+
+    assert!(parse_match(status, &match_rules).is_err());
+}
+
+#[test]
+fn test_parse_match_err() {
+    let status = Status::init("abc_de12345 fghi");
+
+    let match_rules = Match::new().with_chars("ed_cba");
+    let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
+    assert_eq!(status.pos.col, 6);
+    assert_eq!(status.pos.n, 6);
+    assert_eq!(status.pos.row, 0);
+    assert_eq!(last_item_parsed, "abc_de");
+
+    let match_rules = Match::new().with_bound_chars(&vec![('a', 'f'), ('f', 'z')]);
+    assert!(parse_match(status, &match_rules).is_err());
+}

@@ -1,3 +1,181 @@
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//
+//
+//  mod parser::atom
+//
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+use std::result;
+use super::{Error, Status};
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//
+//  T Y P E S
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+/// contains a &str to the string to parse
+pub(crate) struct Literal<'a>(&'a str);
+
+/// contains a string and a Vec<(char,char)>
+/// if char matches one in string -> OK
+/// if char matches between tuple in vec elems -> OK
+pub(crate) struct Match(String, Vec<(char, char)>);
+
+impl Match {
+    #[allow(dead_code)]
+    pub(crate) fn new() -> Self {
+        Match("".to_owned(), vec![])
+    }
+    #[allow(dead_code)]
+    pub(crate) fn with_chars(mut self, chrs: &str) -> Self {
+        self.0 = chrs.to_owned();
+        self
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn with_bound_chars(mut self, bounds: &Vec<(char, char)>) -> Self {
+        self.1 = bounds.clone();
+        self
+    }
+}
+
+type Result<'a> = result::Result<(Status<'a>, String), Error>;
+
+#[cfg(test)]
+mod test;
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//
+//  A P I
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+#[allow(dead_code)]
+pub(crate) fn parse_literal<'a>(mut status: Status<'a>, literal: &'a Literal<'a>) -> Result<'a> {
+    for ch in literal.0.chars() {
+        status = parse_char(status, ch)
+            .map_err(|st| Error::from_status(&st, &format!("parsing literal {}", literal.0)))?;
+    }
+    Ok((status, literal.0.to_string()))
+}
+
+#[allow(dead_code)]
+pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<'a> {
+    let (st, ch) = status
+        .get_char()
+        .map_err(|st| Error::from_status(&st, "parsing dot"))?;
+
+    Ok((st, ch.to_string()))
+}
+
+#[allow(dead_code)]
+pub(crate) fn parse_match<'a>(status: Status<'a>, match_rules: &Match) -> Result<'a> {
+    let match_char = |ch: char| -> bool {
+        if match_rules.0.find(ch).is_some() {
+            true
+        } else {
+            for &(b, t) in &match_rules.1 {
+                if b <= ch && ch <= t {
+                    return true;
+                }
+            }
+            false
+        }
+    };
+
+    status.take_while(|ch| match_char(ch)).map_err(|st| {
+        Error::from_status(
+            &st,
+            &format!("match. expected {} {:?}", match_rules.0, match_rules.1),
+        )
+    })
+}
+
+//-----------------------------------------------------------------------
+//
+//  SUPPORT
+//
+//-----------------------------------------------------------------------
+
+fn parse_char<'a>(status: Status<'a>, ch: char) -> result::Result<Status<'a>, Status<'a>> {
+    let (st, got_ch) = status.get_char()?;
+    match ch == got_ch {
+        true => Ok(st),
+        false => Err(st),
+    }
+}
+
+impl<'a> Status<'a> {
+    #[allow(dead_code)]
+    fn get_char(mut self) -> result::Result<(Status<'a>, char), Status<'a>> {
+        match self.it_parsing.next() {
+            None => Err(self),
+            Some(ch) => {
+                self.pos.n += 1;
+                match ch {
+                    '\n' => {
+                        self.pos.col = 0;
+                        self.pos.row += 1;
+                    }
+                    '\r' => {
+                        self.pos.col = 0;
+                    }
+                    _ => {
+                        self.pos.col += 1;
+                    }
+                }
+                Ok((self, ch))
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    fn take_while<F>(self, fn_check_char: F) -> result::Result<(Status<'a>, String), Status<'a>>
+    where
+        F: Fn(char) -> bool,
+    {
+        fn peek_char<'a>(status: &Status<'a>) -> Option<char> {
+            status.it_parsing.clone().next()
+        }
+
+        let init_tc = (self, "".to_owned());
+
+        let result = tail_call(init_tc, |acc| {
+            if peek_char(&acc.0)
+                .and_then(|ch| Some(fn_check_char(ch)))
+                .unwrap_or(false)
+            {
+                let (st, ch) = acc.0.get_char()?;
+                Ok(TailCall::Call((st, string_with_ch(acc.1, ch))))
+            } else {
+                Ok(TailCall::Return(acc))
+            }
+        })?;
+
+        if result.1.len() == 0 {
+            Err(result.0)
+        } else {
+            Ok(result)
+        }
+    }
+}
+
+fn string_with_ch(mut origin: String, ch: char) -> String {
+    origin.push(ch);
+    origin
+}
+
+//-----------------------------------------------------------------------
+//  TailCall
+//-----------------------------------------------------------------------
 pub enum TailCall<T, R> {
     Call(T),
     Return(R),
@@ -19,277 +197,3 @@ where
         }
     }
 }
-
-// fn factorial(x: u64) -> u64 {
-//     tail_call((x, 1), |(x, acc)| {
-//         if x <= 1 {
-//             TailCall::Return(acc)
-//         } else {
-//             TailCall::Call((x - 1, acc * x))
-//         }
-//     })
-// }
-
-//-----------------------------------------------------------------------
-//-----------------------------------------------------------------------
-//
-//
-//  mod parser::atom
-//
-//
-//-----------------------------------------------------------------------
-//-----------------------------------------------------------------------
-
-use std::result;
-use super::{Error, Status};
-
-//-----------------------------------------------------------------------
-//
-//  T Y P E S
-//
-//-----------------------------------------------------------------------
-pub(crate) struct Literal<'a>(&'a str);
-type Result<'a> = result::Result<(Status<'a>, String), Error>;
-
-#[cfg(test)]
-mod test;
-
-//-----------------------------------------------------------------------
-//-----------------------------------------------------------------------
-//
-//  A P I
-//
-//-----------------------------------------------------------------------
-//-----------------------------------------------------------------------
-
-#[allow(dead_code)]
-pub(crate) fn parse_literal<'a>(mut status: Status<'a>, literal: &'a Literal<'a>) -> Result<'a> {
-    for byte in literal.0.bytes() {
-        status = parse_byte(status, byte)
-            .map_err(|st| Error::from_status(&st, &format!("parsing literal {}", literal.0)))?;
-    }
-    Ok((status, literal.0.to_string()))
-}
-
-// #[allow(dead_code)]
-// pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &'a Literal<'a>) -> Result<'a> {
-//     fn parse_au8<'a>(status: Status<'a>, au8: &[u8], literal: &'a Literal<'a>) -> Result<'a> {
-//         if au8.len() == 0 {
-//             Ok((status, literal.0.to_string()))
-//         } else {
-//             parse_au8(
-//                 parse_byte(status, au8[0]).map_err(|st| {
-//                     Error::from_status(&st, &format!("parsing literal {}", &literal.0))
-//                 })?,
-//                 &au8[1..],
-//                 literal,
-//             )
-//         }
-//     }
-
-//     parse_au8(status, literal.0.as_bytes(), literal)
-// }
-
-// #[allow(dead_code)]
-// pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &'a Literal<'a>) -> Result<'a> {
-//     let init_tc = (literal.0[0..].as_bytes(), Ok(status));
-
-//     let result_status =
-//         tail_call(init_tc, |(pend_lit, acc)| {
-//             if pend_lit.len() == 0 {
-//                 Ok(TailCall::Return(acc?))
-//             } else {
-//                 Ok(TailCall::Call((
-//                     &pend_lit[1..],
-//                     parse_byte(acc?, pend_lit[0]),
-//                 )))
-//             }
-//         }).map_err(|st| Error::from_status(&st, &format!("parsing literal {}", literal.0)))?;
-
-//     Ok((result_status, literal.0.to_string()))
-// }
-
-fn parse_byte<'a>(status: Status<'a>, byte: u8) -> result::Result<Status<'a>, Status<'a>> {
-    let (b, st) = status.get_byte()?;
-    match b == byte {
-        true => Ok(st),
-        false => Err(st),
-    }
-}
-
-impl<'a> Status<'a> {
-    #[allow(dead_code)]
-    fn get_byte(mut self) -> result::Result<(u8, Status<'a>), Status<'a>> {
-        if self.text2parse.len() == 0 {
-            Err(self)
-        } else {
-            self.pos.n += 1;
-            let byte = self.text2parse[0];
-            match byte as char {
-                '\n' => {
-                    self.pos.col = 0;
-                    self.pos.row += 1;
-                }
-                '\r' => {
-                    self.pos.col = 0;
-                }
-                _ => {
-                    self.pos.col += 1;
-                }
-            }
-            self.text2parse = &self.text2parse[1..];
-            Ok((byte, self))
-        }
-    }
-}
-// use Error;
-// use super::Status;
-// use std::result;
-
-// use std::str;
-
-// #[cfg(test)]
-// mod test;
-
-// //-----------------------------------------------------------------------
-// //-----------------------------------------------------------------------
-// //
-// //  T Y P E S
-// //
-// //-----------------------------------------------------------------------
-// //-----------------------------------------------------------------------
-
-// type Result<'a> = result::Result<Status<'a>, Error>;
-
-// pub(crate) struct Literal<'a>(&'a str);
-// pub(crate) struct Symbol<'a>(&'a str);
-// // pub(crate) struct Match(String, Vec<(char, char)>);
-
-// //-----------------------------------------------------------------------
-// //-----------------------------------------------------------------------
-// //
-// //  A P I
-// //
-// //-----------------------------------------------------------------------
-// //-----------------------------------------------------------------------
-
-// #[allow(dead_code)]
-// pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &Literal) -> Result<'a> {
-//     let mut new_status = status.set_parsing_desc(&format!("expected literal {}", literal.0));
-
-//     for ch in literal.0.chars() {
-//         new_status = parse_ch(new_status, ch)?;
-//     }
-//     Ok(new_status)
-// }
-
-// //-----------------------------------------------------------------------
-
-// #[allow(dead_code)]
-// pub(crate) fn parse_dot<'a>(status: Status<'a>) -> Result<'a> {
-//     let (_, result_status) = status.set_parsing_desc("expected any char").get_char()?;
-//     Ok(result_status)
-// }
-
-// //-----------------------------------------------------------------------
-
-// #[allow(dead_code)]
-// pub(crate) fn parse_symbol<'a>(status: Status<'a>) -> Result<'a> {
-//     fn is_char_symbol(ch: char) -> bool {
-//         match ch {
-//             'a'...'z' => true,
-//             _ => false,
-//         }
-//     }
-
-//     let nwst0 = status.set_parsing_desc("expected symbol");
-//     let error = Error::from_status(&nwst0);
-
-//     match nwst0.peek_ch() {
-//         Some((_, nwst1)) => Ok(nwst1),
-//         None => Err(error),
-//     }
-//     // let Some((ch, nwst1)) = nwst0.peek_ch();
-
-//     // // while let Some((ch, mut nwst)) = nwst.peek_ch() {
-//     // //     if is_char_symbol(ch) {
-//     // //         nwst.get_char2();
-//     // //     }
-//     // // }
-//     // Ok(nwst1)
-// }
-
-// //-----------------------------------------------------------------------
-
-// //-----------------------------------------------------------------------
-// //-----------------------------------------------------------------------
-// //  local support
-
-// #[allow(dead_code)]
-// fn parse_ch(status: Status, ch: char) -> Result {
-//     let (got_ch, new_status) = status.get_char()?;
-//     if got_ch == ch {
-//         Ok(new_status)
-//     } else {
-//         Err(Error::from_status(&new_status))
-//     }
-// }
-
-// impl<'a> Status<'a> {
-//     #[allow(dead_code)]
-//     fn get_byte(mut self) -> result::Result<(u8, Status<'a>), Error> {
-//         let ch = self.t2p_iterator.next().ok_or(Error::from_status(&self))?;
-//         self.pos.n += 1;
-//         match ch {
-//             '\n' => {
-//                 self.pos.col = 0;
-//                 self.pos.row += 1;
-//             }
-//             '\r' => {
-//                 self.pos.col = 0;
-//             }
-//             _ => {
-//                 self.pos.col += 1;
-//             }
-//         }
-//         Ok((ch, self))
-//     }
-
-//     #[allow(dead_code)]
-//     fn get_char2(&mut self) -> Option<char> {
-//         let ch = self.t2p_iterator.next()?;
-//         self.pos.n += 1;
-//         match ch {
-//             '\n' => {
-//                 self.pos.col = 0;
-//                 self.pos.row += 1;
-//             }
-//             '\r' => {
-//                 self.pos.col = 0;
-//             }
-//             _ => {
-//                 self.pos.col += 1;
-//             }
-//         }
-//         Some(ch)
-//     }
-
-//     fn peek_ch(self) -> Option<(char, Self)> {
-//         let ch = self.t2p_iterator.peekable().peek()?.clone();
-//         Some((ch, self))
-//     }
-// }
-
-// // use std::iter;
-// // fn peek<I>(it: &iter::Peekable<I>) -> Option<char>
-// // where
-// //     I: Iterator<Item = char>,
-// // {
-// //     // Some(self.t2p_iterator.peekable().peek()?.clone())
-// //     Some(*it.peekable().peek()?)
-// //     // None
-// // }
-
-// // fn trawl<E, I>(it: Peekable<I>) where I: Iterator<Result<char, E>> {
-// //     ...
-// // }
