@@ -3,7 +3,7 @@
 Como ya he comentado en alguna ocasión, la mutabilidad no es vírica en Rust y se puede diseñar un sistema que evite la copia de forma explícita combinándola con el _ownership_.
 
 Este es un ejemplo de una función que recibe la propiedad de _status_ y lo
-declara como mutable. Recuerda, no es vírico. Puesto que se obtiene la propiedad, la declaración de variable puede ser inmutable (muy recomendable)
+declara como mutable. Recuerda, no es vírico. Puesto que se obtiene la propiedad, la declaración de variable en el invocante puede ser inmutable (muy recomendable)
 
 Luego utilzamos un bucle _for_
 
@@ -53,9 +53,9 @@ Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizad
 
 No obstante, la sobrecarga de la recursión, incluso sin optimización de cola, no es grande. Gracias al _ownership_ status no se copia, y los otros dos parámetros son referencias de estructuras sencillas. Uno de ellos es siempre la misma estructura, y el otro, sí se crea en la pila en cada contexto de llamada.
 
-Ni Rust ni LLVM garantizan la recursión de cola, pero es posible escribir un poco de código (20 líneas), para tener algo que parece un recursión de cola y hace cuack
+Ni Rust ni LLVM garantizan la optimización de recursión de cola, pero es posible escribir un poco de código (20 líneas), para tener algo que parece una recursión de cola y hace cuack, pero que es un bucle for.
 
-Esta es la solución que "simula" la sintáxis de recursión de cola y utiliza un bucle (por debajo, nada feo que ver)
+Esta es la solución que utiliza una _recursión de cola optimizada (artificial)_. Parece recursión, pero el código es traducido a un bucle for.
 
 0% mutabilidad declarada
 
@@ -87,11 +87,11 @@ Los datos siguientes son comparativos entre las diferentes soluciones, no entre 
 
 En las gráficas se indica el tiempo invertido, lógicamente menos es mejor.
 
+En todos los ejemplos, no se utiliza dinámicamente la memoria del montículo. Esta memoria es igual en todos ellos. No así la de pila, como se verá...
+
 ### Literal a procesar pequeño (5 caracteres)
 
 ![graph](rust_for_recurs_short.png)
-
-Todos los ejemplos utilizan sólo memoria de pila, no hay diferencia en uso de memoria del montículo.
 
 Múltiples ejecuciones. Error inferior al 1%
 
@@ -121,11 +121,11 @@ La recursión con optimización de cola artificial, 1.15 veces más lenta.
 
 ## Conclusión
 
-No hay optimización de recursión de cola garantizada. IMPORTANTE
+No podemos confiar en la optimización de recursión de cola. IMPORTANTE
 
-Cuando el código sea más legible con recursión, se puede utilizar una _recursión de cola con optimización artifical_ sin incurrir significativamente en el rendimiento, además de que se evitará el desbordamiento de la pila para niveles muy profundos.
+Se puede utilizar el ownership para evitar la infección vírica de la mutabilidad. Esta mutabilidad, puede quedar restringida a un ámbito muy pequeño y no tendrá un efecto negativo en el diseño del código, mientras se maximiza el rendimiento (incluso en ocasiones el código puede ser más legible)
 
-Se puede utilizar la mutabilidad combinada con el ownership para evitar la infección vírica. Esta mutabilidad, puede quedar restringida a un ámbito muy pequeño y no tendrá un efecto negativo en el diseño del código, mientras se maximiza el rendimiento (incluso en ocasiones el código puede ser más legible)
+Cuando el código sea más legible con recursión, se puede utilizar una _recursión de cola con optimización artifical_ sin penalizar significativamente en el rendimiento, además de que se evitará el desbordamiento de la pila para niveles muy profundos.
 
 Código completo:
 [(aquí)](https://github.com/jleahred/katas/tree/master/langs/rust/mutability_recursion)
