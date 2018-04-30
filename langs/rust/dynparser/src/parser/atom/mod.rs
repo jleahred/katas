@@ -19,6 +19,13 @@ use super::{Error, Status};
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
+pub(crate) enum Atom<'a> {
+    Literal(Literal<'a>),
+    Match(Match),
+    Dot,
+    EOF,
+}
+
 /// contains a &str to the string to parse
 pub(crate) struct Literal<'a>(&'a str);
 
@@ -97,6 +104,14 @@ pub(crate) fn parse_match<'a>(status: Status<'a>, match_rules: &Match) -> Result
             &format!("match. expected {} {:?}", match_rules.0, match_rules.1),
         )
     })
+}
+
+#[allow(dead_code)]
+pub(crate) fn parse_eof<'a>(status: Status<'a>) -> Result<'a> {
+    match status.get_char() {
+        Ok((st, _ch)) => Err(Error::from_status(&st, "expected EOF")),
+        Err(st) => Ok((st, "".to_owned())),
+    }
 }
 
 //-----------------------------------------------------------------------

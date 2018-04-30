@@ -4,7 +4,7 @@
 //
 //-----------------------------------------------------------------------
 use super::Status;
-use super::{parse_dot, parse_literal, parse_match, Literal, Match};
+use super::{parse_dot, parse_eof, parse_literal, parse_match, Literal, Match};
 
 #[test]
 fn test_parse_literal_ok() {
@@ -125,4 +125,26 @@ fn test_parse_match_err() {
 
     let match_rules = Match::new().with_bound_chars(&vec![('a', 'f'), ('f', 'z')]);
     assert!(parse_match(status, &match_rules).is_err());
+}
+
+#[test]
+fn test_parse_match_eof_ok() {
+    let status = Status::init("abcde12345fghi");
+
+    let match_rules = Match::new().with_bound_chars(&vec![('a', 'z'), ('0', '9')]);
+    let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
+    assert_eq!(last_item_parsed, "abcde12345fghi");
+
+    assert!(parse_eof(status).is_ok());
+}
+
+#[test]
+fn test_parse_match_eof_error() {
+    let status = Status::init("abcde12345fghi_");
+
+    let match_rules = Match::new().with_bound_chars(&vec![('a', 'z'), ('0', '9')]);
+    let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
+    assert_eq!(last_item_parsed, "abcde12345fghi");
+
+    assert!(parse_eof(status).is_err());
 }
