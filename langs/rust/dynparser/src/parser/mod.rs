@@ -9,9 +9,11 @@
 //-----------------------------------------------------------------------
 
 mod atom;
+mod expression;
 
 use {Error, Possition};
 use std::str::Chars;
+use std::result;
 
 //-----------------------------------------------------------------------
 #[derive(Debug)]
@@ -39,3 +41,5 @@ impl Error {
         }
     }
 }
+
+type Result<'a> = result::Result<(Status<'a>, String), Error>;

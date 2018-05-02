@@ -1,23 +1,63 @@
-// #[derive(Debug)]
-pub enum Expression {
-    // Simple(Atom),
-    // Or(MultiExpr),
-    // And(MultiExpr),
-    // Not(Box<Expression>),
-    // Repeat(Box<Expression>, NRep, Option<NRep>), //  min max
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//
+//
+//  mod parser::expression
+//
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+/// Here we have the parser and types for non dependencies kind
+
+use std::result;
+use parser::{Error, Result, Status, atom::{self, Atom}};
+
+#[cfg(test)]
+mod test;
+
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//
+//  T Y P E S
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+#[allow(dead_code)]
+pub(crate) enum Expression<'a> {
+    Simple(Atom<'a>),
 }
 
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//
+//  A P I
+//
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+
+#[allow(dead_code)]
+pub(crate) fn parse<'a>(status: Status<'a>, expression: &'a Expression) -> Result<'a> {
+    match expression {
+        &Expression::Simple(ref atom) => atom::parse(status, &atom),
+    }
+}
+
+// #[derive(Debug)]
+// pub enum Expression {
+// Simple(Atom),
+// Or(MultiExpr),
+// And(MultiExpr),
+// Not(Box<Expression>),
+// Repeat(Box<Expression>, NRep, Option<NRep>), //  min max
+// }
 
 // #[derive(Debug)]
 // pub struct NRep(pub u32);
 
-
 // #[derive(Debug)]
 // pub struct MultiExpr(pub Vec<Expression>);
-
-
-
-
 
 // impl Parse for Expression {
 //     fn parse(&self,
@@ -35,7 +75,6 @@ pub enum Expression {
 //         }
 //     }
 // }
-
 
 // fn parse_or(conf: &parser::Config,
 //             exprs: &Vec<Expression>,
@@ -67,7 +106,6 @@ pub enum Expression {
 //     }
 // }
 
-
 // fn parse_and(conf: &parser::Config,
 //              exprs: &Vec<Expression>,
 //              status: parser::Status)
@@ -89,7 +127,6 @@ pub enum Expression {
 //     }
 //     Ok((parst, ast(ast_nodes)))
 // }
-
 
 // fn parse_negate(conf: &parser::Config,
 //                 expr: &Expression,

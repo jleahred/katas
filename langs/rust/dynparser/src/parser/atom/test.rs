@@ -91,60 +91,60 @@ fn test_parse_dot() {
 
 #[test]
 fn test_parse_match_ok() {
-    let status = Status::init("abc_de12345 fghi");
+    let status = Status::init("a f0ghi");
 
     let match_rules = Match::new().with_chars("54321ed_cba");
     let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
-    assert_eq!(status.pos.col, 11);
-    assert_eq!(status.pos.n, 11);
+    assert_eq!(status.pos.col, 1);
+    assert_eq!(status.pos.n, 1);
     assert_eq!(status.pos.row, 0);
-    assert_eq!(last_item_parsed, "abc_de12345");
+    assert_eq!(last_item_parsed, "a");
 
     let (status, _last_item_parsed) = parse_dot(status).ok().unwrap();
 
     let match_rules = Match::new().with_bound_chars(&vec![('f', 'g'), ('h', 'j')]);
     let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
-    assert_eq!(status.pos.col, 16);
-    assert_eq!(status.pos.n, 16);
+    assert_eq!(status.pos.col, 3);
+    assert_eq!(status.pos.n, 3);
     assert_eq!(status.pos.row, 0);
-    assert_eq!(last_item_parsed, "fghi");
+    assert_eq!(last_item_parsed, "f");
 
     assert!(parse_match(status, &match_rules).is_err());
 }
 
 #[test]
 fn test_parse_match_err() {
-    let status = Status::init("abc_de12345 fghi");
+    let status = Status::init("a9");
 
     let match_rules = Match::new().with_chars("ed_cba");
     let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
-    assert_eq!(status.pos.col, 6);
-    assert_eq!(status.pos.n, 6);
+    assert_eq!(status.pos.col, 1);
+    assert_eq!(status.pos.n, 1);
     assert_eq!(status.pos.row, 0);
-    assert_eq!(last_item_parsed, "abc_de");
+    assert_eq!(last_item_parsed, "a");
 
-    let match_rules = Match::new().with_bound_chars(&vec![('a', 'f'), ('f', 'z')]);
+    let match_rules = Match::new().with_bound_chars(&vec![('a', 'z'), ('0', '8')]);
     assert!(parse_match(status, &match_rules).is_err());
 }
 
 #[test]
 fn test_parse_match_eof_ok() {
-    let status = Status::init("abcde12345fghi");
+    let status = Status::init("a");
 
     let match_rules = Match::new().with_bound_chars(&vec![('a', 'z'), ('0', '9')]);
     let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
-    assert_eq!(last_item_parsed, "abcde12345fghi");
+    assert_eq!(last_item_parsed, "a");
 
     assert!(parse_eof(status).is_ok());
 }
 
 #[test]
 fn test_parse_match_eof_error() {
-    let status = Status::init("abcde12345fghi_");
+    let status = Status::init("ab");
 
     let match_rules = Match::new().with_bound_chars(&vec![('a', 'z'), ('0', '9')]);
     let (status, last_item_parsed) = parse_match(status, &match_rules).ok().unwrap();
-    assert_eq!(last_item_parsed, "abcde12345fghi");
+    assert_eq!(last_item_parsed, "a");
 
     assert!(parse_eof(status).is_err());
 }
