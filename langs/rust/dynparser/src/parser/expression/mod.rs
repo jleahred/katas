@@ -11,7 +11,7 @@
 /// Here we have the parser and types for non dependencies kind
 
 use std::result;
-use parser::{Error, Result, Status, atom::{self, Atom}};
+use parser::{Error, Result, ResultPartial, Started, Status, atom::{self, Atom}};
 
 #[cfg(test)]
 mod test;
@@ -25,9 +25,16 @@ mod test;
 //-----------------------------------------------------------------------
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub(crate) enum Expression<'a> {
     Simple(Atom<'a>),
+    And(MultiExpr<'a>),
+    Not(Box<Expression<'a>>),
 }
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub(crate) struct MultiExpr<'a>(&'a [Expression<'a>]);
 
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
@@ -39,8 +46,42 @@ pub(crate) enum Expression<'a> {
 
 #[allow(dead_code)]
 pub(crate) fn parse<'a>(status: Status<'a>, expression: &'a Expression) -> Result<'a> {
+    let started = Started(status.pos.n);
+    Ok((parse_partial(status, expression)?, started))
+}
+
+//-----------------------------------------------------------------------
+#[allow(dead_code)]
+pub(crate) fn parse_partial<'a>(
+    status: Status<'a>,
+    expression: &'a Expression,
+) -> ResultPartial<'a> {
     match expression {
-        &Expression::Simple(ref atom) => atom::parse(status, &atom),
+        &Expression::Simple(ref val) => atom::parse(status, &val),
+        &Expression::And(ref val) => parse_and(status, &val),
+        &Expression::Not(ref val) => parse_not(status, &val),
+    }
+}
+//-----------------------------------------------------------------------
+fn parse_and<'a>(status: Status<'a>, multi_expr: &'a MultiExpr) -> ResultPartial<'a> {
+    let init_tc: (_, &[Expression]) = (status, &(multi_expr.0));
+
+    let result = tail_call(init_tc, |acc| {
+        if acc.1.len() == 0 {
+            Ok(TailCall::Return(acc))
+        } else {
+            Ok(TailCall::Call((parse(acc.0, &acc.1[0])?.0, &acc.1[1..])))
+        }
+    })?;
+
+    Ok(result.0)
+}
+
+//-----------------------------------------------------------------------
+fn parse_not<'a>(status: Status<'a>, expression: &'a Expression) -> ResultPartial<'a> {
+    match parse_partial(status.clone(), expression) {
+        Ok(_) => Err(Error::from_status(&status, "not")),
+        Err(_) => Ok(status),
     }
 }
 
@@ -193,3 +234,28 @@ pub(crate) fn parse<'a>(status: Status<'a>, expression: &'a Expression) -> Resul
 //               "stupid line waitting for #37339",
 //               conf.text2parse))
 // }
+
+//-----------------------------------------------------------------------
+//  TailCall
+//-----------------------------------------------------------------------
+pub enum TailCall<T, R> {
+    Call(T),
+    Return(R),
+}
+
+pub fn tail_call<T, R, E, F>(seed: T, recursive_function: F) -> result::Result<R, E>
+where
+    F: Fn(T) -> result::Result<TailCall<T, R>, E>,
+{
+    let mut state = TailCall::Call(seed);
+    loop {
+        match state {
+            TailCall::Call(arg) => {
+                state = recursive_function(arg)?;
+            }
+            TailCall::Return(result) => {
+                return Ok(result);
+            }
+        }
+    }
+}

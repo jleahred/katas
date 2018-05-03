@@ -11,7 +11,7 @@
 /// Here we have the parser and types for non dependencies kind
 
 use std::result;
-use super::{Error, Result, Status};
+use super::{Error, ResultPartial, Status};
 
 #[cfg(test)]
 mod test;
@@ -25,20 +25,23 @@ mod test;
 //-----------------------------------------------------------------------
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub(crate) enum Atom<'a> {
-    Literal(Literal<'a>),
-    Match(Match<'a>),
+    Literal(&'a str),
+    Match(MatchRules<'a>),
     Dot,
     EOF,
 }
 
 /// contains a &str to the string to parse
-pub(crate) struct Literal<'a>(&'a str);
+// #[derive(Debug)]
+// pub(crate) struct Literal<'a>(pub(crate) &'a str);
 
 /// contains a string and a Vec<(char,char)>
 /// if char matches one in string -> OK
 /// if char matches between tuple in vec elems -> OK
-pub(crate) struct Match<'a>(&'a str, Vec<(char, char)>);
+#[derive(Debug)]
+pub(crate) struct MatchRules<'a>(&'a str, Vec<(char, char)>);
 
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
@@ -49,19 +52,19 @@ pub(crate) struct Match<'a>(&'a str, Vec<(char, char)>);
 //-----------------------------------------------------------------------
 
 #[allow(dead_code)]
-pub(crate) fn parse<'a>(status: Status<'a>, atom: &'a Atom) -> Result<'a> {
+pub(crate) fn parse<'a>(status: Status<'a>, atom: &'a Atom) -> ResultPartial<'a> {
     match atom {
-        &Atom::Literal(ref literal) => parse_literal(status, &literal),
+        &Atom::Literal(literal) => parse_literal(status, literal),
         &Atom::Match(ref match_rules) => parse_match(status, &match_rules),
         &Atom::Dot => parse_dot(status),
         &Atom::EOF => parse_eof(status),
     }
 }
 
-impl<'a> Match<'a> {
+impl<'a> MatchRules<'a> {
     #[allow(dead_code)]
     pub(crate) fn new() -> Self {
-        Match("", vec![])
+        MatchRules("", vec![])
     }
     #[allow(dead_code)]
     pub(crate) fn with_chars(mut self, chrs: &'a str) -> Self {
@@ -83,25 +86,25 @@ impl<'a> Match<'a> {
 //-----------------------------------------------------------------------
 
 #[allow(dead_code)]
-fn parse_literal<'a>(mut status: Status<'a>, literal: &'a Literal<'a>) -> Result<'a> {
-    for ch in literal.0.chars() {
+fn parse_literal<'a>(mut status: Status<'a>, literal: &'a str) -> ResultPartial<'a> {
+    for ch in literal.chars() {
         status = parse_char(status, ch)
-            .map_err(|st| Error::from_status(&st, &format!("parsing literal {}", literal.0)))?;
+            .map_err(|st| Error::from_status(&st, &format!("literal {}", literal)))?;
     }
-    Ok((status, literal.0.to_string()))
+    Ok(status)
 }
 
 #[allow(dead_code)]
-fn parse_dot<'a>(status: Status<'a>) -> Result<'a> {
-    let (st, ch) = status
+fn parse_dot<'a>(status: Status<'a>) -> ResultPartial<'a> {
+    let (st, _ch) = status
         .get_char()
-        .map_err(|st| Error::from_status(&st, "parsing dot"))?;
+        .map_err(|st| Error::from_status(&st, "dot"))?;
 
-    Ok((st, ch.to_string()))
+    Ok(st)
 }
 
 #[allow(dead_code)]
-fn parse_match<'a>(status: Status<'a>, match_rules: &Match) -> Result<'a> {
+fn parse_match<'a>(status: Status<'a>, match_rules: &MatchRules) -> ResultPartial<'a> {
     let match_char = |ch: char| -> bool {
         if match_rules.0.find(ch).is_some() {
             true
@@ -118,7 +121,7 @@ fn parse_match<'a>(status: Status<'a>, match_rules: &Match) -> Result<'a> {
     status
         .get_char()
         .and_then(|(st, ch)| match match_char(ch) {
-            true => Ok((st, ch.to_string())),
+            true => Ok(st),
             false => Err(st),
         })
         .map_err(|st| {
@@ -137,10 +140,10 @@ fn parse_match<'a>(status: Status<'a>, match_rules: &Match) -> Result<'a> {
 }
 
 #[allow(dead_code)]
-fn parse_eof<'a>(status: Status<'a>) -> Result<'a> {
+fn parse_eof<'a>(status: Status<'a>) -> ResultPartial<'a> {
     match status.get_char() {
         Ok((st, _ch)) => Err(Error::from_status(&st, "expected EOF")),
-        Err(st) => Ok((st, "".to_owned())),
+        Err(st) => Ok(st),
     }
 }
 

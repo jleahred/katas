@@ -16,8 +16,9 @@ use std::str::Chars;
 use std::result;
 
 //-----------------------------------------------------------------------
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Status<'a> {
+    text2parse: &'a str,
     it_parsing: Chars<'a>,
     pos: Possition,
 }
@@ -26,6 +27,7 @@ impl<'a> Status<'a> {
     #[allow(dead_code)]
     fn init(t2p: &'a str) -> Self {
         Status {
+            text2parse: t2p,
             it_parsing: t2p.chars(),
             pos: Possition::init(),
         }
@@ -42,4 +44,8 @@ impl Error {
     }
 }
 
-type Result<'a> = result::Result<(Status<'a>, String), Error>;
+#[derive(Clone, Copy)]
+pub(crate) struct Started(usize);
+
+type Result<'a> = result::Result<(Status<'a>, Started), Error>;
+type ResultPartial<'a> = result::Result<Status<'a>, Error>;
