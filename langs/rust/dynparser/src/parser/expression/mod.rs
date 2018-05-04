@@ -13,7 +13,7 @@
 use std::result;
 use parser::{Error, Result, ResultPartial, Started, Status, atom::{self, Atom}};
 
-#[cfg(test)]
+//#[cfg(test)]
 mod test;
 
 //-----------------------------------------------------------------------
@@ -29,6 +29,7 @@ mod test;
 pub(crate) enum Expression<'a> {
     Simple(Atom<'a>),
     And(MultiExpr<'a>),
+    Or(MultiExpr<'a>),
     Not(Box<Expression<'a>>),
 }
 
@@ -59,6 +60,7 @@ pub(crate) fn parse_partial<'a>(
     match expression {
         &Expression::Simple(ref val) => atom::parse(status, &val),
         &Expression::And(ref val) => parse_and(status, &val),
+        &Expression::Or(ref val) => parse_or(status, &val),
         &Expression::Not(ref val) => parse_not(status, &val),
     }
 }
@@ -75,6 +77,25 @@ fn parse_and<'a>(status: Status<'a>, multi_expr: &'a MultiExpr) -> ResultPartial
     })?;
 
     Ok(result.0)
+}
+
+//-----------------------------------------------------------------------
+fn parse_or<'a>(status: Status<'a>, multi_expr: &'a MultiExpr) -> ResultPartial<'a> {
+    let init_tc: (_, &[Expression]) = (status, &(multi_expr.0));
+
+    let result = tail_call(init_tc, |acc| {
+        if acc.1.len() == 0 {
+            Ok(TailCall::Return(Err(Error::from_status(&acc.0, "or"))))
+        } else {
+            let try_parse = parse(acc.0.clone(), &acc.1[0]);
+            match try_parse {
+                Ok(result) => Ok(TailCall::Return(Ok(result))),
+                Err(_) => Ok(TailCall::Call((acc.0, &acc.1[1..]))),
+            }
+        }
+    })?;
+
+    Ok(result?.0)
 }
 
 //-----------------------------------------------------------------------

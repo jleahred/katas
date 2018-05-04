@@ -36,12 +36,14 @@ fn test_parse_and_ok() {
 
 #[test]
 fn test_parse_and_fail() {
-    let status_init = Status::init("aabb");
-    let expr = Expression::Simple(Atom::Literal("aa"));
+    let status_init = Status::init("aaaaaaaaaaaaaaaa");
+    let and_rules = vec![
+        Expression::Simple(Atom::Literal("aa")),
+        Expression::Simple(Atom::Literal("bb")),
+    ];
+    let expr = Expression::And(MultiExpr(&and_rules));
 
-    let result = parse(status_init, &expr).ok().unwrap();
-
-    assert!(parse(result.0, &expr).is_err());
+    assert!(parse(status_init, &expr).is_err());
 }
 
 #[test]
@@ -62,4 +64,62 @@ fn test_parse_not_fail() {
 
     let expr_not = Expression::Not(Box::new(Expression::Simple(Atom::Literal("aa"))));
     assert!(parse(status_init, &expr_not).is_err());
+}
+
+#[test]
+fn test_parse_or_ok() {
+    {
+        let status_init = Status::init("aaaaaaaaaaaaaaaa");
+        let rules = vec![
+            Expression::Simple(Atom::Literal("aa")),
+            Expression::Simple(Atom::Literal("aa")),
+        ];
+        let expr = Expression::Or(MultiExpr(&rules));
+
+        let result = parse(status_init, &expr).ok().unwrap();
+
+        assert_eq!(result.0.pos.col, 2);
+        assert_eq!(result.0.pos.n, 2);
+        assert_eq!(result.0.pos.row, 0);
+    }
+    {
+        let status_init = Status::init("aaaaaaaaaaaaaaaa");
+        let rules = vec![
+            Expression::Simple(Atom::Literal("aa")),
+            Expression::Simple(Atom::Literal("bb")),
+        ];
+        let expr = Expression::Or(MultiExpr(&rules));
+
+        let result = parse(status_init, &expr).ok().unwrap();
+
+        assert_eq!(result.0.pos.col, 2);
+        assert_eq!(result.0.pos.n, 2);
+        assert_eq!(result.0.pos.row, 0);
+    }
+    {
+        let status_init = Status::init("aaaaaaaaaaaaaaaa");
+        let rules = vec![
+            Expression::Simple(Atom::Literal("bb")),
+            Expression::Simple(Atom::Literal("aa")),
+        ];
+        let expr = Expression::Or(MultiExpr(&rules));
+
+        let result = parse(status_init, &expr).ok().unwrap();
+
+        assert_eq!(result.0.pos.col, 2);
+        assert_eq!(result.0.pos.n, 2);
+        assert_eq!(result.0.pos.row, 0);
+    }
+}
+
+#[test]
+fn test_parse_or_fail() {
+    let status_init = Status::init("aaaaaaaaaaaaaaaa");
+    let and_rules = vec![
+        Expression::Simple(Atom::Literal("cc")),
+        Expression::Simple(Atom::Literal("bb")),
+    ];
+    let expr = Expression::And(MultiExpr(&and_rules));
+
+    assert!(parse(status_init, &expr).is_err());
 }
