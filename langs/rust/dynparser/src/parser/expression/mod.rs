@@ -8,12 +8,12 @@
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
 
-/// Here we have the parser and types for non dependencies kind
+/// Here we have the parser for dependent kinds
 
 use std::result;
 use parser::{Error, Result, ResultPartial, Started, Status, atom::{self, Atom}};
 
-//#[cfg(test)]
+#[cfg(test)]
 mod test;
 
 //-----------------------------------------------------------------------
@@ -31,11 +31,22 @@ pub(crate) enum Expression<'a> {
     And(MultiExpr<'a>),
     Or(MultiExpr<'a>),
     Not(Box<Expression<'a>>),
+    Repeat(RepInfo<'a>), //  min max
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct MultiExpr<'a>(&'a [Expression<'a>]);
+
+#[derive(Debug)]
+pub(crate) struct RepInfo<'a> {
+    expression: Box<Expression<'a>>,
+    min: NRep,
+    max: Option<NRep>,
+}
+
+#[derive(Debug)]
+pub(crate) struct NRep(pub usize);
 
 //-----------------------------------------------------------------------
 //-----------------------------------------------------------------------
@@ -62,40 +73,38 @@ pub(crate) fn parse_partial<'a>(
         &Expression::And(ref val) => parse_and(status, &val),
         &Expression::Or(ref val) => parse_or(status, &val),
         &Expression::Not(ref val) => parse_not(status, &val),
+        &Expression::Repeat(ref val) => parse_repeat(status, &val),
     }
 }
+
 //-----------------------------------------------------------------------
 fn parse_and<'a>(status: Status<'a>, multi_expr: &'a MultiExpr) -> ResultPartial<'a> {
     let init_tc: (_, &[Expression]) = (status, &(multi_expr.0));
 
-    let result = tail_call(init_tc, |acc| {
+    Ok(try_tail_call(init_tc, |acc| {
         if acc.1.len() == 0 {
             Ok(TailCall::Return(acc))
         } else {
             Ok(TailCall::Call((parse(acc.0, &acc.1[0])?.0, &acc.1[1..])))
         }
-    })?;
-
-    Ok(result.0)
+    })?.0)
 }
 
 //-----------------------------------------------------------------------
 fn parse_or<'a>(status: Status<'a>, multi_expr: &'a MultiExpr) -> ResultPartial<'a> {
     let init_tc: (_, &[Expression]) = (status, &(multi_expr.0));
 
-    let result = tail_call(init_tc, |acc| {
+    Ok(tail_call(init_tc, |acc| {
         if acc.1.len() == 0 {
-            Ok(TailCall::Return(Err(Error::from_status(&acc.0, "or"))))
+            TailCall::Return(Err(Error::from_status(&acc.0, "or")))
         } else {
             let try_parse = parse(acc.0.clone(), &acc.1[0]);
             match try_parse {
-                Ok(result) => Ok(TailCall::Return(Ok(result))),
-                Err(_) => Ok(TailCall::Call((acc.0, &acc.1[1..]))),
+                Ok(result) => TailCall::Return(Ok(result)),
+                Err(_) => TailCall::Call((acc.0, &acc.1[1..])),
             }
         }
-    })?;
-
-    Ok(result?.0)
+    })?.0)
 }
 
 //-----------------------------------------------------------------------
@@ -106,155 +115,24 @@ fn parse_not<'a>(status: Status<'a>, expression: &'a Expression) -> ResultPartia
     }
 }
 
-// #[derive(Debug)]
-// pub enum Expression {
-// Simple(Atom),
-// Or(MultiExpr),
-// And(MultiExpr),
-// Not(Box<Expression>),
-// Repeat(Box<Expression>, NRep, Option<NRep>), //  min max
-// }
+//-----------------------------------------------------------------------
+fn parse_repeat<'a>(status: Status<'a>, rep_info: &'a RepInfo) -> ResultPartial<'a> {
+    let big_min_bound = |counter| counter >= rep_info.min.0;
+    let touch_max_bound = |counter: usize| match rep_info.max {
+        Some(ref m) => counter == m.0,
+        None => false,
+    };
 
-// #[derive(Debug)]
-// pub struct NRep(pub u32);
-
-// #[derive(Debug)]
-// pub struct MultiExpr(pub Vec<Expression>);
-
-// impl Parse for Expression {
-//     fn parse(&self,
-//              conf: &parser::Config,
-//              status: parser::Status)
-//              -> Result<(parser::Status, ast::Node), Error> {
-//         match self {
-//             &Expression::Simple(ref atom) => atom.parse(conf, status),
-//             &Expression::Or(MultiExpr(ref exprs)) => parse_or(conf, exprs, status),
-//             &Expression::And(MultiExpr(ref exprs)) => parse_and(conf, exprs, status),
-//             &Expression::Not(ref exprs) => parse_negate(conf, exprs, status),
-//             &Expression::Repeat(ref exprs, ref min, ref max) => {
-//                 parse_repeat(conf, exprs, status, min, max)
-//             }
-//         }
-//     }
-// }
-
-// fn parse_or(conf: &parser::Config,
-//             exprs: &Vec<Expression>,
-//             status: parser::Status)
-//             -> Result<(parser::Status, ast::Node), Error> {
-//     let mut errs = vec![];
-//     for e in exprs {
-//         match e.parse(conf, status.clone()) {
-//             Ok(p) => return Ok(p),
-//             Err(perr) => errs.push(error(&perr.pos, &perr.descr, conf.text2parse)),
-//         }
-//     }
-
-//     let max_deep = errs.iter().fold(0, |acc, e| ::std::cmp::max(acc, e.pos.n));
-//     errs.retain(|ref e| e.pos.n == max_deep);
-
-//     if errs.len() == 1 {
-//         Err(errs[0].clone())    //  [0]  it's safe
-//     } else {
-//         let mut error = error(&status.pos, "", conf.text2parse);
-//         for e in errs {
-//             if e.pos.n == max_deep {
-//                 error.descr = format!("{}  {}", error.descr, e.descr_indented());
-//                 error.pos = e.pos;
-//             }
-//         }
-//         // error.descr = format!("{}end parsing or", error.descr);
-//         Err(error)
-//     }
-// }
-
-// fn parse_and(conf: &parser::Config,
-//              exprs: &Vec<Expression>,
-//              status: parser::Status)
-//              -> Result<(parser::Status, ast::Node), Error> {
-//     let ast = |ast_nodes| {
-//         ast::Node {
-//             kind: ast::K::EAnd,
-//             val: ast::V("".to_owned()),
-//             nodes: Box::new(ast_nodes),
-//         }
-//     };
-
-//     let mut parst = status.clone();
-//     let mut ast_nodes = vec![];
-//     for e in exprs {
-//         let (nw_st, ast) = e.parse(conf, parst.clone())?;
-//         parst = nw_st;
-//         ast_nodes.push(ast);
-//     }
-//     Ok((parst, ast(ast_nodes)))
-// }
-
-// fn parse_negate(conf: &parser::Config,
-//                 expr: &Expression,
-//                 status: parser::Status)
-//                 -> Result<(parser::Status, ast::Node), Error> {
-
-//     match expr.parse(conf, status.clone()) {
-//         Ok(result) => Err(error(&result.0.pos, "negation error", conf.text2parse)),
-//         Err(_) => Ok((status, ast::Node::new_valstr(ast::K::ENot, ""))),
-//     }
-// }
-
-// fn parse_repeat(conf: &parser::Config,
-//                 expr: &Expression,
-//                 status: parser::Status,
-//                 min: &NRep,
-//                 omax: &Option<NRep>)
-//                 -> Result<(parser::Status, ast::Node), Error> {
-//     let ast = |ast_nodes| {
-//         ast::Node {
-//             kind: ast::K::ERepeat,
-//             val: ast::V("".to_owned()),
-//             nodes: ast_nodes,
-//         }
-//     };
-//     let max_reached = |i| omax.as_ref().map_or(false, |ref m| i + 1 >= m.0);
-//     let last_ok_or =
-//         |lok: Option<parser::Status>, ref status| lok.as_ref().unwrap_or(&status).clone();
-
-//     let mut opt_lastokst = None;
-//     let mut opt_lasterror = None;
-//     let mut ast_nodes = Box::new(vec![]);
-//     for i in 0.. {
-//         let st = last_ok_or(opt_lastokst.clone(), status.clone());
-//         let last_result = expr.parse(conf, st);
-
-//         match last_result {
-//             Ok((st, ast_node)) => {
-//                 opt_lastokst = Some(st);
-//                 ast_nodes.push(ast_node);
-//             }
-//             Err(err) => opt_lasterror = Some(err),
-//         }
-
-//         match (i >= min.0, max_reached(i), opt_lasterror.clone(), opt_lastokst.clone()) {
-//             (false, _, Some::<Error>(err), _) => {
-//                 return Err(error(&err.pos,
-//                                  &format!("trying repeat., {}", err.descr),
-//                                  conf.text2parse))
-//             }
-//             (false, _, None, _) => (),
-//             (true, _, Some(lerr), Some(lok)) => {
-//                 return Ok((lok.update_deep_error(&lerr), ast(ast_nodes)))
-//             }
-//             (true, _, Some(lerr), None) => {
-//                 return Ok((status.update_deep_error(&lerr), ast(ast_nodes)))
-//             }
-//             (true, true, None, Some(lok)) => return Ok((lok, ast(ast_nodes))),
-//             (true, true, None, None) => return Ok((status, ast(ast_nodes))),
-//             (true, false, None, _) => (),
-//         }
-//     }
-//     Err(error(&status.pos,
-//               "stupid line waitting for #37339",
-//               conf.text2parse))
-// }
+    Ok(tail_call((status, 0), |acc| {
+        let try_parse = parse_partial(acc.0.clone(), &rep_info.expression);
+        match (try_parse, big_min_bound(acc.1), touch_max_bound(acc.1)) {
+            (Err(_), true, _) => TailCall::Return(Ok(acc.0)),
+            (Err(_), false, _) => TailCall::Return(Err(Error::from_status(&acc.0, "repeat"))),
+            (Ok(st), _, false) => TailCall::Call((st, acc.1 + 1)),
+            (Ok(st), _, true) => TailCall::Return(Ok(st)),
+        }
+    })?)
+}
 
 //-----------------------------------------------------------------------
 //  TailCall
@@ -264,7 +142,7 @@ pub enum TailCall<T, R> {
     Return(R),
 }
 
-pub fn tail_call<T, R, E, F>(seed: T, recursive_function: F) -> result::Result<R, E>
+pub fn try_tail_call<T, R, E, F>(seed: T, recursive_function: F) -> result::Result<R, E>
 where
     F: Fn(T) -> result::Result<TailCall<T, R>, E>,
 {
@@ -276,6 +154,23 @@ where
             }
             TailCall::Return(result) => {
                 return Ok(result);
+            }
+        }
+    }
+}
+
+pub fn tail_call<T, R, F>(seed: T, recursive_function: F) -> R
+where
+    F: Fn(T) -> TailCall<T, R>,
+{
+    let mut state = TailCall::Call(seed);
+    loop {
+        match state {
+            TailCall::Call(arg) => {
+                state = recursive_function(arg);
+            }
+            TailCall::Return(result) => {
+                return result;
             }
         }
     }
