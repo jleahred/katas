@@ -119,7 +119,7 @@ fn parse_not<'a>(status: Status<'a>, expression: &'a Expression) -> ResultPartia
 fn parse_repeat<'a>(status: Status<'a>, rep_info: &'a RepInfo) -> ResultPartial<'a> {
     let big_min_bound = |counter| counter >= rep_info.min.0;
     let touch_max_bound = |counter: usize| match rep_info.max {
-        Some(ref m) => counter == m.0,
+        Some(ref m) => counter + 1 == m.0,
         None => false,
     };
 

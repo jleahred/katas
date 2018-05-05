@@ -90,7 +90,7 @@ fn test_parse_match_ok() {
 
     let status = parse_dot(status).ok().unwrap();
 
-    let match_rules = MatchRules::new().with_bound_chars(&vec![('f', 'g'), ('h', 'j')]);
+    let match_rules = MatchRules::new().with_bound_chars(&[('f', 'g'), ('h', 'j')]);
     let status = parse_match(status, &match_rules).ok().unwrap();
     assert_eq!(status.pos.col, 3);
     assert_eq!(status.pos.n, 3);
@@ -109,7 +109,7 @@ fn test_parse_match_err() {
     assert_eq!(status.pos.n, 1);
     assert_eq!(status.pos.row, 0);
 
-    let match_rules = MatchRules::new().with_bound_chars(&vec![('a', 'z'), ('0', '8')]);
+    let match_rules = MatchRules::new().with_bound_chars(&[('a', 'z'), ('0', '8')]);
     assert!(parse_match(status, &match_rules).is_err());
 }
 
@@ -117,7 +117,7 @@ fn test_parse_match_err() {
 fn test_parse_match_eof_ok() {
     let status = Status::init("a");
 
-    let match_rules = MatchRules::new().with_bound_chars(&vec![('a', 'z'), ('0', '9')]);
+    let match_rules = MatchRules::new().with_bound_chars(&[('a', 'z'), ('0', '9')]);
     let status = parse_match(status, &match_rules).ok().unwrap();
 
     assert!(parse_eof(status).is_ok());
@@ -127,7 +127,7 @@ fn test_parse_match_eof_ok() {
 fn test_parse_match_eof_error() {
     let status = Status::init("ab");
 
-    let match_rules = MatchRules::new().with_bound_chars(&vec![('a', 'z'), ('0', '9')]);
+    let match_rules = MatchRules::new().with_bound_chars(&[('a', 'z'), ('0', '9')]);
     let status = parse_match(status, &match_rules).ok().unwrap();
 
     assert!(parse_eof(status).is_err());
