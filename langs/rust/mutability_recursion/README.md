@@ -2,7 +2,7 @@
 
 Como ya he comentado en alguna ocasión, la mutabilidad no es vírica en Rust y se puede diseñar un sistema que evite la copia de forma explícita combinándola con el _ownership_.
 
-Este es un ejemplo de una función que recibe la propiedad de _status_ y lo
+A continuación un ejemplo de una función que recibe la propiedad de _status_ y lo
 declara como mutable. Recuerda, no es vírico. Puesto que se obtiene la propiedad, la declaración de variable en el invocante puede ser inmutable (muy recomendable)
 
 Luego utilzamos un bucle _for_
@@ -49,11 +49,11 @@ pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &'a Literal<'a>) ->
 }
 ```
 
-Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizada su eliminación por el compilador ni LLVM :-(
+Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizada su eliminación por el compilador ni LLVM (no normal es que no se elimine esta recursión) :-(
 
-No obstante, la sobrecarga de la recursión, incluso sin optimización de cola, no es grande. Gracias al _ownership_ status no se copia, y los otros dos parámetros son referencias de estructuras sencillas. Uno de ellos es siempre la misma estructura, y el otro, sí se crea en la pila en cada contexto de llamada.
+No obstante, la sobrecarga de la recursión, incluso sin optimización de cola, no es excesiva. Gracias al _ownership_ status no se copia, y los otros dos parámetros son referencias de estructuras sencillas. Uno de ellos es siempre la misma estructura, y el otro, sí se crea en la pila en cada contexto de llamada.
 
-Ni Rust ni LLVM garantizan la optimización de recursión de cola, pero es posible escribir un poco de código (20 líneas), para tener algo que parece una recursión de cola y hace cuack, pero que es un bucle for.
+En Rust no tenemos optimización por recursión de cola, pero es posible escribir un poco de código (20 líneas), para tener algo que parece una recursión de cola y hace cuack, pero que es un bucle for.
 
 Esta es la solución que utiliza una _recursión de cola optimizada (artificial)_. Parece recursión, pero el código es traducido a un bucle for.
 
@@ -119,13 +119,28 @@ Error inferior al 0.2%
 
 La recursión con optimización de cola artificial, 1.15 veces más lenta.
 
+### Explicación
+
+Si miramos el código [(aquí)](https://github.com/jleahred/katas/tree/master/langs/rust/mutability_recursion)
+de la recursión de cola optimizada artificialmente, vemos que se aplica un bucle for (bien), y en cada iteración se hace una llamada a una lambda.
+
+Si esta lambda no se expande _inline_, se producirá un coste adicional de tiempo, que es lo que vemos en las gráficas. No obstante, la optimización artificial consume menos CPU, pero lo más importante y seguro, es que elimina el desbordamiento de pila.
+
+Para tratar de obtener el mismo rendimiento que el bucle for, deberíamos probar con macros.
+
 ## Conclusión
 
-No podemos confiar en la optimización de recursión de cola. IMPORTANTE
+En Rust no podemos contar con la optimización por recursión de cola.
 
 Se puede utilizar el ownership para evitar la infección vírica de la mutabilidad. Esta mutabilidad, puede quedar restringida a un ámbito muy pequeño y no tendrá un efecto negativo en el diseño del código, mientras se maximiza el rendimiento (incluso en ocasiones el código puede ser más legible)
 
-Cuando el código sea más legible con recursión, se puede utilizar una _recursión de cola con optimización artifical_ sin penalizar significativamente en el rendimiento, además de que se evitará el desbordamiento de la pila para niveles muy profundos.
+Cuando el código sea más sencillo y elegante con recursión, se puede utilizar una _recursión de cola con optimización artifical_ penalizando en rendimiento por la llamada a la función (no siempre muy relevante) de una forma no determinista (dependiendo de las optimizaciones del compilador), y muy importante, se evitará el desbordamiento de la pila para niveles muy profundos.
+
+Y como siempre, como en todos los microbenchmark... los datos no valen de mucho :\_(
+
+> Al menos existe una oveja que tiene uno de los lados negro
+
+Tan sólo podemos confirmar que realmente se puede utilizar recursión de cola sin desbordar la pila  ;-P
 
 Código completo:
 [(aquí)](https://github.com/jleahred/katas/tree/master/langs/rust/mutability_recursion)
