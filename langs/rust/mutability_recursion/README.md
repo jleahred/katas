@@ -49,7 +49,7 @@ pub(crate) fn parse_literal<'a>(status: Status<'a>, literal: &'a Literal<'a>) ->
 }
 ```
 
-Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizada su eliminación por el compilador ni LLVM (no normal es que no se elimine esta recursión) :-(
+Hemos quitado la mutabilidad. La recursión es de cola, pero no está garantizada su eliminación por el compilador ni LLVM (lo normal es que no se elimine esta recursión) :-(
 
 No obstante, la sobrecarga de la recursión, incluso sin optimización de cola, no es excesiva. Gracias al _ownership_ status no se copia, y los otros dos parámetros son referencias de estructuras sencillas. Uno de ellos es siempre la misma estructura, y el otro, sí se crea en la pila en cada contexto de llamada.
 
@@ -136,7 +136,7 @@ Se puede utilizar el ownership para evitar la infección vírica de la mutabilid
 
 Cuando el código sea más sencillo y elegante con recursión, se puede utilizar una _recursión de cola con optimización artifical_ penalizando en rendimiento por la llamada a la función (no siempre muy relevante) de una forma no determinista (dependiendo de las optimizaciones del compilador), y muy importante, se evitará el desbordamiento de la pila para niveles muy profundos.
 
-Y como siempre, como en todos los microbenchmark... los datos no valen de mucho :\_(
+Y como siempre, como en todos los microbenchmark... no son fiables ni realistas, los datos no valen de mucho :\_(
 
 > Al menos existe una oveja que tiene uno de los lados negro
 
