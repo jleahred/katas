@@ -1,0 +1,8 @@
+[package]
+name = "counter"
+version = "0.1.1"
+authors = ["jleahred"]
+
+[dependencies]
+stdweb = "0.4.2"
+yew = { git = "https://github.com/DenisKolodin/yew" }
