@@ -1,11 +1,12 @@
 [package]
-name = "counter"
+name = "calculator"
 version = "0.1.1"
 authors = ["jleahred"]
 
 [dependencies]
 stdweb = "0.4.2"
 yew = { git = "https://github.com/DenisKolodin/yew" }
+idata = { git = "https://github.com/jleahred/idata.git" }
 
 # [profile.release]
 # lto = true
