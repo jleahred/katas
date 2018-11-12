@@ -43,15 +43,29 @@ pub enum Operator {
     Div,
 }
 
-fn try_add_char2display(display: &mut String, ch: char) {
+fn operation_from_operator(op: Option<Operator>) -> Option<Box<Fn(f64, f64) -> f64>> {
+    let add = Box::new(move |l: f64, r: f64| l + r);
+    let sub = Box::new(move |l: f64, r: f64| l - r);
+    let mult = Box::new(move |l: f64, r: f64| l * r);
+    let div = Box::new(move |l: f64, r: f64| l / r);
+    match op {
+        Some(Operator::Add) => Some(add),
+        Some(Operator::Subs) => Some(sub),
+        Some(Operator::Mult) => Some(mult),
+        Some(Operator::Div) => Some(div),
+        None => None,
+    }
+}
+
+fn try_add_char2display(display: String, ch: char) -> String {
     let ignore_zero = |display: &str, ch| display == "" && ch == '0';
-    if display.len() < 14 && !ignore_zero(&display, ch) {
-        use std::str::FromStr;
-        let new_display = display.clone().ipush(ch);
-        let conv = f64::from_str(&new_display);
-        if conv.is_ok() {
-            display.push(ch);
-        }
+
+    use std::str::FromStr;
+    let can_add_display = display.len() < 14 && !ignore_zero(&display, ch);
+    let new_display = display.clone().ipush(ch);
+    match (can_add_display, f64::from_str(&new_display).ok()) {
+        (true, Some(_)) => new_display,
+        _ => display,
     }
 }
 
@@ -75,17 +89,34 @@ impl ModelStatus {
     }
 
     fn add_digit_to_display(mut self, d: char) -> Self {
-        try_add_char2display(&mut self.display, d);
+        self.display = try_add_char2display(self.display, d);
         self
     }
 
-    fn process_operator(mut self, op: Operator) -> Self {
-        use std::str::FromStr;
-        let val_display = f64::from_str(&self.display);
+    fn calc_accumulator(&self) -> Option<f64> {
+        let operation = operation_from_operator(self.operator);
 
-        self.display.clear();
-        self.operator = Some(op);
-        self
+        match (operation, self.num_from_display()) {
+            (Some(op), Some(ndisplay)) => Some(op(ndisplay, self.accumulator)),
+            (None, Some(ndisplay)) => Some(ndisplay),
+            _ => Some(self.accumulator),
+        }
+    }
+
+    fn num_from_display(&self) -> Option<f64> {
+        use std::str::FromStr;
+        f64::from_str(&self.display).ok()
+    }
+
+    fn process_operator(self, op: Operator) -> ModelContent {
+        match self.calc_accumulator() {
+            None => ModelContent::Error,
+            Some(new_acc) => ModelContent::Status(ModelStatus {
+                display: "".to_string(),
+                accumulator: new_acc,
+                operator: Some(op),
+            }),
+        }
     }
 
     fn clear(mut self) -> Self {
@@ -108,7 +139,7 @@ impl Component for Model {
         fn update_model_status(st: ModelStatus, msg: &Msg) -> ModelContent {
             match *msg {
                 Msg::PressedDigit(d) => ModelContent::Status(st.add_digit_to_display(d)),
-                Msg::Op(op) => ModelContent::Status(st.process_operator(op)),
+                Msg::Op(op) => st.process_operator(op),
                 Msg::Clear => ModelContent::Status(st.clear()),
                 Msg::Reset => ModelContent::Emtpy,
             }
