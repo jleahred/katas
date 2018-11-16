@@ -10,19 +10,19 @@ use yew::prelude::*;
 
 pub struct Model {
     // console: ConsoleService,
-    content: ModelContent,
+    st: MStatus,
 }
 
 #[derive(Debug)]
-pub enum ModelContent {
+pub enum MStatus {
     Error,
     Emtpy,
-    Status(ModelStatus),
+    Calculating(ModelCalc),
+    Display(ModelCalc),
 }
 
 #[derive(Debug, Clone)]
-pub struct ModelStatus {
-    // console: ConsoleService,
+pub struct ModelCalc {
     accumulator: f64,
     display: String,
     operator: Option<Operator>,
@@ -69,17 +69,18 @@ fn try_add_char2display(display: String, ch: char) -> String {
     }
 }
 
-impl ModelContent {
+impl MStatus {
     fn display(&self) -> String {
         match self {
-            ModelContent::Emtpy => "".to_string(),
-            ModelContent::Error => "error".to_string(),
-            ModelContent::Status(st) => st.display.clone(),
+            MStatus::Emtpy => "".to_string(),
+            MStatus::Error => "error".to_string(),
+            MStatus::Calculating(st) => st.display.clone(),
+            MStatus::Display(st) => st.display.clone(),
         }
     }
 }
 
-impl ModelStatus {
+impl ModelCalc {
     fn new() -> Self {
         Self {
             display: "".to_string(),
@@ -108,11 +109,11 @@ impl ModelStatus {
         f64::from_str(&self.display).ok()
     }
 
-    fn process_operator(self, op: Operator) -> ModelContent {
+    fn process_operator(self, op: Operator) -> MStatus {
         match self.calc_accumulator() {
-            None => ModelContent::Error,
-            Some(new_acc) => ModelContent::Status(ModelStatus {
-                display: "".to_string(),
+            None => MStatus::Error,
+            Some(new_acc) => MStatus::Display(ModelCalc {
+                display: new_acc.to_string(),
                 accumulator: new_acc,
                 operator: Some(op),
             }),
@@ -130,35 +131,49 @@ impl Component for Model {
     type Properties = ();
 
     fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
-        Model {
-            content: ModelContent::Emtpy,
-        }
+        Model { st: MStatus::Emtpy }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        fn update_model_status(st: ModelStatus, msg: &Msg) -> ModelContent {
+        fn update_model_status(st: ModelCalc, msg: &Msg) -> MStatus {
             match *msg {
-                Msg::PressedDigit(d) => ModelContent::Status(st.add_digit_to_display(d)),
+                Msg::PressedDigit(d) => MStatus::Calculating(st.add_digit_to_display(d)),
                 Msg::Op(op) => st.process_operator(op),
-                Msg::Clear => ModelContent::Status(st.clear()),
-                Msg::Reset => ModelContent::Emtpy,
+                Msg::Clear => MStatus::Calculating(st.clear()),
+                Msg::Reset => MStatus::Emtpy,
             }
         }
-        fn update_model_error(msg: &Msg) -> ModelContent {
+        fn update_model_error(msg: &Msg) -> MStatus {
             match *msg {
-                Msg::Reset => ModelContent::Emtpy,
-                _ => ModelContent::Error,
+                Msg::Reset => MStatus::Emtpy,
+                _ => MStatus::Error,
             }
         }
-        fn update_model_empty(msg: &Msg) -> ModelContent {
-            update_model_status(ModelStatus::new(), msg)
+        fn update_model_empty(msg: &Msg) -> MStatus {
+            update_model_status(ModelCalc::new(), msg)
+        }
+        fn update_model_display(st: &ModelCalc, msg: &Msg) -> MStatus {
+            match *msg {
+                Msg::PressedDigit(d) => {
+                    let st = st.clone().clear().add_digit_to_display(d);
+                    MStatus::Calculating(st)
+                }
+                Msg::Op(op) => ModelCalc {
+                    accumulator: 0.,
+                    display: st.display.clone(),
+                    operator: None,
+                }.process_operator(op),
+                Msg::Clear => MStatus::Emtpy,
+                Msg::Reset => MStatus::Emtpy,
+            }
         }
         //  ------------------------------------
 
-        self.content = match self.content {
-            ModelContent::Status(ref st) => update_model_status(st.clone(), &msg),
-            ModelContent::Error => update_model_error(&msg),
-            ModelContent::Emtpy => update_model_empty(&msg),
+        self.st = match self.st {
+            MStatus::Calculating(ref st) => update_model_status(st.clone(), &msg),
+            MStatus::Error => update_model_error(&msg),
+            MStatus::Emtpy => update_model_empty(&msg),
+            MStatus::Display(ref st) => update_model_display(&st, &msg),
         };
         true
     }
@@ -185,7 +200,7 @@ impl Renderable<Model> for Model {
         let display = || {
             html! {
                 <>
-                <input class="form-control my-3", id="display", placeholder="0.", disabled=true, value=&self.content.display(),>
+                <input class="form-control my-3", id="display", placeholder="0.", disabled=true, value=&self.st.display(),>
                 </input>
                 </>
             }
@@ -245,7 +260,7 @@ impl Renderable<Model> for Model {
         let status = || {
             html!{
                 <>
-                    {format!("{:#?}", self.content)}
+                    {format!("{:#?}", self.st)}
                 </>
             }
         };
