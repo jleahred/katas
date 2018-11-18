@@ -3,39 +3,39 @@ extern crate stdweb;
 extern crate yew;
 extern crate idata;
 
+use std::result::Result;
+
 use idata::IString;
+use std::str::FromStr;
 // use stdweb::web::Date;
 use yew::prelude::*;
 // use yew::services::ConsoleService;
 
+type ModelStatus = Result<MOptions, String>;
+
 pub struct Model {
     // console: ConsoleService,
-    st: MStatus,
+    st: ModelStatus,
 }
 
 #[derive(Debug)]
-pub enum MStatus {
-    Error,
+pub enum MOptions {
     Emtpy,
-    Calculating(ModelCalc),
-    Display(ModelCalc),
-}
-
-#[derive(Debug, Clone)]
-pub struct ModelCalc {
-    accumulator: f64,
-    display: String,
-    operator: Option<Operator>,
+    Num(NumSt),
+    Op(OpSt),
+    OpNum(OpNumSt),
+    Res(ResSt),
 }
 
 pub enum Msg {
-    PressedDigit(char),
+    Digit(char),
     Op(Operator),
+    Equal,
     Clear,
     Reset,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operator {
     Add,
     Subs,
@@ -43,86 +43,223 @@ pub enum Operator {
     Div,
 }
 
-fn operation_from_operator(op: Option<Operator>) -> Option<Box<Fn(f64, f64) -> f64>> {
-    let add = Box::new(move |l: f64, r: f64| l + r);
-    let sub = Box::new(move |l: f64, r: f64| l - r);
-    let mult = Box::new(move |l: f64, r: f64| l * r);
-    let div = Box::new(move |l: f64, r: f64| l / r);
-    match op {
-        Some(Operator::Add) => Some(add),
-        Some(Operator::Subs) => Some(sub),
-        Some(Operator::Mult) => Some(mult),
-        Some(Operator::Div) => Some(div),
-        None => None,
+#[derive(Debug, Clone)]
+pub struct NumSt(String);
+
+#[derive(Debug, Clone)]
+pub struct OpSt {
+    display: String,
+    accumulator: f64,
+    operator: Operator,
+}
+
+#[derive(Debug, Clone)]
+pub struct OpNumSt {
+    display: String,
+    accumulator: f64,
+    operator: Operator,
+}
+
+#[derive(Debug, Clone)]
+pub struct ResSt {
+    display: String,
+    accumulator: f64,
+    operator: Operator,
+}
+
+//  ----------
+
+impl Model {
+    fn display(&self) -> String {
+        match self.st {
+            Ok(ref st) => st.display(),
+            Err(ref descr) => format!("err {}", descr),
+        }
     }
 }
 
-fn try_add_char2display(display: String, ch: char) -> String {
-    let ignore_zero = |display: &str, ch| display == "" && ch == '0';
-
-    use std::str::FromStr;
-    let can_add_display = display.len() < 14 && !ignore_zero(&display, ch);
-    let new_display = display.clone().ipush(ch);
-    match (can_add_display, f64::from_str(&new_display).ok()) {
-        (true, Some(_)) => new_display,
-        _ => display,
-    }
-}
-
-impl MStatus {
+impl MOptions {
     fn display(&self) -> String {
         match self {
-            MStatus::Emtpy => "".to_string(),
-            MStatus::Error => "error".to_string(),
-            MStatus::Calculating(st) => st.display.clone(),
-            MStatus::Display(st) => st.display.clone(),
+            MOptions::Emtpy => "".to_string(),
+            MOptions::Num(ref snum) => snum.0.clone(),
+            MOptions::Op(ref st) => st.display.clone(),
+            MOptions::OpNum(ref st) => st.display.clone(),
+            MOptions::Res(ref st) => st.display.clone(),
         }
     }
 }
 
-impl ModelCalc {
-    fn new() -> Self {
-        Self {
+impl NumSt {
+    fn process_op(&self, op: Operator) -> ModelStatus {
+        Ok(MOptions::Op(OpSt {
+            display: self.0.clone(),
+            accumulator: f64::from_str(&self.0).map_err(|_| "conv")?,
+            operator: op,
+        }))
+    }
+
+    fn process_digit(&self, ch: char) -> ModelStatus {
+        Ok(MOptions::Num(NumSt(try_add_char2display(&self.0, ch))))
+    }
+}
+
+impl OpSt {
+    fn process_digit(&self, ch: char) -> ModelStatus {
+        let display = try_add_char2display("", ch);
+        Ok(MOptions::OpNum(OpNumSt {
+            display,
+            accumulator: self.accumulator,
+            operator: self.operator,
+        }))
+    }
+}
+
+impl OpNumSt {
+    fn clear(&self) -> ModelStatus {
+        Ok(MOptions::OpNum(OpNumSt {
             display: "".to_string(),
-            accumulator: 0.,
-            operator: None,
-        }
+            accumulator: self.accumulator,
+            operator: self.operator,
+        }))
     }
 
-    fn add_digit_to_display(mut self, d: char) -> Self {
-        self.display = try_add_char2display(self.display, d);
-        self
+    fn process_op(self, op: Operator) -> ModelStatus {
+        let new_acc = self.calc()?;
+        Ok(MOptions::Op(OpSt {
+            display: new_acc.to_string(),
+            accumulator: new_acc,
+            operator: op,
+        }))
     }
 
-    fn calc_accumulator(&self) -> Option<f64> {
+    fn process_digit(mut self, ch: char) -> ModelStatus {
+        self.display = try_add_char2display(&self.display, ch);
+
+        Ok(MOptions::OpNum(self))
+    }
+
+    fn process_equal(self) -> ModelStatus {
+        let new_acc = self.calc()?;
+        Ok(MOptions::Res(ResSt {
+            display: new_acc.to_string(),
+            accumulator: new_acc,
+            operator: self.operator,
+        }))
+    }
+
+    fn calc(&self) -> Result<f64, String> {
         let operation = operation_from_operator(self.operator);
+        let onum_display = f64::from_str(&self.display).ok();
+        let result = match onum_display {
+            Some(ndispl) => operation(self.accumulator, ndispl),
+            None => Err("conv displ".to_string()),
+        }?;
+        Ok(result)
+    }
+}
 
-        match (operation, self.num_from_display()) {
-            (Some(op), Some(ndisplay)) => Some(op(ndisplay, self.accumulator)),
-            (None, Some(ndisplay)) => Some(ndisplay),
-            _ => Some(self.accumulator),
+impl ResSt {
+    fn process_op(self, op: Operator) -> ModelStatus {
+        NumSt(self.display).process_op(op)
+    }
+
+    fn process_digit(self, ch: char) -> ModelStatus {
+        NumSt("".to_string()).process_digit(ch)
+    }
+}
+
+fn try_add_char2display(display: &str, ch: char) -> String {
+    let ignore_zero = |display: &str, ch| display == "0" && ch == '0';
+
+    let can_add_display = display.len() < 14 && !ignore_zero(&display, ch);
+    let new_display = if display == "0" {
+        "".to_string()
+    } else {
+        display.to_string()
+    }.ipush(ch);
+    match (can_add_display, f64::from_str(&new_display).ok()) {
+        (true, Some(_)) => new_display,
+        _ => display.to_string(),
+    }
+}
+
+fn operation_from_operator(op: Operator) -> Box<Fn(f64, f64) -> Result<f64, String>> {
+    let add = Box::new(move |l: f64, r: f64| Ok(l + r));
+    let sub = Box::new(move |l: f64, r: f64| Ok(l - r));
+    let mult = Box::new(move |l: f64, r: f64| Ok(l * r));
+    let div = Box::new(move |l: f64, r: f64| {
+        if r != 0. {
+            Ok(l / r)
+        } else {
+            Err("div by zero".to_string())
         }
+    });
+    match op {
+        Operator::Add => add,
+        Operator::Subs => sub,
+        Operator::Mult => mult,
+        Operator::Div => div,
     }
+}
 
-    fn num_from_display(&self) -> Option<f64> {
-        use std::str::FromStr;
-        f64::from_str(&self.display).ok()
+fn update_model_empty(msg: &Msg) -> Option<ModelStatus> {
+    match msg {
+        Msg::Reset => None,
+        Msg::Clear => None,
+        Msg::Equal => None,
+        Msg::Op(_) => Some(Err("op on empty".to_string())),
+        Msg::Digit(d) => Some(Ok(MOptions::Num(NumSt(d.to_string())))),
     }
+}
 
-    fn process_operator(self, op: Operator) -> MStatus {
-        match self.calc_accumulator() {
-            None => MStatus::Error,
-            Some(new_acc) => MStatus::Display(ModelCalc {
-                display: new_acc.to_string(),
-                accumulator: new_acc,
-                operator: Some(op),
-            }),
-        }
+fn update_model_error(msg: &Msg) -> Option<ModelStatus> {
+    match msg {
+        Msg::Reset => Some(Ok(MOptions::Emtpy)),
+        Msg::Clear => None,
+        Msg::Equal => None,
+        Msg::Op(_) => None,
+        Msg::Digit(_) => None,
     }
+}
 
-    fn clear(mut self) -> Self {
-        self.display.clear();
-        self
+fn update_model_num(snum: &NumSt, msg: &Msg) -> Option<ModelStatus> {
+    match msg {
+        Msg::Reset => Some(Ok(MOptions::Emtpy)),
+        Msg::Clear => Some(Ok(MOptions::Num(NumSt("".to_string())))),
+        Msg::Equal => None,
+        Msg::Op(ref op) => Some(snum.process_op(*op)),
+        Msg::Digit(d) => Some(snum.process_digit(*d)),
+    }
+}
+
+fn update_model_op(op_st: &OpSt, msg: &Msg) -> Option<ModelStatus> {
+    match msg {
+        Msg::Reset => Some(Ok(MOptions::Emtpy)),
+        Msg::Clear => None,
+        Msg::Equal => Some(Err("incompl".to_string())),
+        Msg::Op(_) => Some(Err("rec op w num".to_string())),
+        Msg::Digit(d) => Some(op_st.process_digit(*d)),
+    }
+}
+
+fn update_model_op_num(opn_st: OpNumSt, msg: &Msg) -> Option<ModelStatus> {
+    Some(match msg {
+        Msg::Reset => Ok(MOptions::Emtpy),
+        Msg::Clear => opn_st.clear(),
+        Msg::Equal => opn_st.process_equal(),
+        Msg::Op(op) => opn_st.process_op(*op),
+        Msg::Digit(d) => opn_st.process_digit(*d),
+    })
+}
+
+fn update_model_res(st: ResSt, msg: &Msg) -> Option<ModelStatus> {
+    match msg {
+        Msg::Reset => Some(Ok(MOptions::Emtpy)),
+        Msg::Clear => None,
+        Msg::Equal => None,
+        Msg::Op(op) => Some(st.process_op(*op)),
+        Msg::Digit(d) => Some(st.process_digit(*d)),
     }
 }
 
@@ -131,50 +268,23 @@ impl Component for Model {
     type Properties = ();
 
     fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
-        Model { st: MStatus::Emtpy }
+        Model {
+            st: Ok(MOptions::Emtpy),
+        }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        fn update_model_status(st: ModelCalc, msg: &Msg) -> MStatus {
-            match *msg {
-                Msg::PressedDigit(d) => MStatus::Calculating(st.add_digit_to_display(d)),
-                Msg::Op(op) => st.process_operator(op),
-                Msg::Clear => MStatus::Calculating(st.clear()),
-                Msg::Reset => MStatus::Emtpy,
-            }
-        }
-        fn update_model_error(msg: &Msg) -> MStatus {
-            match *msg {
-                Msg::Reset => MStatus::Emtpy,
-                _ => MStatus::Error,
-            }
-        }
-        fn update_model_empty(msg: &Msg) -> MStatus {
-            update_model_status(ModelCalc::new(), msg)
-        }
-        fn update_model_display(st: &ModelCalc, msg: &Msg) -> MStatus {
-            match *msg {
-                Msg::PressedDigit(d) => {
-                    let st = st.clone().clear().add_digit_to_display(d);
-                    MStatus::Calculating(st)
-                }
-                Msg::Op(op) => ModelCalc {
-                    accumulator: 0.,
-                    display: st.display.clone(),
-                    operator: None,
-                }.process_operator(op),
-                Msg::Clear => MStatus::Emtpy,
-                Msg::Reset => MStatus::Emtpy,
-            }
-        }
-        //  ------------------------------------
-
-        self.st = match self.st {
-            MStatus::Calculating(ref st) => update_model_status(st.clone(), &msg),
-            MStatus::Error => update_model_error(&msg),
-            MStatus::Emtpy => update_model_empty(&msg),
-            MStatus::Display(ref st) => update_model_display(&st, &msg),
+        let new_st = match self.st {
+            Ok(MOptions::Emtpy) => update_model_empty(&msg),
+            Ok(MOptions::Num(ref snum)) => update_model_num(snum, &msg),
+            Ok(MOptions::Op(ref st)) => update_model_op(st, &msg),
+            Ok(MOptions::OpNum(ref st)) => update_model_op_num(st.clone(), &msg),
+            Ok(MOptions::Res(ref st)) => update_model_res(st.clone(), &msg),
+            Err(_) => update_model_error(&msg),
         };
+        if let Some(st) = new_st {
+            self.st = st
+        }
         true
     }
 }
@@ -200,7 +310,7 @@ impl Renderable<Model> for Model {
         let display = || {
             html! {
                 <>
-                <input class="form-control my-3", id="display", placeholder="0.", disabled=true, value=&self.st.display(),>
+                <input class="form-control my-3", id="display", placeholder="0.", disabled=true, value=&self.display(),>
                 </input>
                 </>
             }
@@ -209,7 +319,7 @@ impl Renderable<Model> for Model {
         let digit_button = |digit: char| {
             html! {
                 <>
-                <input class="form-group btn btn-outline-secondary butt", type="button", value=digit.to_string(), onclick=|_| Msg::PressedDigit(digit),>
+                <input class="form-group btn btn-outline-secondary butt", type="button", value=digit.to_string(), onclick=|_| Msg::Digit(digit),>
                 </input>
                 </>
             }
@@ -230,6 +340,37 @@ impl Renderable<Model> for Model {
             }
         };
 
+        let dot_button = || {
+            html!{
+                <>
+                <input class="form-group btn btn-outline-secondary butt", type="button", value=".", onclick=|_| Msg::Digit('.'),>
+                </input>
+                </>
+            }
+        };
+
+        let equal_button = || {
+            html! {
+                <>
+                <input class="form-group btn btn-outline-primary butt", type="button", value="=", onclick=|_| Msg::Equal,>
+                </input>
+                </>
+            }
+        };
+
+        let clear_reset_buttons = || {
+            html!{
+                <>
+                <div class="row mx-auto",>
+                    <input class="form-group btn btn-outline-info buttbig", type="button", value="Clear", onclick=|_| Msg::Clear, >
+                    </input>
+                    <input class="form-group btn btn-outline-danger buttbig", type="button", value="Reset", onclick=|_| Msg::Reset,>
+                    </input>
+                </div>
+                </>
+            }
+        };
+
         let buttons = || {
             html! {
                 <>
@@ -244,13 +385,10 @@ impl Renderable<Model> for Model {
                 {digit_button('1')}  {digit_button('2')} {digit_button('3')} {op_button(Operator::Mult)}
                 </div>
                 <div class="row mx-auto",>
-                {digit_button('0')}  /*{op_button(".")} {op_button("=")}*/ {op_button(Operator::Div)}
-                </div>
-                <div class="row mx-auto",>
-                    <input class="form-group btn btn-outline-info buttbig", type="button", value="Clear", onclick=|_| Msg::Clear, >
-                    </input>
-                    <input class="form-group btn btn-outline-danger buttbig", type="button", value="Reset", onclick=|_| Msg::Reset,>
-                    </input>
+                {digit_button('0')}
+                {dot_button()}
+                {equal_button()}
+                {op_button(Operator::Div)}
                 </div>
 
                 </>
@@ -260,7 +398,7 @@ impl Renderable<Model> for Model {
         let status = || {
             html!{
                 <>
-                    {format!("{:#?}", self.st)}
+                    // {format!("{:#?}", self.st)}
                 </>
             }
         };
@@ -270,6 +408,7 @@ impl Renderable<Model> for Model {
             <div class="container",><div class="row my-3",><div class="mx-auto",>
                 <form name="form",>
                     {display()}
+                    {clear_reset_buttons()}
                     {buttons()}
                 </form>
             </div></div></div>

@@ -2,6 +2,8 @@
 
 ## Status diagram
 
+[link](http://jleahred.github.io/apps/calculator_rust/index.html)
+
 ![status diagram](./status_diagram.png)
 
 ## diagrams
@@ -16,22 +18,20 @@ digraph finite_state_machine {
     node [shape = circle];
 
     empty -> Num [ label = "dig"]
-    empty -> Error [ label = "=|op"]
+    empty -> Error [ label = "= | op"]
 
-    Num -> Num [ label = "dig"]
+    Num -> Num [ label = "dig | ="]
     Num -> Op [ label = "op"]
-    Num -> Error [ label = "="]
 
     Op -> OpNum [ label = "dig"]
-    Op -> Op [ label = "op/calc"]
+    Op -> Error [ label = "op"]
     Op -> Error [ label = "="]
 
     OpNum -> OpNum [ label = "dig"]
-    OpNum -> Op [ label = "op/calc"]
-    OpNum -> Result [ label = "="]
+    OpNum -> Op [ label = "op -> calc"]
+    OpNum -> Res [ label = "= -> calc"]
 
-    Result -> Num [ label = "dig"]
-    Result -> Op [ label = "op/calc"]
-    Result -> Result [ label = "=/calc"]
+    Res -> Op [ label = "op"]
+    Res -> Num [ label = "dig"]
 }
 ```
