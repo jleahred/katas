@@ -48,14 +48,16 @@ impl Renderable<Model> for Model {
         let ncalcs = || {
             html! {
             <>
-                {"Calcs num: "}
+                {"Num Calcs: "}
                 <input type="number",
                         value={self.calc_num},
                         name="quantity", min="1", max="9",
                         onchange=|event| {
+                            use std::cmp::{min, max};
                             match event {
                                 ChangeData::Value(s) => {
                                     let v = usize::from_str(&s).unwrap_or_else(|_|1);
+                                    let v = min(9, max(1, v));
                                     Msg::NumCalcs(v)
                                 }
                                 _ => {
