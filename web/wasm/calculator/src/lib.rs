@@ -64,6 +64,7 @@ pub struct OpNumSt {
 pub struct ResSt {
     display: String,
     accumulator: f64,
+    last_input: f64,
     operator: Operator,
 }
 
@@ -141,11 +142,15 @@ impl OpNumSt {
 
     fn process_equal(self) -> ModelStatus {
         let new_acc = self.calc()?;
-        Ok(MOptions::Res(ResSt {
-            display: new_acc.to_string(),
-            accumulator: new_acc,
-            operator: self.operator,
-        }))
+        match f64::from_str(&self.display).ok() {
+            Some(last_input) => Ok(MOptions::Res(ResSt {
+                display: new_acc.to_string(),
+                accumulator: new_acc,
+                operator: self.operator,
+                last_input,
+            })),
+            None => Err("conv displ".to_string()),
+        }
     }
 
     fn calc(&self) -> Result<f64, String> {
@@ -166,6 +171,17 @@ impl ResSt {
 
     fn process_digit(self, ch: char) -> ModelStatus {
         NumSt("".to_string()).process_digit(ch)
+    }
+
+    fn process_equal(self) -> ModelStatus {
+        let operation = operation_from_operator(self.operator);
+        let accumulator = operation(self.accumulator, self.last_input)?;
+        Ok(MOptions::Res(ResSt {
+            display: accumulator.to_string(),
+            accumulator,
+            last_input: self.last_input,
+            operator: self.operator,
+        }))
     }
 }
 
@@ -257,7 +273,7 @@ fn update_model_res(st: ResSt, msg: &Msg) -> Option<ModelStatus> {
     match msg {
         Msg::Reset => Some(Ok(MOptions::Emtpy)),
         Msg::Clear => None,
-        Msg::Equal => None,
+        Msg::Equal => Some(st.process_equal()),
         Msg::Op(op) => Some(st.process_op(*op)),
         Msg::Digit(d) => Some(st.process_digit(*d)),
     }
