@@ -1,0 +1,148 @@
+.board {
+    width: 100%;
+}
+
+.game {
+    /* font-family: Helvetica, Arial, "Lucida Grande", sans-serif; */
+    width: 340px;
+    /* text-align: center */
+}
+
+.board {
+    border: 0px solid #8585ad;
+    /* box-shadow: 7px 7px 28px 0px rgba(50, 50, 50, 0.6); */
+    padding: 7px;
+    border-spacing: 4px;
+    border-radius: 8px 8px 8px 8px
+}
+
+td {
+    border: 0px solid #8585ad;
+    border-radius: 2000px;
+    /* box-shadow: inset 7px 7px 20px 0px rgba(50, 50, 50, 0.4); */
+    opacity: 1;
+    height: 40px;
+    background: #fff
+}
+
+
+.game,
+.board {
+    margin: 30px auto 0
+}
+
+.board {
+    background: #8585ad
+}
+
+td:hover {
+    opacity: 0.4
+}
+
+td.red,
+td.yellow {
+    box-shadow: inset 0 0 25px rgba(99, 99, 99, 0.7)
+}
+
+.red:hover,
+.yellow:hover {
+    opacity: 1
+}
+
+.yellow {
+    background: #ff0
+}
+
+.red {
+    background: #f00;
+    color: #fff
+}
+
+@media (min-width: 500px) {
+    .game {
+        width: 405px;
+    }
+
+    td {
+        height: 47px;
+        border-width: 1px
+    }
+}
+
+@media (min-width: 600px) {
+    .game {
+        width: 503px;
+    }
+
+    td {
+        height: 59px;
+        border-width: 2px
+    }
+
+    button {
+        margin: 30px auto 0;
+        padding: 4px 10px
+    }
+}
+
+@media (min-width: 700px) {
+    .game {
+        width: 601px;
+    }
+
+    td {
+        height: 71px;
+        border-width: 3px
+    }
+
+    td {
+        box-shadow: inset 15px 15px 15px 0px rgba(50, 50, 50, 0.25)
+    }
+
+    td.red,
+    td.yellow {
+        box-shadow: inset 0 0 20px rgba(99, 99, 99, 0.8)
+    }
+
+    .board {
+        box-shadow: 15px 15px 15px 0px rgba(50, 50, 50, 0.3)
+    }
+}
+
+@media (max-width: 370px) {
+    .game {
+        width: 249px;
+    }
+
+    td {
+        height: 29px;
+        border-width: 0
+    }
+
+    td {
+        box-shadow: inset 3px 3px 10px 0px rgba(50, 50, 50, 0.4)
+    }
+
+    td.red,
+    td.yellow {
+        box-shadow: inset 0 0 10px rgba(99, 99, 99, 0.7)
+    }
+
+    .board {
+        box-shadow: 3px 3px 10px 0px rgba(50, 50, 50, 0.6)
+    }
+}
+
+@media (max-width: 280px) {
+    .game {
+        width: 200px;
+    }
+
+    td {
+        height: 22px;
+    }
+
+    * {
+        box-shadow: none !important
+    }
+}

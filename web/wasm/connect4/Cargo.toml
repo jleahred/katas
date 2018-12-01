@@ -1,0 +1,9 @@
+[package]
+name = "connect4"
+version = "0.1.0"
+authors = ["maiquel <jleahred@gmail.com>"]
+
+[dependencies]
+stdweb = "0.4.2"
+yew = { git = "https://github.com/DenisKolodin/yew" }
+idata = { git = "https://github.com/jleahred/idata.git" }
