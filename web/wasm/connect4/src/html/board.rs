@@ -21,7 +21,7 @@ impl Component for Board {
         Board {}
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
         true
     }
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {

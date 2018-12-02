@@ -1,13 +1,15 @@
 // extern crate stdweb;
 
+pub mod engine;
+
 #[macro_use]
 extern crate yew;
 // use yew::services::ConsoleService;
 
 extern crate idata;
 
-mod board;
-use board::Board;
+mod html;
+use html::board::Board as HBoard;
 
 use yew::prelude::*;
 
@@ -30,7 +32,7 @@ impl Component for Model {
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
         // match msg {
         //     Msg::NumCalcs(nc) => self.calc_num = nc,
         // };
@@ -42,7 +44,7 @@ impl Renderable<Model> for Model {
     fn view(&self) -> Html<Self> {
         html! {
             <h1>{"Connect 4"}</h1>
-            <Board:/>
+            <HBoard:/>
         }
     }
 }
