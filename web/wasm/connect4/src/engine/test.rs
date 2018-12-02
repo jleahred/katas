@@ -1,20 +1,7 @@
-// extern crate connect4;
-// extern crate yew;
+use crate::engine::{Col, Game, Player, Turn};
 
-// use connect4::Model;
-// use yew::prelude::*;
-
-// fn main() {
-//     yew::initialize();
-//     App::<Model>::new().mount_to_body();
-//     yew::run_loop();
-// }
-
-extern crate connect4;
-
-use connect4::engine::*;
-
-fn main() {
+#[test]
+fn test_4_in_line() {
     let play_col = |game: Game, col| -> Game {
         match game.play(Col::new(col).unwrap()) {
             Ok(game) => game,

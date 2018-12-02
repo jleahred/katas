@@ -1,14 +1,23 @@
+const NCOLS: u8 = 7;
+const NROWS: u8 = 6;
+
+mod patterns;
+
+#[cfg(test)]
+mod test;
+
 /// Abstract type with game status
 ///
 pub struct Game {
     pub board: Board,
-    pub next2move: Next2Move,
+    pub turn: Turn,
 }
 
-/// Next player to move, or winner of game
+/// Player to move, or winner of game
 ///
-pub enum Next2Move {
-    Next(Player),
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum Turn {
+    P(Player),
     Won(Player),
 }
 
@@ -24,15 +33,12 @@ pub struct Col(u8);
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Row(u8);
 
-const NCOLS: u8 = 7;
-const NROWS: u8 = 6;
-
 /// Abstract type to manage the board
 #[derive(PartialEq, Eq)]
 pub struct Board([[Cell; NCOLS as usize]; NROWS as usize]);
 
 /// Two players, O and X
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Cell {
     P(Player),
     Empty,
@@ -81,7 +87,7 @@ impl Game {
     ///     println!("{}", game);
     ///
     ///     assert!(game.board == board.unwrap());
-    ///     if let Next2Move::Next(next_player) = game.next2move {
+    ///     if let Turn::P(next_player) = game.turn {
     ///         assert!(next_player == Player::X)
     ///     } else {
     ///         panic!("error on next move")
@@ -91,7 +97,7 @@ impl Game {
     pub fn new(start: Player) -> Game {
         Game {
             board: empty_board(),
-            next2move: Next2Move::Next(start),
+            turn: Turn::P(start),
         }
     }
 
@@ -128,7 +134,7 @@ impl Game {
     ///     println!("{}", game);
     ///
     ///     assert!(game.board == board.unwrap());
-    ///     if let Next2Move::Next(next_player) = game.next2move {
+    ///     if let Turn::P(next_player) = game.turn {
     ///         assert!(next_player == Player::X)
     ///     } else {
     ///         panic!("error on next move")
@@ -172,7 +178,7 @@ impl Game {
     ///     println!("{}", game);
     ///
     ///     assert!(game.board == board.unwrap());
-    ///     if let Next2Move::Next(next_player) = game.next2move {
+    ///     if let Turn::P(next_player) = game.turn {
     ///         assert!(next_player == Player::X)
     ///     } else {
     ///         panic!("error on next move")
@@ -210,9 +216,9 @@ impl Game {
     ///     assert!(egame.is_err())
     /// }
     /// ```
-    
+
     pub fn play(mut self, col: Col) -> std::result::Result<Game, Game> {
-        match (row_for_play(&self, col), next_player(&self)) {
+        match (self.board.row_for_play(col), next_player(&self)) {
             (Some(row), Some(player)) => {
                 self.board.0[row.0 as usize][col.0 as usize] = Cell::P(player);
                 self.change_next_player()
@@ -226,27 +232,22 @@ impl Game {
             Player::O => Player::X,
             Player::X => Player::O,
         };
-        if let Some(player) = next_player(&self) {
-            self.next2move = Next2Move::Next(switch_player(player));
-            Ok(self)
-        } else {
-            Err(self)
+        match (self.turn, patterns::find_4line(&self.board)) {
+            (Turn::P(player), true) => {
+                self.turn = Turn::Won(player);
+                Ok(self)
+            }
+            (Turn::P(player), false) => {
+                self.turn = Turn::P(switch_player(player));
+                Ok(self)
+            }
+            _ => Err(self),
         }
     }
-}
-
-fn row_for_play(game: &Game, col: Col) -> Option<Row> {
-    for i in 0..NROWS {
-        let r = NROWS - i - 1;
-        if game.board.0[r as usize][col.0 as usize] == Cell::Empty {
-            return Some(Row(r)); //  I know, I know
-        }
-    }
-    None
 }
 
 fn next_player(game: &Game) -> Option<Player> {
-    if let Next2Move::Next(ref player) = game.next2move {
+    if let Turn::P(ref player) = game.turn {
         Some(*player)
     } else {
         None
@@ -306,10 +307,120 @@ pub fn board_from_string(blines: &str) -> Option<Board> {
     Some(board)
 }
 
+impl Board {
+    pub fn get_cell(&self, col: Col, row: Row) -> Cell {
+        self.get_cell_dang(col.0 as usize, row.0 as usize)
+    }
+
+    pub(crate) fn get_cell_dang(&self, col: usize, row: usize) -> Cell {
+        self.0[row][col]
+    }
+
+    /// Returns the valid column to play starting from col
+    ///
+    /// ```rust
+    /// extern crate connect4;
+    ///
+    /// use connect4::engine::*;
+    ///
+    /// fn main() {
+    ///     let play_col = |game: Game, col| -> Game {
+    ///         match game.play(Col::new(col).unwrap()) {
+    ///             Ok(game) => game,
+    ///             _ => panic!("error processing move"),
+    ///         }
+    ///     };
+    ///     let fill_col = |game, col| {
+    ///         let game = play_col(game, col);
+    ///         let game = play_col(game, col);
+    ///         let game = play_col(game, col);
+    ///         let game = play_col(game, col);
+    ///         let game = play_col(game, col);
+    ///         play_col(game, col)
+    ///     };
+    ///
+    ///     let game = Game::new(Player::X);
+    ///
+    ///     let game = fill_col(game, 0);
+    ///     let game = fill_col(game, 1);
+    ///     let game = fill_col(game, 2);
+    ///     let game = fill_col(game, 4);
+    ///     let game = fill_col(game, 5);
+    ///
+    ///     assert!(game.board.get_valid_col_to_play(Col::new(0).unwrap()) == Col::new(3));
+    ///     assert!(game.board.get_valid_col_to_play(Col::new(3).unwrap()) == Col::new(3));
+    ///     assert!(game.board.get_valid_col_to_play(Col::new(4).unwrap()) == Col::new(6));
+    ///     assert!(game.board.get_valid_col_to_play(Col::new(6).unwrap()) == Col::new(6));
+    /// }
+    /// ```
+    ///
+    pub fn get_valid_col_to_play(&self, col: Col) -> Option<Col> {
+        for i in (col.0 as usize)..(NCOLS as usize) {
+            if self.0[0][i] == Cell::Empty {
+                return Col::new(i as u8); //  I know, I know
+            }
+        }
+        None
+    }
+
+    /// ```rust
+    /// extern crate connect4;
+    ///
+    /// use connect4::engine::*;
+    ///
+    /// fn main() {
+    ///    let play_col = |game: Game, col| -> Game {
+    ///        match game.play(Col::new(col).unwrap()) {
+    ///            Ok(game) => game,
+    ///            _ => panic!("error processing move"),
+    ///        }
+    ///    };
+    ///    let fill_col = |game, col| {
+    ///        let game = play_col(game, col);
+    ///        let game = play_col(game, col);
+    ///        let game = play_col(game, col);
+    ///        let game = play_col(game, col);
+    ///        let game = play_col(game, col);
+    ///        play_col(game, col)
+    ///    };
+    ///
+    ///    let game = Game::new(Player::X);
+    ///
+    ///    let game = fill_col(game, 0);
+    ///    let game = fill_col(game, 1);
+    ///    let game = fill_col(game, 2);
+    ///    let game = fill_col(game, 4);
+    ///    let game = fill_col(game, 5);
+    ///
+    ///    assert!(!game.board.is_valid_col_to_play(Col::new(0).unwrap()));
+    ///    assert!(!game.board.is_valid_col_to_play(Col::new(1).unwrap()));
+    ///    assert!(!game.board.is_valid_col_to_play(Col::new(2).unwrap()));
+    ///    assert!(game.board.is_valid_col_to_play(Col::new(3).unwrap()));
+    ///    assert!(!game.board.is_valid_col_to_play(Col::new(4).unwrap()));
+    ///    assert!(!game.board.is_valid_col_to_play(Col::new(5).unwrap()));
+    ///    assert!(game.board.is_valid_col_to_play(Col::new(6).unwrap()));
+    /// }
+    /// ```
+    ///
+    pub fn is_valid_col_to_play(&self, col: Col) -> bool {
+        self.0[0][col.0 as usize] == Cell::Empty
+    }
+
+    fn row_for_play(&self, col: Col) -> Option<Row> {
+        for i in 0..NROWS {
+            let r = NROWS - i - 1;
+            if self.0[r as usize][col.0 as usize] == Cell::Empty {
+                return Some(Row(r)); //  I know, I know
+            }
+        }
+        None
+    }
+}
+
 impl std::fmt::Display for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.board)?;
-        write!(f, "{}", self.next2move)
+        write!(f, "{}", self.turn)
     }
 }
 
@@ -325,11 +436,11 @@ impl std::fmt::Display for Board {
     }
 }
 
-impl std::fmt::Display for Next2Move {
+impl std::fmt::Display for Turn {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Next2Move::Next(player) => write!(f, "next: {}", player),
-            Next2Move::Won(player) => write!(f, "won: {}", player),
+            Turn::P(player) => write!(f, "next: {}", player),
+            Turn::Won(player) => write!(f, "won: {}", player),
         }
     }
 }
