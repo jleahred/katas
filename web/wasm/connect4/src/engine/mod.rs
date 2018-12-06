@@ -232,12 +232,12 @@ impl Game {
             Player::O => Player::X,
             Player::X => Player::O,
         };
-        match (self.turn, patterns::find_4line(&self.board)) {
-            (Turn::P(player), true) => {
+        match (self.turn, patterns::get_patterns(&self.board)) {
+            (Turn::P(player), patterns::Possition::FourInLine) => {
                 self.turn = Turn::Won(player);
                 Ok(self)
             }
-            (Turn::P(player), false) => {
+            (Turn::P(player), _) => {
                 self.turn = Turn::P(switch_player(player));
                 Ok(self)
             }
@@ -309,10 +309,10 @@ pub fn board_from_string(blines: &str) -> Option<Board> {
 
 impl Board {
     pub fn get_cell(&self, col: Col, row: Row) -> Cell {
-        self.get_cell_dang(col.0 as usize, row.0 as usize)
+        self.get_cell_dangerous(col.0 as usize, row.0 as usize)
     }
 
-    pub(crate) fn get_cell_dang(&self, col: usize, row: usize) -> Cell {
+    pub(crate) fn get_cell_dangerous(&self, col: usize, row: usize) -> Cell {
         self.0[row][col]
     }
 
