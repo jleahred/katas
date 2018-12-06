@@ -8,6 +8,7 @@ mod test;
 
 /// Abstract type with game status
 ///
+#[derive(Clone)]
 pub struct Game {
     pub board: Board,
     pub turn: Turn,
@@ -34,7 +35,7 @@ pub struct Col(u8);
 pub struct Row(u8);
 
 /// Abstract type to manage the board
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Board([[Cell; NCOLS as usize]; NROWS as usize]);
 
 /// Two players, O and X
@@ -224,6 +225,13 @@ impl Game {
                 self.change_next_player()
             }
             _ => Err(self),
+        }
+    }
+
+    pub fn try_play(self, col: Col) -> Self {
+        match self.play(col) {
+            Ok(game) => game,
+            Err(game) => game,
         }
     }
 
