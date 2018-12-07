@@ -1,10 +1,10 @@
-use engine;
+use crate::engine;
 use yew::prelude::*;
 // use yew::services::ConsoleService;
 
 pub struct Board {
     // console: ConsoleService,
-    game: engine::Game,
+    game: Box<engine::Game>,
 }
 
 pub enum Msg {
@@ -21,19 +21,20 @@ impl Component for Board {
 
     fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
         let game = engine::Game::new(engine::Player::O);
-        Board { game }
+        Board {
+            game: Box::new(game),
+        }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        let play_mut_game = |game: &mut engine::Game, c| {
-            if let Some(col) = engine::Col::new(c) {
-                let g = game.clone();
-                std::mem::swap(&mut g.try_play(col), game);
+        let try_play = |game: &mut engine::Game, c| {
+            if let Some(col) = engine::Col::b(c) {
+                idata::steal_borrow(game, &|s: engine::Game| s.try_play(col))
             }
         };
 
         match msg {
-            Msg::Click(col) => play_mut_game(&mut self.game, col),
+            Msg::Click(col) => try_play(&mut self.game, col),
         };
         true
     }
@@ -51,7 +52,7 @@ impl Renderable<Board> for Board {
                 engine::Cell::Empty => "",
             };
 
-            match (engine::Row::new(r), engine::Col::new(c)) {
+            match (engine::Row::b(r), engine::Col::b(c)) {
                 (Some(r), Some(c)) => get_color_rc(r, c),
                 _ => "",
             }

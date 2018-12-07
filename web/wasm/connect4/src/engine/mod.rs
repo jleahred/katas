@@ -8,7 +8,6 @@ mod test;
 
 /// Abstract type with game status
 ///
-#[derive(Clone)]
 pub struct Game {
     pub board: Board,
     pub turn: Turn,
@@ -35,7 +34,7 @@ pub struct Col(u8);
 pub struct Row(u8);
 
 /// Abstract type to manage the board
-#[derive(Clone, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct Board([[Cell; NCOLS as usize]; NROWS as usize]);
 
 /// Two players, O and X
@@ -46,7 +45,7 @@ pub enum Cell {
 }
 
 impl Col {
-    pub fn new(v: u8) -> Option<Self> {
+    pub fn b(v: u8) -> Option<Self> {
         if v < NCOLS {
             Some(Col(v))
         } else {
@@ -56,7 +55,7 @@ impl Col {
 }
 
 impl Row {
-    pub fn new(v: u8) -> Option<Self> {
+    pub fn b(v: u8) -> Option<Self> {
         if v < NROWS {
             Some(Row(v))
         } else {
@@ -365,7 +364,7 @@ impl Board {
     pub fn get_valid_col_to_play(&self, col: Col) -> Option<Col> {
         for i in (col.0 as usize)..(NCOLS as usize) {
             if self.0[0][i] == Cell::Empty {
-                return Col::new(i as u8); //  I know, I know
+                return Col::b(i as u8); //  I know, I know
             }
         }
         None
@@ -438,7 +437,7 @@ impl std::fmt::Display for Board {
             for cell in self.0[row].iter() {
                 write!(f, "{}", cell)?;
             }
-            write!(f, "\n");
+            let _ = write!(f, "\n");
         }
         write!(f, "")
     }

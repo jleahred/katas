@@ -114,7 +114,7 @@ dependencies = [
 [[package]]
 name = "idata"
 version = "0.1.1"
-source = "git+https://github.com/jleahred/idata.git#30e7cb3612a9e31496979c74a3368aa219d6959c"
+source = "git+https://github.com/jleahred/idata.git#87a0c725a634f113843c71f0d4c3f471fcd1665a"
 
 [[package]]
 name = "iovec"

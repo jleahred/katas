@@ -9,7 +9,7 @@ extern crate yew;
 extern crate idata;
 
 mod html;
-use html::board::Board as HBoard;
+use crate::html::board::Board as HBoard;
 
 use yew::prelude::*;
 

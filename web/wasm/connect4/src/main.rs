@@ -1,4 +1,5 @@
 extern crate connect4;
+extern crate idata;
 extern crate yew;
 
 use connect4::Model;

@@ -3,7 +3,7 @@ use crate::engine::{Col, Game, Player, Turn};
 #[test]
 fn test_4_in_line_vert_and_horizontal() {
     let play_col = |game: Game, col| -> Game {
-        match game.play(Col::new(col).unwrap()) {
+        match game.play(Col::b(col).unwrap()) {
             Ok(game) => game,
             _ => panic!("error processing move"),
         }
@@ -89,7 +89,7 @@ fn test_4_in_line_vert_and_horizontal() {
 #[test]
 fn test_4_in_line_diagonals() {
     let play_col = |game: Game, col| -> Game {
-        match game.play(Col::new(col).unwrap()) {
+        match game.play(Col::b(col).unwrap()) {
             Ok(game) => game,
             _ => panic!("error processing move"),
         }
