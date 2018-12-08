@@ -1,7 +1,8 @@
 const NCOLS: u8 = 7;
 const NROWS: u8 = 6;
+const NLINE: u8 = 4;
 
-mod patterns;
+pub(crate) mod patterns;
 
 #[cfg(test)]
 mod test;
@@ -11,6 +12,7 @@ mod test;
 pub struct Game {
     pub board: Board,
     pub turn: Turn,
+    pub patterns: patterns::Patterns,
 }
 
 /// Player to move, or winner of game
@@ -98,6 +100,7 @@ impl Game {
         Game {
             board: empty_board(),
             turn: Turn::P(start),
+            patterns: patterns::Patterns::init(),
         }
     }
 
@@ -218,10 +221,24 @@ impl Game {
     /// ```
 
     pub fn play(mut self, col: Col) -> std::result::Result<Game, Game> {
+        let next_turn = |patterns: &patterns::Patterns, player| {
+            let switch_player = |player| match player {
+                Player::O => Player::X,
+                Player::X => Player::O,
+            };
+            match patterns {
+                patterns::Patterns::FourInLine => Turn::Won(player),
+                patterns::Patterns::P(ref _pc) => Turn::P(switch_player(player)),
+            }
+        };
+
+        //  -------
         match (self.board.row_for_play(col), next_player(&self)) {
             (Some(row), Some(player)) => {
                 self.board.0[row.0 as usize][col.0 as usize] = Cell::P(player);
-                self.change_next_player()
+                self.patterns = patterns::get_patterns(&self.board, player);
+                self.turn = next_turn(&self.patterns, player);
+                Ok(self)
             }
             _ => Err(self),
         }
@@ -231,24 +248,6 @@ impl Game {
         match self.play(col) {
             Ok(game) => game,
             Err(game) => game,
-        }
-    }
-
-    fn change_next_player(mut self) -> std::result::Result<Game, Game> {
-        let switch_player = |player| match player {
-            Player::O => Player::X,
-            Player::X => Player::O,
-        };
-        match (self.turn, patterns::get_patterns(&self.board)) {
-            (Turn::P(player), patterns::Possition::FourInLine) => {
-                self.turn = Turn::Won(player);
-                Ok(self)
-            }
-            (Turn::P(player), _) => {
-                self.turn = Turn::P(switch_player(player));
-                Ok(self)
-            }
-            _ => Err(self),
         }
     }
 }

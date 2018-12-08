@@ -12,26 +12,71 @@
 ///
 use super::*;
 
-pub(crate) enum Possition {
+#[derive(Debug)]
+pub enum Patterns {
     FourInLine,
-    P(PosPatterns),
+    P((PatternsCount, PatternsCount)),
 }
 
-pub(crate) struct PosPatterns {
-    _next_player_wins: u16,
-    _imposible_avoid: u16,
-    _vert_consecutive_hole_3inline: u16,
-    _one_hole_for_connect4: u16,
-    _two_holes_for_connect4: u16,
+impl Patterns {
+    pub(crate) fn init() -> Self {
+        Patterns::P((PatternsCount::init(), PatternsCount::init()))
+    }
 }
 
-fn score_4cells(cl: &CellsLine, pos: Possition, _board: &Board) -> Possition {
-    score_4inline(cl, pos, _board)
+#[derive(Debug)]
+pub struct PatternsCount {
+    next_player_wins: u16,
+    imposible_avoid: u16,
+    vert_consecutive_hole_3inline: u16,
+    line3: u16, //  a hole for win
+    line2: u16, //  2 holes for win
 }
 
-fn score_4inline(cl: &CellsLine, pos: Possition, board: &Board) -> Possition {
-    let get_cell_from_coord =
-        |cc: &CellsCoord, board: &Board| board.get_cell_dangerous(cc.col, cc.row);
+struct BPP<'a> {
+    board: &'a Board,
+    patterns: Patterns,
+    player: Player,
+}
+
+impl<'a> BPP<'a> {
+    fn new(board: &'a Board, patterns: Patterns, player: Player) -> Self {
+        BPP {
+            board,
+            patterns,
+            player,
+        }
+    }
+}
+
+pub(crate) fn get_patterns(board: &Board, player: Player) -> Patterns {
+    let emtpy_pc = || PatternsCount::init();
+    let bpp = BPP::new(board, Patterns::P((emtpy_pc(), emtpy_pc())), player);
+    let bpp = scan_horiz(bpp);
+    let bpp = scan_vert(bpp);
+    let bpp = scan_diag1(bpp);
+    let bpp = scan_diag2(bpp);
+    bpp.patterns
+}
+
+//  scan4line   ->  FourInLine or not
+//  scan3line   ->  line3, next wins, vert_consecutive_hole_3inline
+//  scan3line   ->  line2m Impossible avoid
+
+fn score_4cells(cl: &CellsLine, patt: Patterns, board: &Board) -> Patterns {
+    let patt = scan_4line(cl, patt, board);
+    if let Patterns::P(ref _pc) = patt {
+        scan_3line(cl, patt, board)
+    } else {
+        patt
+    }
+}
+
+fn get_cell_from_coord(cc: &CellsCoord, board: &Board) -> Cell {
+    board.get_cell_dangerous(cc.col, cc.row)
+}
+
+fn scan_4line(cl: &CellsLine, patt: Patterns, board: &Board) -> Patterns {
     let control_cell = get_cell_from_coord(&cl.0[0], board);
 
     if let Cell::P(_) = control_cell {
@@ -44,39 +89,49 @@ fn score_4inline(cl: &CellsLine, pos: Possition, board: &Board) -> Possition {
             }
         }
         if count_matches == 3 {
-            return Possition::FourInLine;
+            return Patterns::FourInLine;
         }
     }
-    pos
+    patt
 }
 
-impl PosPatterns {
-    fn init() -> Self {
-        PosPatterns {
-            _next_player_wins: 0,
-            _imposible_avoid: 0,
-            _vert_consecutive_hole_3inline: 0,
-            _one_hole_for_connect4: 0,
-            _two_holes_for_connect4: 0,
+fn scan_3line(cl: &CellsLine, patt: Patterns, board: &Board) -> Patterns {
+    // let control_cell = get_cell_from_coord(&cl.0[0], board);
+
+    // if let Cell::P(_) = control_cell {
+    //     let mut count_matches = 0;
+    //     for i in 0..4 {
+    //         if control_cell != get_cell_from_coord(&cl.0[i], board) {
+    //             break;
+    //         } else {
+    //             count_matches += 1;
+    //         }
+    //     }
+    //     if count_matches == 3 {
+    //         return Patterns::FourInLine;
+    //     }
+    // }
+    patt
+}
+
+impl PatternsCount {
+    pub(crate) fn init() -> Self {
+        PatternsCount {
+            next_player_wins: 0,
+            imposible_avoid: 0,
+            vert_consecutive_hole_3inline: 0,
+            line3: 0,
+            line2: 0,
         }
     }
 }
 
-pub(crate) fn get_patterns(board: &Board) -> Possition {
-    let bp = (board, Possition::P(PosPatterns::init()));
-    let bp = scan_horiz(bp);
-    let bp = scan_vert(bp);
-    let bp = scan_diag1(bp);
-    let bp = scan_diag2(bp);
-    bp.1
-}
-
-fn scan_horiz(bp: (&Board, Possition)) -> (&Board, Possition) {
+fn scan_horiz<'a>(bp: BPP<'a>) -> BPP<'a> {
     scan(
         bp,
         &ScanConf {
             startc: 0,
-            limitc: 3,
+            limitc: (NLINE - 1) as usize,
             limitr: 0,
             incc: 1,
             incr: 0,
@@ -84,37 +139,37 @@ fn scan_horiz(bp: (&Board, Possition)) -> (&Board, Possition) {
     )
 }
 
-fn scan_vert(bp: (&Board, Possition)) -> (&Board, Possition) {
+fn scan_vert<'a>(bp: BPP<'a>) -> BPP<'a> {
     scan(
         bp,
         &ScanConf {
             startc: 0,
             limitc: 0,
-            limitr: 3,
+            limitr: (NLINE - 1) as usize,
             incc: 0,
             incr: 1,
         },
     )
 }
-fn scan_diag1(bp: (&Board, Possition)) -> (&Board, Possition) {
+fn scan_diag1<'a>(bp: BPP<'a>) -> BPP<'a> {
     scan(
         bp,
         &ScanConf {
             startc: 0,
-            limitc: 3,
-            limitr: 3,
+            limitc: (NLINE - 1) as usize,
+            limitr: (NLINE - 1) as usize,
             incc: 1,
             incr: 1,
         },
     )
 }
-fn scan_diag2(bp: (&Board, Possition)) -> (&Board, Possition) {
+fn scan_diag2<'a>(bp: BPP<'a>) -> BPP<'a> {
     scan(
         bp,
         &ScanConf {
-            startc: 3,
+            startc: (NLINE - 1) as usize,
             limitc: 0,
-            limitr: 3,
+            limitr: (NLINE - 1) as usize,
             incc: -1,
             incr: 1,
         },
@@ -136,9 +191,9 @@ struct CellsCoord {
     col: usize,
 }
 
-fn scan<'a>(bp: (&'a Board, Possition), sc: &ScanConf) -> (&'a Board, Possition) {
-    let board = bp.0;
-    let mut position = bp.1;
+fn scan<'a>(bp: BPP<'a>, sc: &ScanConf) -> BPP<'a> {
+    let board = bp.board;
+    let mut patterns = bp.patterns;
     for c in sc.startc..(NCOLS as usize) - sc.limitc {
         for r in 0..(NROWS as usize) - sc.limitr {
             let cl = CellsLine([
@@ -160,8 +215,8 @@ fn scan<'a>(bp: (&'a Board, Possition), sc: &ScanConf) -> (&'a Board, Possition)
                 },
             ]);
 
-            position = score_4cells(&cl, position, board)
+            patterns = score_4cells(&cl, patterns, board)
         }
     }
-    (board, position)
+    BPP::new(bp.board, patterns, bp.player)
 }

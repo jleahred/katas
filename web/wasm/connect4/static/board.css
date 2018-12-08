@@ -58,6 +58,10 @@ td.yellow {
     color: #fff
 }
 
+h1 {
+    text-align: center;
+}
+
 @media (min-width: 500px) {
     .game {
         width: 405px;

@@ -79,8 +79,9 @@ impl Renderable<Board> for Board {
                 </tr>
             }
         };
-        html! {
-            <div class="game",>
+
+        let board = || {
+            html! {
                 <table class="board",>
                     {row(0)}
                     {row(1)}
@@ -89,6 +90,30 @@ impl Renderable<Board> for Board {
                     {row(4)}
                     {row(5)}
                 </table>
+            }
+        };
+
+        let pattern_count = || {
+            let get_pattern_debug_txt = || match &self.game.patterns {
+                crate::engine::patterns::Patterns::P((po, px)) => {
+                    (format!("{:?}", po), format!("{:?}", px))
+                }
+                _ => ("".to_string(), "".to_string()),
+            };
+            html! {
+                <>
+                <p>{get_pattern_debug_txt().0}</p>
+                <p>{get_pattern_debug_txt().1}</p>
+                </>
+            }
+        };
+
+        html! {
+            <div class="game",>
+                {board()}
+            </div>
+            {pattern_count()}
+            </div>
             </div>
         }
     }

@@ -33,9 +33,6 @@ impl Component for Model {
     }
 
     fn update(&mut self, _msg: Self::Message) -> ShouldRender {
-        // match msg {
-        //     Msg::NumCalcs(nc) => self.calc_num = nc,
-        // };
         true
     }
 }
@@ -43,7 +40,7 @@ impl Component for Model {
 impl Renderable<Model> for Model {
     fn view(&self) -> Html<Self> {
         html! {
-            <h1>{"Connect 4"}</h1>
+            <div><h1>{"Connect 4"}</h1></div>
             <HBoard:/>
         }
     }
