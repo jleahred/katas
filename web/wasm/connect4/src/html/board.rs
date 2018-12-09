@@ -95,8 +95,8 @@ impl Renderable<Board> for Board {
 
         let pattern_count = || {
             let get_pattern_debug_txt = || match &self.game.patterns {
-                crate::engine::patterns::Patterns::P((po, px)) => {
-                    (format!("{:?}", po), format!("{:?}", px))
+                crate::engine::patterns::Patterns::P(pcp) => {
+                    (format!("{:?}", pcp.player_o), format!("{:?}", pcp.player_x))
                 }
                 _ => ("".to_string(), "".to_string()),
             };

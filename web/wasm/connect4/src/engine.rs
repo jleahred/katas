@@ -236,7 +236,7 @@ impl Game {
         match (self.board.row_for_play(col), next_player(&self)) {
             (Some(row), Some(player)) => {
                 self.board.0[row.0 as usize][col.0 as usize] = Cell::P(player);
-                self.patterns = patterns::get_patterns(&self.board, player);
+                self.patterns = patterns::get_patterns(&self.board);
                 self.turn = next_turn(&self.patterns, player);
                 Ok(self)
             }
