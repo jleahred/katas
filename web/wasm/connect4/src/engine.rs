@@ -471,26 +471,7 @@ impl std::fmt::Display for Player {
 
 //  ---------------------
 fn empty_board() -> Board {
-    fn empty_row() -> [Cell; 7] {
-        [
-            Cell::Empty,
-            Cell::Empty,
-            Cell::Empty,
-            Cell::Empty,
-            Cell::Empty,
-            Cell::Empty,
-            Cell::Empty,
-        ]
-    }
-
-    Board([
-        empty_row(),
-        empty_row(),
-        empty_row(),
-        empty_row(),
-        empty_row(),
-        empty_row(),
-    ])
+    Board([[Cell::Empty; NCOLS as usize]; NROWS as usize])
 }
 
 fn set_cell_on_board(mut br: Board, col: usize, row: usize, player: Cell) -> Option<Board> {

@@ -94,6 +94,10 @@ impl Renderable<Board> for Board {
         };
 
         let pattern_count = || {
+            let get_pos_eval = || match &self.game.patterns {
+                crate::engine::patterns::Patterns::P(pcp) => format!("{:?}", pcp.eval(self.game.turn)),
+                _ => "we have a winner".to_string(),
+            };
             let get_pattern_debug_txt = || match &self.game.patterns {
                 crate::engine::patterns::Patterns::P(pcp) => {
                     (format!("{:?}", pcp.player_o), format!("{:?}", pcp.player_x))
@@ -102,6 +106,7 @@ impl Renderable<Board> for Board {
             };
             html! {
                 <>
+                <p>{get_pos_eval()}</p>
                 <p>{get_pattern_debug_txt().0}</p>
                 <p>{get_pattern_debug_txt().1}</p>
                 </>
