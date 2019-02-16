@@ -1,9 +1,15 @@
+pub type GroupsPos = Vec<PositionsGroup>;
+
+pub struct PositionsGroup {
+    pub group: String,
+    pub pos_prods: PosByProds,
+}
+
 pub type PosByProds = Vec<PositionsByProduct>;
 pub type Levels = Vec<Level>;
 pub type Positions = Vec<Position>;
 
 pub struct PositionsByProduct {
-    pub sub_group: String,
     pub isin: String,
     pub desc: String,
     pub updated: String,

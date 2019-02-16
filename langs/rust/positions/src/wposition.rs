@@ -18,7 +18,7 @@ pub struct Model {
     wss: WebSocketService,
     link: ComponentLink<Model>,
     console: ConsoleService,
-    pos_by_product: PosByProds,
+    group_pos: GroupsPos,
     api_posisions: Box<Positions>,
     connect2: String,
 }
@@ -63,7 +63,7 @@ impl Component for Model {
             wss: WebSocketService::new(),
             link,
             api_posisions: Box::new(vec![]),
-            pos_by_product: vec![], 
+            group_pos: vec![], 
             connect2: match stdweb::web::window().location() {
                 Some(location) => {
                     match location.host() {
@@ -80,7 +80,7 @@ impl Component for Model {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::ClickFakeData(n) => {
-                self.pos_by_product = test_fill_fake(n);
+                self.group_pos = test_fill_fake(n);
                 true
             }
             Msg::ClickConnect => {
@@ -123,12 +123,68 @@ impl Component for Model {
 
 impl Renderable<Model> for Model {
     fn view(&self) -> Html<Self> {
+        // let status = || {
+        //     html! {
+        //         <>
+        //             // {format!("{:#?}", self.st)}
+        //         </>
+        //     }
+        // };
+
+
+        let connect_params = || {
+            html! {
+                <>
+                    <span onclick=|_| Msg::ClickConnect,>
+                    {"disconected"}
+                    </span>
+                    <input type="text",
+                        value={self.connect2.to_string()},
+                        oninput=|input| Msg::UpdatedUrl(input.value), >
+                    </input>
+                </>
+            }
+        };
+
+        let test_fake = || {
+            html! {
+                <>
+                    <p>
+                    <span onclick=|_| Msg::ClickFakeData(0),>{"fake0 "}</span>
+                    <span onclick=|_| Msg::ClickFakeData(1),>{"fake1 "}</span>
+                    <span onclick=|_| Msg::ClickFakeData(2),>{"fake2 "}</span>
+                    <span onclick=|_| Msg::ClickFakeData(3),>{"fake3 "}</span>
+                    <span onclick=|_| Msg::ClickFakeData(4),>{"fake4 "}</span>
+                    <span onclick=|_| Msg::ClickFakeData(5),>{"fake5 "}</span>
+                    </p>
+                </>
+            }
+        };
+
+        let connected = || {
+            html! {
+                <>
+                <p>
+                {
+                    if self.ws.is_some() {
+                        html! {<>{"connected"}</>}
+                    } else {
+                        connect_params()
+                    }
+                }
+                </p>
+                </>
+            }
+        };
+
+
         let header = || {
             html! {
                 <>
             <thead>
                 <tr>
                 <th scope="col", class="uk-width-medium black",>{"id"}</th>
+                <th scope="col", class="uk-width-medium black",>{"descr"}</th>
                 <th scope="col", class="uk-width-small center",>{"qty"}</th>
                 <th scope="col", class="uk-width-small center",>{"bid"}</th>
                 <th scope="col", class="uk-width-small center",>{"ask"}</th>
@@ -167,78 +223,39 @@ impl Renderable<Model> for Model {
                 // <th scope="row",>{1}</th>
                 // <td>{&pos_by_prod.id}</td>
                 <td class="bordertop",>{&pos_by_prod.isin}</td>
+                <td class="uk-text-truncate bordertop",>{&pos_by_prod.desc}</td>
                 {leveln(0, &pos_by_prod.bids, &pos_by_prod.asks, true)}
                 <td class="uk-text-truncate bordertop",>{&pos_by_prod.updated}</td>
                 </tr>
                 {for (1..5).map(|i| 
-                    html!{<tr><td></td>{leveln(i, &pos_by_prod.bids, &pos_by_prod.asks, false)}<td></td></tr>})
+                    html!{<tr><td></td><td></td>{leveln(i, &pos_by_prod.bids, &pos_by_prod.asks, false)}<td></td></tr>})
                 }
                 </>
             }
         };
 
-        let rows = || {
+        let rows = |pos_by_prod: &PosByProds| {
             html! {
                 <>
-                    {for (self.pos_by_product.iter()).map(|pos_by_prod| {
+                    {for (pos_by_prod.iter()).map(|pos_by_prod| {
                         pos_by_prod_view(&pos_by_prod)
                     })}
                 </>
             }
         };
 
-        // let status = || {
-        //     html! {
-        //         <>
-        //             // {format!("{:#?}", self.st)}
-        //         </>
-        //     }
-        // };
-
-        let connected = || html! {<>{"connected"}</>};
-
-        let connect_params = || {
+        let table = |group:&String, pos_prods: &PosByProds| {
             html! {
                 <>
-                    <span onclick=|_| Msg::ClickConnect,>
-                    {"disconected"}
-                    </span>
-                    <input type="text",
-                        value={self.connect2.to_string()},
-                        oninput=|input| Msg::UpdatedUrl(input.value), >
-                    </input>
-                </>
-            }
-        };
-
-        let test_fake = || {
-            html! {
-                <>
-                    <p>
-                    <span onclick=|_| Msg::ClickFakeData(0),>{"fake0 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(1),>{"fake1 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(2),>{"fake2 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(3),>{"fake3 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(4),>{"fake4 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(5),>{"fake5 "}</span>
-                    </p>
-                </>
-            }
-        };
-
-        let connected = || {
-            html! {
-                <>
-                <p>
-                {
-                    if self.ws.is_some() {
-                        connected()
-                    } else {
-                        connect_params()
-                    }
-
-                }
-                </p>
+                <h3>{group}</h3>
+                <div class="uk-overflow-auto",>
+                    <table class="uk-table uk-table-small",>
+                    {header()}
+                    <tbody>
+                        {rows(pos_prods)}
+                    </tbody>
+                    </table>
+                </div>            
                 </>
             }
         };
@@ -247,14 +264,12 @@ impl Renderable<Model> for Model {
             <>
             {connected()}
             {test_fake()}
-            <div class="uk-overflow-auto",>
-                <table class="uk-table uk-table-small",>
-                {header()}
-                <tbody>
-                    {rows()}
-                </tbody>
-                </table>
-            </div>            
+
+            {
+                for (self.group_pos.iter()).map(|positions_group| {
+                    table(&positions_group.group, &positions_group.pos_prods)
+                })
+            }
             </>
         }
     }
@@ -275,7 +290,7 @@ fn process_add(model: &mut Model, data: &serde_json::value::Value) {
         };
         std::mem::swap(&mut fake, &mut model.api_posisions);
     }
-    model.pos_by_product = agregator::gen_group_positions(&model.api_posisions);
+    model.group_pos = agregator::gen_group_positions(&model.api_posisions);
 }
 
 fn process_del(model: &mut Model, data: &serde_json::value::Value) {
@@ -293,7 +308,7 @@ fn process_del(model: &mut Model, data: &serde_json::value::Value) {
         };
         std::mem::swap(&mut fake, &mut model.api_posisions);
     }
-    model.pos_by_product = agregator::gen_group_positions(&model.api_posisions);
+    model.group_pos = agregator::gen_group_positions(&model.api_posisions);
 }
 
 
@@ -301,11 +316,12 @@ fn process_del(model: &mut Model, data: &serde_json::value::Value) {
 //  --------------------------------------------------------
 //  --------------------------------------------------------
 
-fn test_fill_fake(i: u8) -> PosByProds {
+fn test_fill_fake(i: u8) -> GroupsPos {
     match i {
-        0 =>     vec![
+        0 => vec![PositionsGroup {
+        group: "SPAIN".to_string(),
+        pos_prods: vec![
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -315,10 +331,13 @@ fn test_fill_fake(i: u8) -> PosByProds {
         }],
             asks: vec![],
         }
-    ],
-        1 =>     vec![
+    ]
+    }]
+,
+        1 =>  vec![PositionsGroup {
+        group: "SPAIN".to_string(),
+        pos_prods: vec![
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -328,10 +347,11 @@ fn test_fill_fake(i: u8) -> PosByProds {
         }],
             bids: vec![],
         }
-    ],
-        2 =>     vec![
+    ]}],
+        2 =>  vec![PositionsGroup {
+        group: "SPAIN".to_string(),
+        pos_prods: vec![
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -352,10 +372,11 @@ fn test_fill_fake(i: u8) -> PosByProds {
             qty: 3,
         }],
         }
-    ],
-        3 =>     vec![
+    ]}],
+        3 =>  vec![PositionsGroup {
+        group: "SPAIN".to_string(),
+        pos_prods: vec![
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -373,10 +394,11 @@ fn test_fill_fake(i: u8) -> PosByProds {
         }],
             bids: vec![],
         }
-    ],    
-        4 =>     vec![
+    ]}],    
+        4 =>  vec![PositionsGroup {
+        group: "SPAIN".to_string(),
+        pos_prods: vec![
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -395,7 +417,6 @@ fn test_fill_fake(i: u8) -> PosByProds {
             bids: vec![],
         },
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "SADFASDFASDFASDF".to_string(),
             desc: "ASDFASDFSADF".to_string(),
             updated: "2019-02-15 17:33:29.123".to_string(),
@@ -413,11 +434,12 @@ fn test_fill_fake(i: u8) -> PosByProds {
         }],
             bids: vec![],
         }
-    ],
+    ]}],
 
-        5 =>     vec![
+        5 =>  vec![PositionsGroup {
+        group: "SPAIN".to_string(),
+        pos_prods: vec![
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -436,7 +458,6 @@ fn test_fill_fake(i: u8) -> PosByProds {
             bids: vec![],
         },
         PositionsByProduct {
-            sub_group: "SPAIN".to_string(),
             isin: "SADFASDFASDFASDF".to_string(),
             desc: "ASDFASDFSADF".to_string(),
             updated: "2019-02-15 17:33:29.123".to_string(),
@@ -455,7 +476,6 @@ fn test_fill_fake(i: u8) -> PosByProds {
             bids: vec![],
         },
         PositionsByProduct {
-            sub_group: "ITALY".to_string(),
             isin: "ISINSADFASDF".to_string(),
             desc: "description sad fsad f".to_string(),
             updated: "2019-02-15 17:30:29.123".to_string(),
@@ -474,7 +494,6 @@ fn test_fill_fake(i: u8) -> PosByProds {
             bids: vec![],
         },
         PositionsByProduct {
-            sub_group: "ITALY".to_string(),
             isin: "SADFASDFASDFASDF".to_string(),
             desc: "ASDFASDFSADF".to_string(),
             updated: "2019-02-15 17:33:29.123".to_string(),
@@ -493,7 +512,84 @@ fn test_fill_fake(i: u8) -> PosByProds {
             bids: vec![],
         }
 
-    ],    
+    ]},
+    PositionsGroup {
+        group: "ITALY".to_string(),
+        pos_prods: vec![
+        PositionsByProduct {
+            isin: "ISINSADFASDF".to_string(),
+            desc: "description sad fsad f".to_string(),
+            updated: "2019-02-15 17:30:29.123".to_string(),
+            asks: vec![Level {
+            price: 99.1111,
+            qty: 3,
+        },
+        Level {
+            price: 97.1111,
+            qty: 4,
+        },
+        Level {
+            price: 95.1111,
+            qty: 5,
+        }],
+            bids: vec![],
+        },
+        PositionsByProduct {
+            isin: "SADFASDFASDFASDF".to_string(),
+            desc: "ASDFASDFSADF".to_string(),
+            updated: "2019-02-15 17:33:29.123".to_string(),
+            asks: vec![Level {
+            price: 89.1111,
+            qty: 38,
+        },
+        Level {
+            price: 87.1111,
+            qty: 48,
+        },
+        Level {
+            price: 85.1111,
+            qty: 58,
+        }],
+            bids: vec![],
+        },
+        PositionsByProduct {
+            isin: "ISINSADFASDF".to_string(),
+            desc: "description sad fsad f".to_string(),
+            updated: "2019-02-15 17:30:29.123".to_string(),
+            asks: vec![Level {
+            price: 99.1111,
+            qty: 3,
+        },
+        Level {
+            price: 97.1111,
+            qty: 4,
+        },
+        Level {
+            price: 95.1111,
+            qty: 5,
+        }],
+            bids: vec![],
+        },
+        PositionsByProduct {
+            isin: "SADFASDFASDFASDF".to_string(),
+            desc: "ASDFASDFSADF".to_string(),
+            updated: "2019-02-15 17:33:29.123".to_string(),
+            asks: vec![Level {
+            price: 89.1111,
+            qty: 38,
+        },
+        Level {
+            price: 87.1111,
+            qty: 48,
+        },
+        Level {
+            price: 85.1111,
+            qty: 58,
+        }],
+            bids: vec![],
+        }
+
+    ]}],    
 
     _ => vec![]
     }

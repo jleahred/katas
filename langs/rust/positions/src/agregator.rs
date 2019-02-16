@@ -1,5 +1,6 @@
 use crate::json_api::*;
 use crate::position::*;
+use std::collections::BTreeMap;
 use std::result::Result;
 
 pub fn add(
@@ -33,41 +34,87 @@ pub fn del(
     Ok(Box::new(result))
 }
 
-pub fn gen_group_positions(positions: &[Position]) -> PosByProds {
-    use std::collections::BTreeMap;
+pub fn gen_group_positions(positions: &[Position]) -> GroupsPos {
     let mut group_positions = BTreeMap::new();
 
     for p in positions {
-        let posbyprod = {
-            let mut posbyprod =
-                group_positions
-                    .entry(p.isin.clone())
-                    .or_insert(PositionsByProduct {
-                        sub_group: p.sub_group.clone(),
-                        desc: p.desc.clone(),
-                        isin: p.isin.clone(),
-                        updated: p.updated.clone(),
-                        bids: vec![],
-                        asks: vec![],
-                    });
-            posbyprod.updated = p.updated.clone();
-            posbyprod
-        };
-        let levels = match p.side {
-            Side::Bid => &mut posbyprod.bids,
-            Side::Ask => &mut posbyprod.asks,
-        };
-        insert_level_in_levels(&p.level, levels, p.side);
+        let mut posbyprod = group_positions
+            .entry(p.sub_group.clone())
+            .or_insert_with(BTreeMap::<String, PositionsByProduct>::new);
+        insert_in_pos_by_prod(&mut posbyprod, p);
     }
 
     let mut result = vec![];
 
-    for (_, pbp) in group_positions {
-        result.push(pbp);
+    for (group_name, gp) in group_positions {
+        let mut psg = PositionsGroup {
+            group: group_name,
+            pos_prods: vec![],
+        };
+        for (_, pbp) in gp {
+            psg.pos_prods.push(pbp);
+        }
+        result.push(psg);
     }
 
     result
 }
+
+fn insert_in_pos_by_prod(map_posbyprod: &mut BTreeMap<String, PositionsByProduct>, p: &Position) {
+    let posbyprod = {
+        let mut posbyprod = map_posbyprod
+            .entry(p.isin.clone())
+            .or_insert(PositionsByProduct {
+                desc: p.desc.clone(),
+                isin: p.isin.clone(),
+                updated: p.updated.clone(),
+                bids: vec![],
+                asks: vec![],
+            });
+        posbyprod.updated = p.updated.clone();
+        posbyprod
+    };
+    let levels = match p.side {
+        Side::Bid => &mut posbyprod.bids,
+        Side::Ask => &mut posbyprod.asks,
+    };
+    insert_level_in_levels(&p.level, levels, p.side);
+}
+
+// fn gen_pos_by_prod(positions: &[Position]) -> PosByProds {
+//     use std::collections::BTreeMap;
+//     let mut group_positions = BTreeMap::new();
+
+//     for p in positions {
+//         let posbyprod = {
+//             let mut posbyprod =
+//                 group_positions
+//                     .entry(p.isin.clone())
+//                     .or_insert(PositionsByProduct {
+//                         desc: p.desc.clone(),
+//                         isin: p.isin.clone(),
+//                         updated: p.updated.clone(),
+//                         bids: vec![],
+//                         asks: vec![],
+//                     });
+//             posbyprod.updated = p.updated.clone();
+//             posbyprod
+//         };
+//         let levels = match p.side {
+//             Side::Bid => &mut posbyprod.bids,
+//             Side::Ask => &mut posbyprod.asks,
+//         };
+//         insert_level_in_levels(&p.level, levels, p.side);
+//     }
+
+//     let mut result = vec![];
+
+//     for (_, pbp) in group_positions {
+//         result.push(pbp);
+//     }
+
+//     result
+// }
 
 fn insert_level_in_levels(level: &Level, levels: &mut Levels, side: Side) {
     let next: Box<Fn(usize, &mut Levels) -> bool> = Box::new(|_i, _levels| false); //  return
@@ -395,8 +442,9 @@ mod tests {
 
         let group_pos = gen_group_positions(&positions);
         assert_eq!(group_pos.len(), 1);
-        assert!(group_pos[0].bids.len() == 1);
-        assert!(group_pos[0].asks.is_empty());
+        assert_eq!(group_pos[0].pos_prods.len(), 1);
+        assert!(group_pos[0].pos_prods[0].bids.len() == 1);
+        assert!(group_pos[0].pos_prods[0].asks.is_empty());
     }
 
     #[test]
@@ -416,8 +464,9 @@ mod tests {
 
         let group_pos = gen_group_positions(&positions);
         assert_eq!(group_pos.len(), 1);
-        assert!(group_pos[0].asks.len() == 1);
-        assert!(group_pos[0].bids.is_empty());
+        assert_eq!(group_pos[0].pos_prods.len(), 1);
+        assert!(group_pos[0].pos_prods[0].asks.len() == 1);
+        assert!(group_pos[0].pos_prods[0].bids.is_empty());
     }
 
     #[test]
@@ -450,7 +499,7 @@ mod tests {
         ];
 
         let group_pos = gen_group_positions(&positions);
-        assert_eq!(group_pos.len(), 2);
+        assert_eq!(group_pos.len(), 1);
     }
 
     #[test]
@@ -483,11 +532,16 @@ mod tests {
         ];
 
         let group_pos = gen_group_positions(&positions);
+
         assert_eq!(group_pos.len(), 1);
-        assert_eq!(group_pos[0].bids.len(), 2);
-        assert_eq!(group_pos[0].asks.len(), 0);
-        assert!(comp_price(group_pos[0].bids[0].price, 105.111) == std::cmp::Ordering::Equal);
-        assert_eq!(group_pos[0].bids[0].qty, 11);
+        assert_eq!(group_pos[0].pos_prods.len(), 1);
+        assert!(group_pos[0].pos_prods[0].bids.len() == 2);
+        assert!(group_pos[0].pos_prods[0].asks.is_empty());
+        assert!(
+            comp_price(group_pos[0].pos_prods[0].bids[0].price, 105.111)
+                == std::cmp::Ordering::Equal
+        );
+        assert_eq!(group_pos[0].pos_prods[0].bids[0].qty, 11);
     }
 
 }
