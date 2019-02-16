@@ -1,4 +1,6 @@
 // use std::result::Result;
+use std::collections::HashSet;
+
 use crate::position::*;
 use crate::json_api::{JsonApiAdd, JsonApiDel};
 
@@ -20,6 +22,7 @@ pub struct Model {
     console: ConsoleService,
     group_pos: GroupsPos,
     api_posisions: Box<Positions>,
+    expanded: HashSet<(String, String)>, 
     connect2: String,
 }
 
@@ -30,6 +33,7 @@ pub enum Msg {
     Disconnected,
     Received(Format<serde_json::value::Value>),
     UpdatedUrl(String),
+    ExpandCollapse((String, String)),
 }
 
 impl Model {
@@ -64,6 +68,7 @@ impl Component for Model {
             link,
             api_posisions: Box::new(vec![]),
             group_pos: vec![], 
+            expanded: HashSet::new(),
             connect2: match stdweb::web::window().location() {
                 Some(location) => {
                     match location.host() {
@@ -90,6 +95,14 @@ impl Component for Model {
             Msg::Ignore => false,
             Msg::Disconnected => {
                 self.ws = None;
+                true
+            }
+            Msg::ExpandCollapse(ex) => {
+                if self.expanded.contains(&ex) {
+                    self.expanded.remove(&ex);
+                } else {
+                    self.expanded.insert(ex);
+                }
                 true
             }
             Msg::Received(Err(e)) => {
@@ -182,7 +195,7 @@ impl Renderable<Model> for Model {
             html! {
                 <>
             <thead>
-                <tr>
+                <tr class="header",>
                 <th scope="col", class="uk-width-medium black",>{"id"}</th>
                 <th scope="col", class="uk-width-medium black",>{"descr"}</th>
                 <th scope="col", class="uk-width-small center",>{"qty"}</th>
@@ -206,8 +219,8 @@ impl Renderable<Model> for Model {
             let (pbid, qbid) = price_quantity(bids);
             let (pask, qask) = price_quantity(asks);
             let tdclass = || if bordertop {
-                "center , bordertop"
-            } else {"center"};
+                "center bordertop"
+            } else {"center celldepth"};
             html! {
                 <>
                 <td class=tdclass(),> { qbid } </td> <td class=tdclass(),> { pbid } </td>
@@ -216,10 +229,25 @@ impl Renderable<Model> for Model {
             }
         };
 
-        let pos_by_prod_view = |pos_by_prod: &PositionsByProduct| {
+        let depth_levels = |pos_by_prod: &PositionsByProduct| {
+            html! {
+                <>{
+                for (1..=5).map(|i| 
+                    html!{
+                        <tr><td></td><td></td>
+                        {leveln(i, &pos_by_prod.bids, &pos_by_prod.asks, false)}
+                        <td></td></tr>
+                })
+                }</>
+            }
+        };
+
+        let pos_by_prod_view = |group: &str, pos_by_prod: &PositionsByProduct| {
+            let g = group.to_string();
+            let id = pos_by_prod.isin.to_string();
             html! {
                 <>
-                <tr>
+                <tr onclick=|_| Msg::ExpandCollapse((g.clone(), id.clone())),>
                 // <th scope="row",>{1}</th>
                 // <td>{&pos_by_prod.id}</td>
                 <td class="bordertop",>{&pos_by_prod.isin}</td>
@@ -227,32 +255,36 @@ impl Renderable<Model> for Model {
                 {leveln(0, &pos_by_prod.bids, &pos_by_prod.asks, true)}
                 <td class="uk-text-truncate bordertop",>{&pos_by_prod.updated}</td>
                 </tr>
-                {for (1..5).map(|i| 
-                    html!{<tr><td></td><td></td>{leveln(i, &pos_by_prod.bids, &pos_by_prod.asks, false)}<td></td></tr>})
+                {
+                    if self.expanded.contains(&(group.to_string(), pos_by_prod.isin.to_string())) {
+                        depth_levels(pos_by_prod)
+                    } else {
+                        html!{<></>}
+                    }
                 }
                 </>
             }
         };
 
-        let rows = |pos_by_prod: &PosByProds| {
+        let rows = |group: &str, pos_by_prod: &PosByProds| {
             html! {
                 <>
                     {for (pos_by_prod.iter()).map(|pos_by_prod| {
-                        pos_by_prod_view(&pos_by_prod)
+                        pos_by_prod_view(group, &pos_by_prod)
                     })}
                 </>
             }
         };
 
-        let table = |group:&String, pos_prods: &PosByProds| {
+        let table = |group:&str, pos_prods: &PosByProds| {
             html! {
                 <>
                 <h3>{group}</h3>
-                <div class="uk-overflow-auto",>
+                <div class="uk-overflow-auto table_pading",>
                     <table class="uk-table uk-table-small",>
                     {header()}
                     <tbody>
-                        {rows(pos_prods)}
+                        {rows(group, pos_prods)}
                     </tbody>
                     </table>
                 </div>            
