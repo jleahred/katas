@@ -1,0 +1,19 @@
+[package]
+name = "positions"
+version = "0.1.1"
+authors = ["jleahred"]
+edition = "2018"
+
+[dependencies]
+stdweb = "0.4.2"
+yew = { git = "https://github.com/DenisKolodin/yew" }
+idata = { git = "https://github.com/jleahred/idata.git" }
+# failure = {git = "https://github.com/rust-lang-nursery/failure.git"}
+failure = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_derive = "1"
+
+# [profile.release]
+# lto = true
+# opt-level = 's'
