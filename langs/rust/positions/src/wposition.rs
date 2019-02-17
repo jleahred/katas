@@ -1,5 +1,6 @@
 // use std::result::Result;
 use std::collections::HashSet;
+use std::time::Duration;
 
 use crate::position::*;
 use crate::json_api::{JsonApiAdd, JsonApiDel};
@@ -10,7 +11,7 @@ use yew::format::Format;
 use yew::format::Json;
 use yew::prelude::*;
 use yew::services::websocket::{WebSocketService, WebSocketStatus, WebSocketTask};
-use yew::services::ConsoleService;
+use yew::services::{ConsoleService, IntervalService, Task};
 
 use crate::agregator;
 // use stdweb::web::Date;
@@ -24,33 +25,43 @@ pub struct Model {
     api_posisions: Box<Positions>,
     expanded: HashSet<(String, String)>, 
     connect2: String,
+    timer_interval: IntervalService,
+    timer_callback_tick: Callback<()>,
+    timer_job: Option<Box<Task>>,
+    conn_status: ConnStatus,
 }
 
 pub enum Msg {
     ClickConnect,
     ClickFakeData(u8),
-    Ignore,
-    Disconnected,
+    Connection(ConnStatus),
     Received(Format<serde_json::value::Value>),
     UpdatedUrl(String),
     ExpandCollapse((String, String)),
+    Tick,
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum ConnStatus {
+    Ok,
+    Connecting,
+    Disconnected,
 }
 
 impl Model {
     fn connect(&mut self) {
-        // self.console.log("Connecting");
+        self.conn_status = ConnStatus::Connecting;        
+        self.console.log("trying to connect");
         let cbout = self.link.send_back(|Json(data)| Msg::Received(data));
         let cbnot = self.link.send_back(|input| {
             // ConsoleService::new().log(&format!("Notification: {:?}", input));
             match input {
-                WebSocketStatus::Closed | WebSocketStatus::Error => Msg::Disconnected,
-                _ => Msg::Ignore,
+                WebSocketStatus::Opened => Msg::Connection(ConnStatus::Ok),
+                WebSocketStatus::Closed | WebSocketStatus::Error => Msg::Connection(ConnStatus::Disconnected),
             }
         });
-        if self.ws.is_none() {
-            let task = self.wss.connect(&self.connect2, cbout, cbnot);
-            self.ws = Some(task);
-        }
+        let task = self.wss.connect(&self.connect2, cbout, cbnot);
+        self.ws = Some(task);
     }
 }
 
@@ -60,12 +71,19 @@ impl Component for Model {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_: Self::Properties, mut link: ComponentLink<Self>) -> Self {
+        let timer_callback_tick =link.send_back(|_| Msg::Tick); 
+        let mut timer_interval = IntervalService::new(); 
+        let timer_handle = timer_interval.spawn(Duration::from_secs(2), timer_callback_tick.clone());
         Model {
+            conn_status: ConnStatus::Disconnected,
             console: ConsoleService::new(),
             ws: None,
             wss: WebSocketService::new(),
             link,
+            timer_callback_tick,
+            timer_interval,
+            timer_job: Some(Box::new(timer_handle)),
             api_posisions: Box::new(vec![]),
             group_pos: vec![], 
             expanded: HashSet::new(),
@@ -92,9 +110,12 @@ impl Component for Model {
                 self.connect();
                 true
             }
-            Msg::Ignore => false,
-            Msg::Disconnected => {
-                self.ws = None;
+            Msg::Connection(conn_status) => 
+            {
+                self.conn_status = conn_status;
+                if conn_status == ConnStatus::Disconnected {
+                    self.ws = None;
+                }
                 true
             }
             Msg::ExpandCollapse(ex) => {
@@ -127,6 +148,12 @@ impl Component for Model {
                 self.connect2 = url;
                 true
             }
+            Msg::Tick => {
+                if self.ws.is_none() {
+                    self.connect();
+                }
+                false
+            }
         }
     }
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {
@@ -145,11 +172,11 @@ impl Renderable<Model> for Model {
         // };
 
 
-        let connect_params = || {
+        let connect_params = |msg : &str| {
             html! {
                 <>
                     <span onclick=|_| Msg::ClickConnect,>
-                    {"disconected"}
+                    {msg}
                     </span>
                     <input type="text",
                         value={self.connect2.to_string()},
@@ -179,10 +206,11 @@ impl Renderable<Model> for Model {
                 <>
                 <p>
                 {
-                    if self.ws.is_some() {
-                        html! {<>{"connected"}</>}
-                    } else {
-                        connect_params()
+                    match self.conn_status {
+                        ConnStatus::Ok => html! {<>{"connected"}</>},
+                        ConnStatus::Connecting => html! {<>{connect_params("connecting")}</>},
+                        ConnStatus::Disconnected => html! {<>{connect_params("connecting")}</>},
+
                     }
                 }
                 </p>
@@ -277,13 +305,18 @@ impl Renderable<Model> for Model {
         };
 
         let table = |group:&str, pos_prods: &PosByProds| {
+            let style_disconected = if self.conn_status==ConnStatus::Ok {
+                ""
+            } else {
+                "disconected"
+            };
             html! {
                 <>
-                <h3>{group}</h3>
+                <h3 class=style_disconected.to_string(),>{group}</h3>
                 <div class="uk-overflow-auto table_pading",>
                     <table class="uk-table uk-table-small",>
                     {header()}
-                    <tbody>
+                    <tbody class=style_disconected,>
                         {rows(group, pos_prods)}
                     </tbody>
                     </table>
