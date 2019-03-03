@@ -1,0 +1,55 @@
+pub compile    -> Program
+    =   _ e:expr _          { e }
+
+
+expr    -> Program
+    =   n:nsitem  _  s:sum   { vec![].iappend(n).iappend(s) }
+    /   n:nsitem  _  f:fact  { vec![].iappend(n).iappend(f) }
+    /   n:nsitem             { vec![].iappend(n) }
+    /   s:sum                { vec![].ipush(ProgItem::Push(0.0)).iappend(s) }
+
+//  NOT SIGNED  item
+nsitem    -> Program
+  =   n:inum      { vec![].ipush(n) }
+  /   parenth
+
+
+//  SIGNED  item
+sitem    -> Program
+  =   n:snum                { vec![].ipush(n) }
+  /   '+'  p:parenth        { p }
+  /   '-'  p:parenth        { p.ipush(ProgItem::Push(-1.0)).ipush(ProgItem::Op(Operator::Mult)) }
+
+parenth     -> Program
+    =   #quiet<'('  _  e:expr  _  ')'     { e } >
+    /   #expected("unbalanced parenth")
+
+//  A set of numbers with sign (the first one could be without sign)
+sum         -> Program
+  = n:sitem  _  s:sum  _  f:fact  { vec![].iappend(n).iappend(s).iappend(f).ipush(ProgItem::Op(Operator::Add)) }
+  / n:sitem  _  s:sum             { vec![].iappend(n).iappend(s).ipush(ProgItem::Op(Operator::Add)) }
+  / n:sitem  _            f:fact  { vec![].iappend(n).iappend(f).ipush(ProgItem::Op(Operator::Add)) }
+  / n:sitem                       { vec![].iappend(n).ipush(ProgItem::Op(Operator::Add)) }
+
+
+fact        -> Program
+  = o:opf  _  n:nsitem  _  f:fact   { f.iappend(n).ipush(o) }
+  / o:opf  _  n:nsitem  _  s:sum    { vec![].iappend(n).ipush(o).iappend(s) }
+  / o:opf  _  n:nsitem              { vec![].iappend(n).ipush(o) }
+
+opf       -> ProgItem
+  = '*'             {ProgItem::Op(Operator::Mult)}
+  / '/'             {ProgItem::Op(Operator::Div)}
+
+
+
+//  integer float number
+inum    -> ProgItem
+  =  sf:$([0-9]+ ('.' [0-9]+)?)    { ProgItem::Push(sf.parse::<f64>().unwrap()) }
+
+//  signed float number
+snum    -> ProgItem
+  =  _  s:$('+' / '-')  _  i:$(inum)  { ProgItem::Push(format!("{}{}",s,i).parse::<f64>().unwrap()) }
+
+
+_ = #quiet<[ \t]*>
