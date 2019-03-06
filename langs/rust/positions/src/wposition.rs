@@ -2,6 +2,8 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
+use stdweb::Value;
+
 use crate::position::*;
 use crate::json_api::{JsonApiAdd, JsonApiDel};
 
@@ -17,6 +19,7 @@ use crate::agregator;
 // use stdweb::web::Date;
 
 pub struct Model {
+    config: ModelConfig,
     ws: Option<WebSocketTask>,
     wss: WebSocketService,
     link: ComponentLink<Model>,
@@ -25,10 +28,21 @@ pub struct Model {
     api_posisions: Box<Positions>,
     expanded: HashSet<(String, String)>, 
     connect2: String,
-    timer_interval: IntervalService,
-    timer_callback_tick: Callback<()>,
-    timer_job: Option<Box<Task>>,
+
+    timer_interval_connect: IntervalService,
+    timer_callback_connect: Callback<()>,
+    timer_job_connect: Option<Box<Task>>,
+
+    timer_interval_update: IntervalService,
+    timer_callback_update: Callback<()>,
+    timer_job_update: Option<Box<Task>>,
+
     conn_status: ConnStatus,
+    update_pending: bool,
+}
+
+struct ModelConfig {
+    show_address_input: bool,
 }
 
 pub enum Msg {
@@ -38,7 +52,8 @@ pub enum Msg {
     Received(Format<serde_json::value::Value>),
     UpdatedUrl(String),
     ExpandCollapse((String, String)),
-    Tick,
+    TickConnect,
+    TickUpdate,
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -72,25 +87,50 @@ impl Component for Model {
     type Properties = ();
 
     fn create(_: Self::Properties, mut link: ComponentLink<Self>) -> Self {
-        let timer_callback_tick =link.send_back(|_| Msg::Tick); 
-        let mut timer_interval = IntervalService::new(); 
-        let timer_handle = timer_interval.spawn(Duration::from_secs(2), timer_callback_tick.clone());
+        let mut console = ConsoleService::new();
+
+        let value : stdweb::Value = js!( return show_address_input(); );
+        let show_address_input = match value {
+            stdweb::Value::Bool(b) => b,
+            _ => {
+                 console.log("invalid show_address_input() in config.js");
+                 false
+            }
+        };
+        // console.log(&format!("invalid show_address_input() alue: {}", show_address_input));
+        
+        let timer_callback_connect =link.send_back(|_| Msg::TickConnect); 
+        let mut timer_interval_connect = IntervalService::new(); 
+        let timer_handle_connect = timer_interval_connect.spawn(Duration::from_secs(2), timer_callback_connect.clone());
+
+        let timer_callback_update =link.send_back(|_| Msg::TickUpdate); 
+        let mut timer_interval_update = IntervalService::new(); 
+        let timer_handle_update = timer_interval_update.spawn(Duration::from_millis(200), timer_callback_update.clone());
+
         Model {
+            config: ModelConfig{show_address_input},
+            update_pending: false,
             conn_status: ConnStatus::Disconnected,
-            console: ConsoleService::new(),
+            console,
             ws: None,
             wss: WebSocketService::new(),
             link,
-            timer_callback_tick,
-            timer_interval,
-            timer_job: Some(Box::new(timer_handle)),
+
+            timer_callback_connect,
+            timer_interval_connect,
+            timer_job_connect: Some(Box::new(timer_handle_connect)),
+
+            timer_callback_update,
+            timer_interval_update,
+            timer_job_update: Some(Box::new(timer_handle_update)),
+
             api_posisions: Box::new(vec![]),
             group_pos: vec![], 
             expanded: HashSet::new(),
             connect2: match stdweb::web::window().location() {
                 Some(location) => {
                     match location.host() {
-                        Ok(href) => format!("ws://{}", href.to_string()),
+                        Ok(href) => format!("ws://{}/positions/trayport", href.to_string()),
                         _ => "".to_string()
                     }
                 },
@@ -112,10 +152,15 @@ impl Component for Model {
             }
             Msg::Connection(conn_status) => 
             {
-                self.conn_status = conn_status;
-                if conn_status == ConnStatus::Disconnected {
-                    self.ws = None;
+                match conn_status {
+                    ConnStatus::Disconnected => self.ws = None,
+                    ConnStatus::Ok => { 
+                        self.api_posisions.clear();
+                        self.update_pending = true;
+                    }
+                    _ => (),
                 }
+                self.conn_status = conn_status;
                 true
             }
             Msg::ExpandCollapse(ex) => {
@@ -134,25 +179,39 @@ impl Component for Model {
                 self.console.log(&format!("received OK {}", data));
                 self.console.log(&format!("received OK {}", data["_msg_type"].to_string()));
                 if  let Some(msg_type) = data["_msg_type"].as_str() {
+                    let result = 
                     match &msg_type as &str {
-                        "PubBookPosition" => process_add(self, &data),
-                        "PubDelPosition" => process_del(self, &data),
-                        _ => self.console.log(&format!("_msg_type unknown {}", data))
+                        "PubNewBookPosition" => process_add(self, &data),
+                        "PubDelBookPosition" => process_del(self, &data),
+                        _ => Err(format!("_msg_type unknown {}", data))
                     };
+                    if let Err(e) = result {
+                        self.console.log(&e);
+                    }
                 } else {
                     self.console.log(&format!("missing _msg_typoe {}", data))
                 }
-                true
+                self.update_pending = true;
+                false
             }
             Msg::UpdatedUrl(url) => {
                 self.connect2 = url;
                 true
             }
-            Msg::Tick => {
+            Msg::TickConnect => {
                 if self.ws.is_none() {
                     self.connect();
                 }
                 false
+            }
+            Msg::TickUpdate => {
+                if self.update_pending {
+                    self.group_pos = agregator::gen_group_positions(&self.api_posisions);
+                    self.update_pending = false;
+                    true
+                } else {
+                    false
+                }
             }
         }
     }
@@ -173,29 +232,31 @@ impl Renderable<Model> for Model {
 
 
         let connect_params = |msg : &str| {
-            html! {
-                <>
-                    <span onclick=|_| Msg::ClickConnect,>
-                    {msg}
-                    </span>
-                    <input type="text",
-                        value={self.connect2.to_string()},
-                        oninput=|input| Msg::UpdatedUrl(input.value), >
-                    </input>
-                </>
-            }
+            if self.config.show_address_input {
+                html! {
+                    <>
+                        <span onclick=|_| Msg::ClickConnect,>
+                        {msg}
+                        </span>
+                        <input type="text",
+                            value={self.connect2.to_string()},
+                            oninput=|input| Msg::UpdatedUrl(input.value), >
+                        </input>
+                    </>
+                }
+            } else {html!{<></>}}
         };
 
         let test_fake = || {
             html! {
                 <>
                     <p>
-                    <span onclick=|_| Msg::ClickFakeData(0),>{"fake0 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(1),>{"fake1 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(2),>{"fake2 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(3),>{"fake3 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(4),>{"fake4 "}</span>
-                    <span onclick=|_| Msg::ClickFakeData(5),>{"fake5 "}</span>
+                    // <span onclick=|_| Msg::ClickFakeData(0),>{"fake0 "}</span>
+                    // <span onclick=|_| Msg::ClickFakeData(1),>{"fake1 "}</span>
+                    // <span onclick=|_| Msg::ClickFakeData(2),>{"fake2 "}</span>
+                    // <span onclick=|_| Msg::ClickFakeData(3),>{"fake3 "}</span>
+                    // <span onclick=|_| Msg::ClickFakeData(4),>{"fake4 "}</span>
+                    // <span onclick=|_| Msg::ClickFakeData(5),>{"fake5 "}</span>
                     </p>
                 </>
             }
@@ -207,10 +268,9 @@ impl Renderable<Model> for Model {
                 <p>
                 {
                     match self.conn_status {
-                        ConnStatus::Ok => html! {<>{"connected"}</>},
+                        ConnStatus::Ok => html! {<>{if self.config.show_address_input { "connected" } else {""}  }</>},
                         ConnStatus::Connecting => html! {<>{connect_params("connecting")}</>},
                         ConnStatus::Disconnected => html! {<>{connect_params("connecting")}</>},
-
                     }
                 }
                 </p>
@@ -223,14 +283,14 @@ impl Renderable<Model> for Model {
             html! {
                 <>
             <thead>
-                <tr class="header",>
-                <th scope="col", class="uk-width-medium black",>{"id"}</th>
-                <th scope="col", class="uk-width-medium black",>{"descr"}</th>
-                <th scope="col", class="uk-width-small center",>{"qty"}</th>
-                <th scope="col", class="uk-width-small center",>{"bid"}</th>
-                <th scope="col", class="uk-width-small center",>{"ask"}</th>
-                <th scope="col", class="uk-width-small center",>{"qty"}</th>
-                <th scope="col",>{"updated"}</th>
+                <tr>
+                <th scope="col", class="uk-width-small header",>{"id"}</th>
+                <th scope="col", class="uk-width-medium header",>{"descr"}</th>
+                <th scope="col", class="uk-width-small header center",>{"qty"}</th>
+                <th scope="col", class="uk-width-small header center",>{"bid"}</th>
+                <th scope="col", class="uk-width-small header center",>{"ask"}</th>
+                <th scope="col", class="uk-width-small header center",>{"qty"}</th>
+                <th scope="col", class="uk-width-medium header",>{"updated"}</th>
                 </tr>
             </thead>
                 </>
@@ -240,8 +300,8 @@ impl Renderable<Model> for Model {
         let leveln = |n: usize, bids: &Levels, asks: &Levels, bordertop: bool| {
             let price_quantity = |levels: &Levels| {
                 match levels.get(n) {
-                    Some(l) => (format!("{}", l.price), format!("{}", l.qty)),
-                    _ => (" ".to_string(), "".to_string())
+                    Some(l) => (format!("{:.3}", l.price), format!("{}", l.qty)),
+                    _ => ("".to_string(), "".to_string())
                 }
             };
             let (pbid, qbid) = price_quantity(bids);
@@ -264,7 +324,7 @@ impl Renderable<Model> for Model {
                     html!{
                         <tr><td></td><td></td>
                         {leveln(i, &pos_by_prod.bids, &pos_by_prod.asks, false)}
-                        <td></td></tr>
+                        <td class="transparent",>{"_"}</td></tr>
                 })
                 }</>
             }
@@ -340,10 +400,9 @@ impl Renderable<Model> for Model {
     }
 }
 
-fn process_add(model: &mut Model, data: &serde_json::value::Value) {
-    if let Ok(pos) =
-        serde_json::from_str::<JsonApiAdd>(&data.to_string())
-    {
+fn process_add(model: &mut Model, data: &serde_json::value::Value) -> Result<(), String> {
+    match serde_json::from_str::<JsonApiAdd>(&data.to_string()) {
+        Ok(pos) => {
         let mut fake = Box::new(vec![]);
         std::mem::swap(&mut fake, &mut model.api_posisions);
         let mut fake = match agregator::add(fake, pos) {
@@ -354,14 +413,30 @@ fn process_add(model: &mut Model, data: &serde_json::value::Value) {
             },
         };
         std::mem::swap(&mut fake, &mut model.api_posisions);
+        // model.group_pos = agregator::gen_group_positions(&model.api_posisions);
+        Ok(())
+        }
+        Err(e) => Err(e.to_string())
     }
-    model.group_pos = agregator::gen_group_positions(&model.api_posisions);
+    // if let Ok(pos) =
+    //     serde_json::from_str::<JsonApiAdd>(&data.to_string())
+    // {
+    //     let mut fake = Box::new(vec![]);
+    //     std::mem::swap(&mut fake, &mut model.api_posisions);
+    //     let mut fake = match agregator::add(fake, pos) {
+    //         Ok(aps) => aps,
+    //         Err((e, aps)) =>{
+    //             model.console.log(&e.to_string());
+    //             aps
+    //         },
+    //     };
+    //     std::mem::swap(&mut fake, &mut model.api_posisions);
+    // } 
 }
 
-fn process_del(model: &mut Model, data: &serde_json::value::Value) {
-    if let Ok(pos) =
-        serde_json::from_str::<JsonApiDel>(&data.to_string())
-    {
+fn process_del(model: &mut Model, data: &serde_json::value::Value)  -> Result<(), String> {
+    match serde_json::from_str::<JsonApiDel>(&data.to_string()) {
+        Ok(pos) => {
         let mut fake = Box::new(vec![]);
         std::mem::swap(&mut fake, &mut model.api_posisions);
         let mut fake = match agregator::del(fake, pos) {
@@ -372,8 +447,27 @@ fn process_del(model: &mut Model, data: &serde_json::value::Value) {
             },
         };
         std::mem::swap(&mut fake, &mut model.api_posisions);
+        // model.group_pos = agregator::gen_group_positions(&model.api_posisions);
+        Ok(())
+        }
+        Err(e) => Err(e.to_string())
     }
-    model.group_pos = agregator::gen_group_positions(&model.api_posisions);
+
+    // if let Ok(pos) =
+    //     serde_json::from_str::<JsonApiDel>(&data.to_string())
+    // {
+    //     let mut fake = Box::new(vec![]);
+    //     std::mem::swap(&mut fake, &mut model.api_posisions);
+    //     let mut fake = match agregator::del(fake, pos) {
+    //         Ok(aps) => aps,
+    //         Err((e, aps)) =>{
+    //             model.console.log(&e.to_string());
+    //             aps
+    //         },
+    //     };
+    //     std::mem::swap(&mut fake, &mut model.api_posisions);
+    // }
+    // model.group_pos = agregator::gen_group_positions(&model.api_posisions);
 }
 
 

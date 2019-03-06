@@ -5,7 +5,8 @@ authors = ["jleahred"]
 edition = "2018"
 
 [dependencies]
-stdweb = "0.4.2"
+# stdweb = "0.4.2"
+stdweb = "0.4.14"
 yew = { git = "https://github.com/DenisKolodin/yew" }
 idata = { git = "https://github.com/jleahred/idata.git" }
 # failure = {git = "https://github.com/rust-lang-nursery/failure.git"}

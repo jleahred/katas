@@ -17,7 +17,7 @@ pub fn add(
             positions.push(pos);
             Ok(positions)
         }
-        _ => Err((format!("duplicated pos on add {:?}", msg), positions)),
+        Err(e) => Err((e, positions)),
     }
 }
 

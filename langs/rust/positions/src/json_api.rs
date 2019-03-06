@@ -10,6 +10,7 @@ pub struct JsonApi {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JsonApiAdd {
     pub id: String,
+    pub pid: JsonProdId,
     pub desc: String,
     pub dt: String,
     pub isin: String,
@@ -18,11 +19,23 @@ pub struct JsonApiAdd {
     pub qty: u64,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct JsonProdId {
+    pub group: String,
+    pub subgroup: String,
+    pub code: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct JsonApiDel {
+    pub id: String,
+}
+
 impl JsonApiAdd {
     pub fn to_position(&self) -> Result<Position, String> {
         Ok(Position {
             id: self.id.clone(),
-            sub_group: "pending fill sub group".to_string(),
+            sub_group: self.pid.subgroup.clone(),
             desc: self.desc.clone(),
             isin: self.isin.clone(),
             side: side_from_string(&self.side)?,
@@ -33,11 +46,6 @@ impl JsonApiAdd {
             updated: self.dt.clone(),
         })
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct JsonApiDel {
-    pub id: String,
 }
 
 fn side_from_string(sside: &str) -> Result<Side, String> {

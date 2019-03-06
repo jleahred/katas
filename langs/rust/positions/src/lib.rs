@@ -1,6 +1,9 @@
 // extern crate stdweb;
 
 #[macro_use]
+extern crate stdweb;
+
+#[macro_use]
 extern crate yew;
 // use yew::services::ConsoleService;
 
