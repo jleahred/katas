@@ -1,0 +1,30 @@
+[[package]]
+name = "fsm"
+version = "0.1.0"
+dependencies = [
+ "idata 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "peg 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "idata"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "peg"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "quote"
+version = "0.3.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[metadata]
+"checksum idata 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "64285f90c341958db117dbc274a159ec16ee4d651828c948fc38bf9ae1e5b0ec"
+"checksum peg 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)" = "40df12dde1d836ed2a4c3bfc2799797e3abaf807d97520d28d6e3f3bf41a5f85"
+"checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"

@@ -1,0 +1,13 @@
+[package]
+name = "fsm"
+version = "0.1.0"
+authors = ["jleahred <jleahred@gmail.com>"]
+edition = "2018"
+build = "build.rs"
+
+[dependencies]
+peg = "0.5.7"
+idata = "0.1.0"
+
+[build-dependencies]
+peg = { version = "0.5.7" }
