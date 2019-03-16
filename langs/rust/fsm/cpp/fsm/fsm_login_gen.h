@@ -25,6 +25,8 @@ struct timer_t;
 //  generators
 struct key_t;
 
+//  status per state (if so)
+
 //  forward declaration
 //  ----------------------------------
 
@@ -34,7 +36,7 @@ public:
   State state;
 
 public:
-  //    automatic generated methods ---------
+  //    automatic generated ---------
   //    defined on fsm_login_generated.cpp
   //
   void in(const rq_key_t &in);
@@ -43,26 +45,36 @@ public:
   void in(const heartbeat_t &in);
   void in(const timer_t &in);
 
+  //
+  //    defined on fsm_login_generated.cpp
+  //    automatic generated ---------
+
 protected:
   //    hand written methods    --------------
   //    to be defined on fsm_login.cpp
   //
   //    generators
-  void gen_key(const rq_key_t &in);
-  std::unique_ptr<key_t> key;
-
+  key_t gen_key(const rq_key_t &in);
+  //
   //    actions
   void log_error(const rq_key_t &in);
   void log_error(const rq_login_t &in);
   void log_error(const rq_logout_t &in);
   void log_error(const heartbeat_t &in);
   void log_error(const timer_t &in);
-  void send_key(const rq_key_t &in);
+  void send_key(const rq_key_t &in, const key_t &g);
   void send_login(const rq_login_t &in);
   void send_logout(const rq_logout_t &in);
-
+  //
   //    guards
-  bool valid(const rq_login_t &in);
+  bool valid(const rq_login_t &in, const key_t &info);
+  //
+  //    to be defined on fsm_login.cpp
+  //    hand written methods    --------------
+
+private:
+  std::unique_ptr<key_t> w_login_info;
+  void delete_state_info(void);
 };
 
 } // namespace login

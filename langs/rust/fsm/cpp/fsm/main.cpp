@@ -8,7 +8,7 @@
  *      timer                   -   log_err             ->  logout
  *
  *
- *  [w_login]
+ *  [w_login, key_t]
  *      rq_key                  -   log_err             ->  logout
  *      rq_login    &   valid   -   send_login          ->  login
  *      rq_login                -   log_err             ->  logout

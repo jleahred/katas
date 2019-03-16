@@ -18,28 +18,33 @@ std::ostream &operator<<(std::ostream &os, State state) {
   return os;
 }
 
+void Fsm::delete_state_info(void) { this->w_login_info.reset(); }
+
 Fsm::Fsm() : state(State::init) {}
 
 void Fsm::in(const rq_key_t &in) {
   switch (state) {
   case State::init: {
+    delete_state_info();
     state = State::w_login;
-    gen_key(in);
-    send_key(in);
+    auto key = gen_key(in);
+    send_key(in, key);
+    w_login_info = std::make_unique<key_t>(key);
     break;
   }
   case State::w_login: {
+    delete_state_info();
     state = State::logout;
     log_error(in);
     break;
   }
   case State::login: {
+    delete_state_info();
     state = State::logout;
     log_error(in);
     break;
   }
   case State::logout: {
-    state = State::logout;
     log_error(in);
     break;
   }
@@ -54,7 +59,7 @@ void Fsm::in(const rq_login_t &in) {
     break;
   }
   case State::w_login: {
-    if (valid(in)) {
+    if (valid(in, *this->w_login_info)) {
       state = State::login;
       send_login(in);
     } else {
