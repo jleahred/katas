@@ -38,17 +38,13 @@
 use idata::cont::IVec;
 use std::result::Result;
 
-pub(crate) mod parser {
-
-    pub(crate) mod fsm_peg {
-        use crate::*;
-        use idata::cont::IVec;
-        include!(concat!(env!("OUT_DIR"), "/fsm.rs"));
-    }
-
+pub(crate) mod fsm_peg {
+    use crate::parser::*;
+    use idata::cont::IVec;
+    include!(concat!(env!("OUT_DIR"), "/fsm.rs"));
 }
 
-type Fsm = Vec<Status>;
+pub(crate) type Fsm = Vec<Status>;
 
 #[derive(Debug)]
 pub struct Status {
@@ -65,7 +61,7 @@ pub struct Transition {
 }
 
 pub fn parse(input: &str) -> Result<Fsm, String> {
-    match parser::fsm_peg::fsm(input) {
+    match fsm_peg::fsm(input) {
         Ok(fsm) => Ok(fsm),
         Err(e) => Err(format!("{:?}", e)),
     }
