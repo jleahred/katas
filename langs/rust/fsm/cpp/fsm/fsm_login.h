@@ -1,12 +1,18 @@
 #ifndef FSM_LOGIN_H
 #define FSM_LOGIN_H
 
-#include "fsm_login_base.h"
+#include <string>
+
+#include "fsm_login_gen.h"
 
 namespace login {
 
-struct rq_key {};
-struct rq_login {
+struct key_t {
+  std::string val;
+};
+
+struct rq_key_t {};
+struct rq_login_t {
   std::string key;
   std::string login;
 };

@@ -1,6 +1,7 @@
 //  generated automatically
 
-#include "fsm_login_base.h"
+#include "fsm_login_gen.h"
+#include "fsm_login.h"
 
 namespace login {
 std::ostream &operator<<(std::ostream &os, State state) {
@@ -17,10 +18,13 @@ std::ostream &operator<<(std::ostream &os, State state) {
   return os;
 }
 
-void BaseFsm::in(const rq_key &in) {
+Fsm::Fsm() : state(State::init) {}
+
+void Fsm::in(const rq_key_t &in) {
   switch (state) {
   case State::init: {
     state = State::w_login;
+    gen_key(in);
     send_key(in);
     break;
   }
@@ -42,7 +46,7 @@ void BaseFsm::in(const rq_key &in) {
   }
 }
 
-void BaseFsm::in(const rq_login &in) {
+void Fsm::in(const rq_login_t &in) {
   switch (state) {
   case State::init: {
     state = State::logout;
