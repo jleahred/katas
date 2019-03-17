@@ -48,16 +48,16 @@ pub(crate) type Fsm = Vec<Status>;
 
 #[derive(Debug)]
 pub struct Status {
-    name: String,
-    transitions: Vec<Transition>,
+    pub(crate) name: String,
+    pub(crate) transitions: Vec<Transition>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Transition {
-    input: String,
-    guard: Option<String>,
-    action: Option<String>,
-    new_status: String,
+    pub(crate) input: String,
+    pub(crate) guard: Option<String>,
+    pub(crate) action: Option<String>,
+    pub(crate) new_status: String,
 }
 
 pub fn parse(input: &str) -> Result<Fsm, String> {

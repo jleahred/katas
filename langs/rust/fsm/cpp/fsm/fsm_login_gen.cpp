@@ -1,84 +1,180 @@
-//  generated automatically
+
+//  generated automatically  2019-03-17 18:03:18
+//  do not modify it manually
 
 #include "fsm_login_gen.h"
 #include "fsm_login.h"
 
 namespace login {
-std::ostream &operator<<(std::ostream &os, State state) {
-  switch (state) {
-  case State::init:
-    os << "init";
-  case State::w_login:
-    os << "w_login";
-  case State::login:
-    os << "login";
-  case State::logout:
-    os << "logout";
-  }
-  return os;
+
+class BaseState {
+public:
+  BaseState() {}
+  ~BaseState() {}
+
+public:
+  virtual SState in(const heartbeat_t &in) = 0;
+  virtual SState in(const rq_key_t &in) = 0;
+  virtual SState in(const rq_login_t &in) = 0;
+  virtual SState in(const rq_logout_t &in) = 0;
+  virtual SState in(const timer_t &in) = 0;
+};
+
+class init : public BaseState {
+public:
+  init(const init_info_t &i) : info(i) {}
+  virtual ~init() {}
+
+private:
+  init_info_t info;
+
+  SState in(const heartbeat_t &in)override;
+  SState in(const rq_key_t &in)override;
+  SState in(const rq_login_t &in)override;
+  SState in(const rq_logout_t &in)override;
+  SState in(const timer_t &in)override;
+};
+
+class w_login : public BaseState {
+public:
+  w_login(const w_login_info_t &i) : info(i) {}
+  virtual ~w_login() {}
+
+private:
+  w_login_info_t info;
+
+  SState in(const heartbeat_t &in)override;
+  SState in(const rq_key_t &in)override;
+  SState in(const rq_login_t &in)override;
+  SState in(const rq_logout_t &in)override;
+  SState in(const timer_t &in)override;
+};
+
+class login : public BaseState {
+public:
+  login(const login_info_t &i) : info(i) {}
+  virtual ~login() {}
+
+private:
+  login_info_t info;
+
+  SState in(const heartbeat_t &in)override;
+  SState in(const rq_key_t &in)override;
+  SState in(const rq_login_t &in)override;
+  SState in(const rq_logout_t &in)override;
+  SState in(const timer_t &in)override;
+};
+
+class logout : public BaseState {
+public:
+  logout(const logout_info_t &i) : info(i) {}
+  virtual ~logout() {}
+
+private:
+  logout_info_t info;
+
+  SState in(const heartbeat_t &in)override;
+  SState in(const rq_key_t &in)override;
+  SState in(const rq_login_t &in)override;
+  SState in(const rq_logout_t &in)override;
+  SState in(const timer_t &in)override;
+};
+
+Fsm::Fsm() {}
+Fsm::~Fsm() {}
+
+void Fsm::in(const heartbeat_t &in) { state->in(in); }
+void Fsm::in(const rq_key_t &in) { state->in(in); }
+void Fsm::in(const rq_login_t &in) { state->in(in); }
+void Fsm::in(const rq_logout_t &in) { state->in(in); }
+void Fsm::in(const timer_t &in) { state->in(in); }
+
+SState init::in(const rq_key_t &in) {
+  return std::make_shared<w_login>(w_login_info_t{});
 }
 
-void Fsm::delete_state_info(void) { this->w_login_info.reset(); }
-
-Fsm::Fsm() : state(State::init) {}
-
-void Fsm::in(const rq_key_t &in) {
-  switch (state) {
-  case State::init: {
-    delete_state_info();
-    state = State::w_login;
-    auto key = gen_key(in);
-    send_key(in, key);
-    w_login_info = std::make_unique<key_t>(key);
-    break;
-  }
-  case State::w_login: {
-    delete_state_info();
-    state = State::logout;
-    log_error(in);
-    break;
-  }
-  case State::login: {
-    delete_state_info();
-    state = State::logout;
-    log_error(in);
-    break;
-  }
-  case State::logout: {
-    log_error(in);
-    break;
-  }
-  }
+SState init::in(const rq_login_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
 }
 
-void Fsm::in(const rq_login_t &in) {
-  switch (state) {
-  case State::init: {
-    state = State::logout;
-    log_error(in);
-    break;
-  }
-  case State::w_login: {
-    if (valid(in, *this->w_login_info)) {
-      state = State::login;
-      send_login(in);
-    } else {
-      state = State::logout;
-      log_error(in);
-    }
-    break;
-  }
-  case State::login: {
-    state = State::logout;
-    log_error(in);
-    break;
-  }
-  case State::logout: {
-    state = State::logout;
-    log_error(in);
-    break;
-  }
-  }
+SState init::in(const rq_logout_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState init::in(const heartbeat_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState init::in(const timer_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState w_login::in(const rq_key_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState w_login::in(const rq_login_t &in) {
+  return std::make_shared<login>(login_info_t{});
+}
+
+SState w_login::in(const rq_login_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState w_login::in(const rq_logout_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState w_login::in(const heartbeat_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState w_login::in(const timer_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState login::in(const rq_key_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState login::in(const rq_login_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState login::in(const rq_logout_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState login::in(const heartbeat_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState login::in(const timer_t &in) {
+  return std::make_shared<login>(login_info_t{});
+}
+
+SState login::in(const timer_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState logout::in(const rq_key_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState logout::in(const rq_login_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState logout::in(const rq_logout_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState logout::in(const heartbeat_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
+}
+
+SState logout::in(const timer_t &in) {
+  return std::make_shared<logout>(logout_info_t{});
 }
 
 } // namespace login

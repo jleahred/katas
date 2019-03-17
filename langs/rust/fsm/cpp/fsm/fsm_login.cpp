@@ -3,24 +3,9 @@
 
 namespace login {
 
-//  generators  --------------------------------------------
-key_t Fsm::gen_key(const rq_key_t & /*in*/) { return key_t{"key"}; }
+w_login_info_t in2w_login(const rq_key_t &i) { return w_login_info_t{}; }
+logout_info_t in2logout(const rq_key_t &i) { return logout_info_t{}; }
 
-//  actions ------------------------------------------------
-void Fsm::log_error(const rq_key_t &in) {
-  std::cout << "error received rq_key  on state " << this->state << std::endl;
-}
-void Fsm::log_error(const rq_login_t &in) {
-  std::cout << "error received rq_login  on state " << this->state << std::endl;
-}
-void Fsm::log_error(const rq_logout_t &in) {}
-void Fsm::log_error(const heartbeat_t &in) {}
-void Fsm::log_error(const timer_t &in) {}
-void Fsm::send_key(const rq_key_t &in, const key_t &g) {}
-void Fsm::send_login(const rq_login_t &in) {}
-void Fsm::send_logout(const rq_logout_t &in) {}
-
-//  guards  -------------------------------------------------
-bool Fsm::valid(const rq_login_t &in, const key_t &info) { return true; }
+logout_info_t in2logout(const rq_login_t &i) { return logout_info_t{}; }
 
 } // namespace login
