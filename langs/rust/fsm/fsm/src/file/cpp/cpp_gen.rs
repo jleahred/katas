@@ -20,20 +20,23 @@ pub(crate) fn generate_cpp_fsm_code_generated(
 
   let in_methods_forward_virtual = || {
     get_input_names(fsm).iter().fold("".to_string(), |r, i| {
-      format!("{}  virtual SState in(const {}_t& in) = 0;\n", r, i)
+      format!(
+        "{}  virtual SState in(const {}_t& in, Fsm& fsm) = 0;\n",
+        r, i
+      )
     })
   };
 
   let override_inputs = || {
     get_input_names(fsm).iter().fold("".to_string(), |r, i| {
-      format!("{}  SState in(const {}_t& in) override;\n", r, i)
+      format!("{}  SState in(const {}_t& in, Fsm& fsm) override;\n", r, i)
     })
   };
 
   let fsm_in = || {
     get_input_names(fsm).iter().fold("".to_string(), |r, i| {
       format!(
-        "{}void Fsm::in(const {}_t& in) {{ state ->in(in); }}\n",
+        "{}void Fsm::in(const {}_t& in) {{ state ->in(in, *this); }}\n",
         r, i
       )
     })
@@ -77,17 +80,20 @@ private:
           }))
         })
     };
-    let impl_input_trans = |sn: &str| {
-      get_input_names(fsm)
+    let impl_input_trans = |sn: &str, input: &str| {
+      transitions4input(sn, input)
         .iter()
-        .fold("".to_string(), |acc, iname| {
-          let trans_code = transitions4input(sn, iname)
-            .iter()
-            .fold("".to_string(), |acc, tr| {
-              fomat!((acc)r#"    return std::make_shared<_>(__info_t{}); "# (tr.input) r#"
+        .fold("    if(false) {;\n".to_string(), |acc, tr| {
+          if let Some(guard) = &tr.guard {
+            fomat!((acc)r#"    } else if("# (guard) r#"(in)) {
+        return std::make_shared<"# (tr.new_status) r#">(fsm.in2"# (tr.new_status) r#"(in));
 "#)
-            });
-          format!("{}{}", acc, trans_code)
+          } else {
+            fomat!((acc)r#"    } else {
+        return std::make_shared<"# (tr.new_status) r#">(fsm.in2"# (tr.new_status) r#"(in));
+    }              
+"#)
+          }
         })
     };
     let state_impl = |sn: &str| {
@@ -95,8 +101,8 @@ private:
         .iter()
         .fold("".to_string(), |r, input| {
           fomat!((r)r#"
-  SState "# (sn) r#"::in(const "# (input) r#"_t& in) {
-"# (impl_input_trans(sn)) r#"}
+  SState "# (sn) r#"::in(const "# (input) r#"_t& in, Fsm& fsm) {
+"# (impl_input_trans(sn, input)) r#"}
     "#)
         })
     };
@@ -127,7 +133,7 @@ namespace "# (stem_name) r#" {
 
 class BaseState {
 public:
-  BaseState() {}
+  BaseState()  {}
   ~BaseState() {}
 
 public:

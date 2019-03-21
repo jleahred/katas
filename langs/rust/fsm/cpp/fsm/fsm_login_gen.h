@@ -1,9 +1,9 @@
 
-//  generated automatically  2019-03-17 16:45:40
+//  generated automatically  2019-03-21 21:56:54
 //  do not modify it manually
 
-#ifndef FSM_FSM_DOOR_GENERATED_H
-#define FSM_FSM_DOOR_GENERATED_H
+#ifndef FSM_FSM_LOGIN_GENERATED_H
+#define FSM_FSM_LOGIN_GENERATED_H
 
 #include <iostream>
 #include <memory>
@@ -13,7 +13,7 @@ namespace login {
 //  ----------------------------------------------------
 //      M A N U A L
 
-//  declaration on fsm_door.h
+//  declaration on fsm_login.h
 //  forward_status_info
 struct init_info_t;
 struct w_login_info_t;
@@ -26,17 +26,6 @@ struct rq_key_t;
 struct rq_login_t;
 struct rq_logout_t;
 struct timer_t;
-
-//  implementation in fsm_door.cpp
-//  transactions changes
-logout_info_t in2logout(const heartbeat_t &i);
-logout_info_t in2logout(const rq_key_t &i);
-w_login_info_t in2w_login(const rq_key_t &i);
-login_info_t in2login(const rq_login_t &i);
-logout_info_t in2logout(const rq_login_t &i);
-logout_info_t in2logout(const rq_logout_t &i);
-login_info_t in2login(const timer_t &i);
-logout_info_t in2logout(const timer_t &i);
 
 //      M A N U A L
 //  ----------------------------------------------------
@@ -57,10 +46,27 @@ public:
   void in(const rq_logout_t &in);
   void in(const timer_t &in);
 
-protected:
+  //  ----------------------------------------------------
+  //      M A N U A L
+
+  //  implementation in fsm_login.cpp
+  //  transactions changes
+  logout_info_t in2logout(const heartbeat_t &i);
+  logout_info_t in2logout(const rq_key_t &i);
+  w_login_info_t in2w_login(const rq_key_t &i);
+  login_info_t in2login(const rq_login_t &i);
+  logout_info_t in2logout(const rq_login_t &i);
+  logout_info_t in2logout(const rq_logout_t &i);
+  login_info_t in2login(const timer_t &i);
+  logout_info_t in2logout(const timer_t &i);
+
+  //      M A N U A L
+  //  ----------------------------------------------------
+
+private:
   SState state;
 };
 
 } // namespace login
 
-#endif // FSM_DOOR_GENERATED_H
+#endif // FSM_LOGIN_GENERATED_H

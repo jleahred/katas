@@ -35,7 +35,7 @@ pub(crate) fn generate_header_fsm_code_generated(
         get_transchange_in_to(fsm)
             .iter()
             .fold("".to_string(), |r, i| {
-                format!("{0}{1}_info_t in2{1}(const {2}_t& i);\n", r, i.1, i.0)
+                format!("{0}{1}_info_t in2{1}(const {2}_t& i);\n  ", r, i.1, i.0)
             })
     };
 
@@ -67,10 +67,6 @@ namespace login {
 //  in
 "# (forward_struct_in()) r#"
 
-//  implementation in fsm_"# (stem_name) r#".cpp
-//  transactions changes
-"# (transactions_changes_forward_decl()) r#"
-
 //      M A N U A L
 //  ----------------------------------------------------
 
@@ -86,7 +82,18 @@ public:
 
 "# (in_methods_forward_decl()) r#"
 
-protected:
+
+  //  ----------------------------------------------------
+  //      M A N U A L
+  
+  //  implementation in fsm_"# (stem_name) r#".cpp
+  //  transactions changes
+  "# (transactions_changes_forward_decl()) r#"
+  
+  //      M A N U A L
+  //  ----------------------------------------------------
+
+private:
   SState state;
 };
 
