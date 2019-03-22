@@ -35,8 +35,29 @@ pub(crate) fn generate_header_fsm_code_generated(
         get_transchange_in_to(fsm)
             .iter()
             .fold("".to_string(), |r, i| {
-                format!("{0}{1}_info_t in2{1}(const {2}_t& i);\n  ", r, i.1, i.0)
+                format!("{0}  {1}_info_t in2{1}(const {2}_t& i);\n", r, i.1, i.0)
             })
+    };
+
+    let guards2implement = || {
+        let st_gen_guards = |st: &crate::parser::Status| {
+            st.transitions.iter().fold("".to_string(), |acc, t| {
+                if let Some(g) = &t.guard {
+                    format!(
+                        "{}  bool {}(const {}_t& in, const  {}_info_t& st_info);\n",
+                        acc,
+                        g.to_string(),
+                        t.input,
+                        st.name
+                    )
+                } else {
+                    acc
+                }
+            })
+        };
+        fsm.iter().fold("".to_string(), |acc, st| {
+            format!("{}{}", acc, st_gen_guards(st))
+        })
     };
 
     let in_methods_forward_decl = || {
@@ -87,9 +108,13 @@ public:
   //      M A N U A L
   
   //  implementation in fsm_"# (stem_name) r#".cpp
-  //  transactions changes
+
+  //  status change functions
   "# (transactions_changes_forward_decl()) r#"
-  
+
+  //  guards to implement
+  "# (guards2implement()) r#"
+
   //      M A N U A L
   //  ----------------------------------------------------
 

@@ -7,28 +7,92 @@ extern crate structopt;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+macro_rules! enum_str {
+    (enum $name:ident {
+        $($variant:ident = $val:expr),*,
+    }) => {
+        enum $name {
+            $($variant),*
+        }
+
+
+        impl std::str::FromStr for Langs {
+            type Err = String;
+            fn from_str(s: &str) -> Result<Langs, String> {
+                match s {
+                    $($val => Ok($name::$variant)),*,
+                    _ => Err(format!("Language not supported (yet) -> {}\nsupported languages (at the moment): {}", s, Langs::get_options_as_string())),
+                }
+            }
+        }
+
+
+        impl std::fmt::Debug for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                match self {
+                    $($name::$variant => write!(f, "{}", $val)),*
+                }
+            }
+        }
+
+        impl $name {
+            fn get_options_as_string() -> String {
+                let mut s = String::new();
+                $(s = format!("{}  {} ", s, $val);),*
+                s
+            }
+        }
+
+    };
+}
+
+enum_str! {
+    enum Langs {
+        Cpp = "cpp",
+    }
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "fsm",
     about = r#"
     Generate code from a simple fsm file
-    At the moment, it will generate c++ code
+    To check the supported languages  --show_langs
     "#
 )]
 struct Opt {
+    /// Set language to generate code (at the moment only cpp is supported)
+    #[structopt(short = "l", long = "lang", default_value = "cpp")]
+    lang: Langs,
+
     /// Generate all files regardless of change date
     #[structopt(short = "f", long = "force")]
-    debug: bool,
+    force: bool,
+
+    ///  Show supported languages generators
+    #[structopt(short = "s", long = "show_langs")]
+    show_langs: bool,
 
     /// List of fsm files
     #[structopt(parse(from_os_str))]
     fsm_files: Vec<PathBuf>,
+
+    /// Give me some information about generating cpp files
+    #[structopt(long = "help-cpp")]
+    help_cpp: bool,
 }
 
 fn main() {
     let opt = Opt::from_args();
 
-    if opt.fsm_files.is_empty() {
+    if opt.show_langs {
+        println!(
+            "\nSupported languages: {}\n\n",
+            Langs::get_options_as_string()
+        );
+    } else if opt.help_cpp {
+        print_cpp_help_message();
+    } else if opt.fsm_files.is_empty() {
         eprintln!("No files provied!!! If doubt,  --help");
     } else {
         for f in opt.fsm_files {
@@ -38,6 +102,26 @@ fn main() {
             }
         }
     }
+}
+
+fn print_cpp_help_message() {
+    println!(r#"
+Being "name.fsm" the name of the file with the definition of the machine, two files will be generated.
+
+    fsm_name_gen.cpp
+    fsm_name_gen.h
+
+In them the declarations and definitions of the state machine will be generated.
+
+In fsm_name_gen.h it is indicated with comments, the methods to overwrite manually and the file where it is convenient to do it.
+
+The manual implementation of the methods and declarations of the types, it is recommended to do it in the following files.
+
+    fsm_name_gen.cpp
+    fsm_name_gen.h
+
+If they do not exist, they will be created with an empty implementation.
+"#);
 }
 
 // fn main() {

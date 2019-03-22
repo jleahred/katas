@@ -85,7 +85,7 @@ private:
         .iter()
         .fold("    if(false) {;\n".to_string(), |acc, tr| {
           if let Some(guard) = &tr.guard {
-            fomat!((acc)r#"    } else if("# (guard) r#"(in)) {
+            fomat!((acc)r#"    } else if(fsm."# (guard) r#"(in, info)) {
         return std::make_shared<"# (tr.new_status) r#">(fsm.in2"# (tr.new_status) r#"(in));
 "#)
           } else {

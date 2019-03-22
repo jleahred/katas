@@ -1,5 +1,5 @@
 
-//  generated automatically  2019-03-21 21:56:54
+//  generated automatically  2019-03-22 08:43:22
 //  do not modify it manually
 
 #ifndef FSM_FSM_LOGIN_GENERATED_H
@@ -50,7 +50,8 @@ public:
   //      M A N U A L
 
   //  implementation in fsm_login.cpp
-  //  transactions changes
+
+  //  status change functions
   logout_info_t in2logout(const heartbeat_t &i);
   logout_info_t in2logout(const rq_key_t &i);
   w_login_info_t in2w_login(const rq_key_t &i);
@@ -59,6 +60,10 @@ public:
   logout_info_t in2logout(const rq_logout_t &i);
   login_info_t in2login(const timer_t &i);
   logout_info_t in2logout(const timer_t &i);
+
+  //  guards to implement
+  bool valid(const rq_login_t &in, const w_login_info_t &st_info);
+  bool on_time(const timer_t &in, const login_info_t &st_info);
 
   //      M A N U A L
   //  ----------------------------------------------------
