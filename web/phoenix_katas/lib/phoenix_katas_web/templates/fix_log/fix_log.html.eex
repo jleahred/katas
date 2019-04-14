@@ -5,32 +5,36 @@
             type="date" 
             name="date"
             title="Insert the day"
-            placeholder="Date"/>
+            placeholder="Date"
+            value="<%= @date %>"
+            />
 
-    <select class="browser-default custom-select"
+    <select class="form-control"
                 name="dir">
-        <option selected>Both</option>
-        <option value="in">In</option>
-        <option value="out">Out</option>
+        <option value="both" <%=if @dir == "both" do "selected" else "" end %> >Both</option>
+        <option value="in"   <%=if @dir == "in"   do "selected" else "" end %>> In</option>
+        <option value="out"  <%=if @dir == "out"  do "selected" else "" end %> >Out</option>
     </select>
 
-    <select class="browser-default custom-select"
+    <select class="form-control"
         name="connection">
-        <option selected>Any</option>
-        <option value="bloomb">bloomb</option>
-        <option value="bbva">bbva</option>
+        <option value="any"     <%=if @connection == "any" do "selected" else "" end %> >Any</option>
+        <option value="bloomb"  <%=if @connection == "bloomb"   do "selected" else "" end %>> Bloomb </option>
+        <option value="bbva"    <%=if @connection == "bbva"  do "selected" else "" end %> > BBVA </option>
     </select>
 
-    <select class="browser-default custom-select"
+    <select class="form-control"
         name="msg_type">
-        <option selected>Any</option>
-        <option value="rq-nw">rq-nw</option>
-        <option value="cf-nw">cf-nw</option>
+        <option value="any"     <%=if @msg_type == "any" do "selected" else "" end %> >Any</option>
+        <option value="bloomb"  <%=if @msg_type == "bloomb"   do "selected" else "" end %>> Bloomb </option>
+        <option value="bbva"    <%=if @msg_type == "bbva"  do "selected" else "" end %> > BBVA </option>
     </select>
 
     <input id="content" class="form-control input-group-lg reg_name" type="text" name="any"
             title="Find in any field"
-            placeholder="Find in any field"/>
+            placeholder="Find in any field"
+            value="<%= @any %>"
+            />
 
     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>
 
