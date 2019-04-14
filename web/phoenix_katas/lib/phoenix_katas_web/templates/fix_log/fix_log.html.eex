@@ -1,0 +1,37 @@
+<form name="registration_form" id='registration_form' class="form-inline">
+
+    <!-- <label>date:</label> -->
+    <input class="form-control input-group-lg reg_name" 
+            type="date" 
+            name="date"
+            title="Insert the day"
+            placeholder="Date"/>
+
+    <select class="browser-default custom-select"
+                name="dir">
+        <option selected>Both</option>
+        <option value="in">In</option>
+        <option value="out">Out</option>
+    </select>
+
+    <select class="browser-default custom-select"
+        name="connection">
+        <option selected>Any</option>
+        <option value="bloomb">bloomb</option>
+        <option value="bbva">bbva</option>
+    </select>
+
+    <select class="browser-default custom-select"
+        name="msg_type">
+        <option selected>Any</option>
+        <option value="rq-nw">rq-nw</option>
+        <option value="cf-nw">cf-nw</option>
+    </select>
+
+    <input id="content" class="form-control input-group-lg reg_name" type="text" name="any"
+            title="Find in any field"
+            placeholder="Find in any field"/>
+
+    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>
+
+ </form>
