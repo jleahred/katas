@@ -10,7 +10,7 @@
 
 <table class="table table-hover">
   <tbody>
-      <%= for {route, description} <- PhoenixKatas.IndexContent.search(@txt) do %>
+      <%= for {route, description} <- search(@txt) do %>
         <tr  class='clickable-row' data-href='<%= route %>'>
           <th scope="row"> <%= route %></th>
           <td> <%= description %></td>

@@ -18,6 +18,9 @@ defmodule PhoenixKatasWeb.Router do
 
     get "/", MainPageController, :index
     # get "/search", SearchController, :search, as: :search
+    get "/factorial", FactorialController, :factorial
+    get "/fix/tags", FixTagsController, :fix_tags
+    get "/fix/msg_types", FixMsgTypesController, :fix_msg_types
   end
 
   # Other scopes may use custom stacks.

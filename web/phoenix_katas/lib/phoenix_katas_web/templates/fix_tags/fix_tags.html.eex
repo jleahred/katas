@@ -1,0 +1,14 @@
+<div>
+
+<table class="table">
+  <tbody>
+      <%= for atag <- Fix.Static.Tags.list_of_tags do %>
+        <tr>
+          <th scope="row"> <%= Fix.Static.Tags.get_num(atag) %></th>
+          <td> <%= atag %></td>
+        </tr>
+      <% end %>
+  </tbody>
+</table>
+
+</div>

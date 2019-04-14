@@ -1,0 +1,14 @@
+<div>
+
+<table class="table">
+  <tbody>
+      <%= for code <- Fix.Static.MsgTypes.list_all_codes() do %>
+        <tr>
+          <th scope="row"> <%= code %></th>
+          <td> <%= Fix.Static.MsgTypes.get_name(code) %></td>
+        </tr>
+      <% end %>
+  </tbody>
+</table>
+
+</div>
