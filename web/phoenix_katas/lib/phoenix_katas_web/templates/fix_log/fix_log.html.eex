@@ -72,8 +72,9 @@
           <th> timeinforce</th>
         </tr>
       <%= for r <- @records do %>
+        <!-- <tr class='clickable-row' data-href='99'> -->
         <tr>
-          <td> <%= r.time %></td>
+          <td><a href="/fix/log/msg/0">  <%= r.time %> </a></td>
           <td> <%= r.connection %></td>
           <td> <%= r.dir %></td>
           <td> <%= r.msgtype %></td>

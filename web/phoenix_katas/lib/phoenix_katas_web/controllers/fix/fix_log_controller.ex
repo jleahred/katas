@@ -10,7 +10,16 @@ defmodule PhoenixKatasWeb.FixLogController do
   def fix_log(conn, par) do
     form_params = Map.merge(default_par(), par)
 
-    render(conn, "fix_log.html", form: form_params, records: records(form_params))
+    render(conn, "fix_log.html",
+      form: form_params,
+      # records_db(form_params)
+      # records_fake(form_params)
+      records:
+        records_fake(form_params)
+        |> Stream.map(&normalize_record(&1))
+        |> Enum.into([])
+    )
+
     # text(conn, "#{inspect(records(form_params))}")
 
     # text(conn, "#{inspect(Map.merge(def_par(), par2atomkey(par)))}")
@@ -42,56 +51,57 @@ defmodule PhoenixKatasWeb.FixLogController do
     }
   end
 
-  defp records(par) do
-    # fake testing
-    # [
-    #   %PhoenixKatas.FixLogSch{
-    #     account: "",
-    #     clordid: "",
-    #     connection: "dest_bimi",
-    #     exectype: "",
-    #     fix:
-    #       "8=FIX.4.2^9=61^35=A^34=1^49=IMV^52=20170717-05:45:05^56=MKTHUBP^98=0^108=20^10=063^\n",
-    #     id: 26_919_976,
-    #     msgtype: "A",
-    #     origclordid: "",
-    #     securityid: "",
-    #     side: 0,
-    #     symbol: "",
-    #     time: "2017-07-17 05:45:05.276"
-    #   },
-    #   %PhoenixKatas.FixLogSch{
-    #     account: "",
-    #     clordid: "",
-    #     connection: "dest_bimi",
-    #     exectype: "",
-    #     fix:
-    #       "8=FIX.4.2^9=65^35=A^34=1^49=MKTHUBP^52=20170717-05:45:05.285^56=IMV^98=0^108=20^10=016^\n",
-    #     id: 26_919_977,
-    #     msgtype: "A",
-    #     origclordid: "",
-    #     securityid: "",
-    #     side: 0,
-    #     symbol: "",
-    #     time: "2017-07-17 05:45:05.303"
-    #   },
-    #   %PhoenixKatas.FixLogSch{
-    #     account: "",
-    #     clordid: "",
-    #     connection: "conf_bankia",
-    #     exectype: "",
-    #     fix: "8=FIX.4.1^9=57^35=A^34=1^49=CAM^56=IMV^52=20170717-07:45:05^98=0^108=60^10=255^\n",
-    #     id: 26_919_986,
-    #     msgtype: "A",
-    #     origclordid: "",
-    #     securityid: "",
-    #     side: 0,
-    #     symbol: "",
-    #     time: "2017-07-17 05:45:05.611"
-    #   }
-    # ]
-    # par example %{"any" => "abc", "connection" => "bloomb", "date" => "2019-04-17", "dir" => "out", "msg_type" => "bbva"}
+  defp records_fake(par) do
+    [
+      %PhoenixKatas.FixLogSch{
+        account: "",
+        clordid: "",
+        connection: "dest_bimi",
+        exectype: "",
+        fix:
+          "8=FIX.4.2^9=61^35=A^34=1^49=IMV^52=20170717-05:45:05^56=MKTHUBP^98=0^108=20^10=063^\n",
+        id: 26_919_976,
+        msgtype: "A",
+        origclordid: "",
+        securityid: "",
+        side: 0,
+        symbol: "",
+        time: "2017-07-17 05:45:05.276"
+      },
+      %PhoenixKatas.FixLogSch{
+        account: "",
+        clordid: "",
+        connection: "dest_bimi",
+        exectype: "",
+        fix:
+          "8=FIX.4.2^9=65^35=A^34=1^49=MKTHUBP^52=20170717-05:45:05.285^56=IMV^98=0^108=20^10=016^\n",
+        id: 26_919_977,
+        msgtype: "A",
+        origclordid: "",
+        securityid: "",
+        side: 0,
+        symbol: "",
+        time: "2017-07-17 05:45:05.303"
+      },
+      %PhoenixKatas.FixLogSch{
+        account: "",
+        clordid: "",
+        connection: "conf_bankia",
+        exectype: "",
+        fix: "8=FIX.4.1^9=57^35=A^34=1^49=CAM^56=IMV^52=20170717-07:45:05^98=0^108=60^10=255^\n",
+        id: 26_919_986,
+        msgtype: "A",
+        origclordid: "",
+        securityid: "",
+        side: 0,
+        symbol: "",
+        time: "2017-07-17 05:45:05.611"
+      }
+    ]
+  end
 
+  # par example %{"any" => "abc", "connection" => "bloomb", "date" => "2019-04-17", "dir" => "out", "msg_type" => "bbva"}
+  defp records_db(par) do
     any =
       if par["any"] == "" do
         "%"
@@ -113,14 +123,6 @@ defmodule PhoenixKatasWeb.FixLogController do
         "%" <> par["connection"]
       end
 
-    # dir =
-    #   case par["dir"] do
-    #     "" -> [1, 2]
-    #     "both" -> [1, 2]
-    #     "in" -> [1]
-    #     "out" -> [2]
-    #   end
-
     query =
       from(fl in FixLogSch,
         # hints: ["USE INDEX (fix_log_7f12bbd9)"], # it doesn't work with our mariadb
@@ -136,19 +138,20 @@ defmodule PhoenixKatasWeb.FixLogController do
         select: fl
       )
 
-    Repo.all(query)
-    |> Stream.map(&Map.update!(&1, :fix, fn el -> String.replace(el, <<1>>, "^") end))
-    |> Stream.map(&Map.update!(&1, :msgtype, fn mt -> Fix.Static.MsgTypes.get_name(mt) end))
-    |> Stream.map(&Map.update!(&1, :time, fn t -> String.slice(t, 11..50) end))
-    |> Stream.map(
-      &Map.update!(&1, :dir, fn d ->
-        case d do
-          _ -> "?"
-        end
-      end)
-    )
-    |> Enum.into([])
+    # Repo.all(query)
+    # |> Stream.map(&Map.update!(&1, :fix, fn el -> String.replace(el, <<1>>, "^") end))
+    # |> Stream.map(&Map.update!(&1, :msgtype, fn mt -> Fix.Static.MsgTypes.get_name(mt) end))
+    # |> Stream.map(&Map.update!(&1, :time, fn t -> String.slice(t, 11..50) end))
 
-    # msgtype
+    Repo.all(query)
+    # |> Stream.map(&normalize_record(&1))
+    # |> Enum.into([])
+  end
+
+  def normalize_record(fix_msg) do
+    fix_msg
+    |> Map.update!(:fix, &String.replace(&1, <<01>>, "|"))
+    |> Map.update!(:msgtype, &Fix.Static.MsgTypes.get_name(&1))
+    |> Map.update!(:time, &String.slice(&1, 11..50))
   end
 end

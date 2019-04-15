@@ -2,10 +2,10 @@
 
 <table class="table">
   <tbody>
-      <%= for atag <- Fix.Static.Tags.list_of_tags do %>
+      <%= for code <- Fix.Static.Tags.list_all_codes() do %>
         <tr>
-          <th scope="row"> <%= Fix.Static.Tags.get_num(atag) %></th>
-          <td> <%= atag %></td>
+          <th scope="row"> <%= code %></th>
+          <td> <%= Fix.Static.Tags.get_name(code) %></td>
         </tr>
       <% end %>
   </tbody>
