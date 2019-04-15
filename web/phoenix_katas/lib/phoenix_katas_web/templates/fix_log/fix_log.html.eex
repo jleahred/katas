@@ -6,34 +6,34 @@
             name="date"
             title="Insert the day"
             placeholder="Date"
-            value="<%= @date %>"
+            value="<%= @form["date"] %>"
             />
 
     <select class="form-control"
                 name="dir">
-        <option value="both" <%=if @dir == "both" do "selected" else "" end %> >Both</option>
-        <option value="in"   <%=if @dir == "in"   do "selected" else "" end %>> In</option>
-        <option value="out"  <%=if @dir == "out"  do "selected" else "" end %> >Out</option>
+        <option value="both" <%=if @form["dir"] == "both" do "selected" else "" end %> >Both</option>
+        <option value="in"   <%=if @form["dir"] == "in"   do "selected" else "" end %>> In</option>
+        <option value="out"  <%=if @form["dir"] == "out"  do "selected" else "" end %> >Out</option>
     </select>
 
     <select class="form-control"
         name="connection">
-        <option value="any"     <%=if @connection == "any" do "selected" else "" end %> >Any</option>
-        <option value="bloomb"  <%=if @connection == "bloomb"   do "selected" else "" end %>> Bloomb </option>
-        <option value="bbva"    <%=if @connection == "bbva"  do "selected" else "" end %> > BBVA </option>
+        <option value="any"     <%=if @form["connection"] == "any" do "selected" else "" end %> >Any</option>
+        <option value="bloomb"  <%=if @form["connection"] == "bloomb"   do "selected" else "" end %>> Bloomb </option>
+        <option value="bbva"    <%=if @form["connection"] == "bbva"  do "selected" else "" end %> > BBVA </option>
     </select>
 
     <select class="form-control"
         name="msg_type">
-        <option value="any"     <%=if @msg_type == "any" do "selected" else "" end %> >Any</option>
-        <option value="bloomb"  <%=if @msg_type == "bloomb"   do "selected" else "" end %>> Bloomb </option>
-        <option value="bbva"    <%=if @msg_type == "bbva"  do "selected" else "" end %> > BBVA </option>
+        <option value="any"     <%=if @form["msg_type"] == "any" do "selected" else "" end %> >Any</option>
+        <option value="bloomb"  <%=if @form["msg_type"] == "bloomb"   do "selected" else "" end %>> Bloomb </option>
+        <option value="bbva"    <%=if @form["msg_type"] == "bbva"  do "selected" else "" end %> > BBVA </option>
     </select>
 
     <input id="content" class="form-control input-group-lg reg_name" type="text" name="any"
             title="Find in any field"
             placeholder="Find in any field"
-            value="<%= @any %>"
+            value="<%= @form["any"] %>"
             />
 
     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>

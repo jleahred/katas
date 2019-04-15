@@ -5,7 +5,7 @@ defmodule PhoenixKatasWeb.FixLogController do
   # %{"any" => "aa", "connection" => "Any", "date" => "2019-04-14", "dir" => "Both", "msg_type" => "Any"}
   @spec fix_log(Plug.Conn.t(), atom() | binary() | keyword() | map()) :: Plug.Conn.t()
   def fix_log(conn, par) do
-    render(conn, "fix_log.html", Map.merge(def_par(), par2atomkey(par)))
+    render(conn, "fix_log.html", form: Map.merge(def_par(), par))
     # text(conn, "#{inspect(Map.merge(def_par(), par2atomkey(par)))}")
     # text(conn, "#{inspect(par2atomkey(par))}")
     # text(conn, "#{inspect(def_par())}")
@@ -27,25 +27,25 @@ defmodule PhoenixKatasWeb.FixLogController do
 
   defp def_par() do
     %{
-      any: "",
-      connection: "any",
-      date: today_string(),
-      dir: "both",
-      msg_type: "any"
+      "any" => "",
+      "connection" => "any",
+      "date" => today_string(),
+      "dir" => "both",
+      "msg_type" => "any"
     }
   end
 
-  defp par2atomkey(smap) do
-    sdefpar =
-      def_par()
-      |> Enum.map(fn {k, v} ->
-        {Atom.to_string(k), v}
-      end)
-      |> Enum.into(%{})
+  # defp par2atomkey(smap) do
+  #   sdefpar =
+  #     def_par()
+  #     |> Enum.map(fn {k, v} ->
+  #       {Atom.to_string(k), v}
+  #     end)
+  #     |> Enum.into(%{})
 
-    smap
-    |> Enum.filter(&Map.has_key?(sdefpar, elem(&1, 0)))
-    |> Enum.map(fn {k, v} -> {String.to_atom(k), v} end)
-    |> Enum.into(%{})
-  end
+  #   smap
+  #   |> Enum.filter(&Map.has_key?(sdefpar, elem(&1, 0)))
+  #   |> Enum.map(fn {k, v} -> {String.to_atom(k), v} end)
+  #   |> Enum.into(%{})
+  # end
 end
