@@ -1,4 +1,7 @@
+<div>
 <form name="registration_form" id='registration_form' class="form-inline">
+
+    <!--  par example %{"any" => "abc", "connection" => "bloomb", "date" => "2019-04-17", "dir" => "out", "msg_type" => "bbva"} -->
 
     <!-- <label>date:</label> -->
     <input class="form-control input-group-lg reg_name" 
@@ -16,18 +19,23 @@
         <option value="out"  <%=if @form["dir"] == "out"  do "selected" else "" end %> >Out</option>
     </select>
 
-    <select class="form-control"
+    <select class="selectpicker" data-live-search="true" 
         name="connection">
-        <option value="any"     <%=if @form["connection"] == "any" do "selected" else "" end %> >Any</option>
-        <option value="bloomb"  <%=if @form["connection"] == "bloomb"   do "selected" else "" end %>> Bloomb </option>
-        <option value="bbva"    <%=if @form["connection"] == "bbva"  do "selected" else "" end %> > BBVA </option>
+
+        <option value="any"     <%=if @form["connection"] == "any" do "selected" else "" end %> > Any </option>
+        <%= for c <- Fix.Static.Clients.all() do %>
+            <option value="<%= c %>"     <%=if @form["connection"] == c do "selected" else "" end %> > <%= c %> </option>
+        <% end %>
+
     </select>
 
-    <select class="form-control"
+    <select class="selectpicker" data-live-search="true"  
         name="msg_type">
-        <option value="any"     <%=if @form["msg_type"] == "any" do "selected" else "" end %> >Any</option>
-        <option value="bloomb"  <%=if @form["msg_type"] == "bloomb"   do "selected" else "" end %>> Bloomb </option>
-        <option value="bbva"    <%=if @form["msg_type"] == "bbva"  do "selected" else "" end %> > BBVA </option>
+
+        <option value="any"     <%=if @form["msg_type"] == "any" do "selected" else "" end %> > Any </option>
+        <%= for c <- Fix.Static.MsgTypes.list_all_codes do %>
+            <option value="<%= c %>"     <%=if @form["msg_type"] == c do "selected" else "" end %> > <%= Fix.Static.MsgTypes.get_name(c) %> </option>
+        <% end %>
     </select>
 
     <input id="content" class="form-control input-group-lg reg_name" type="text" name="any"
@@ -39,3 +47,49 @@
     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>
 
  </form>
+</div>
+
+
+ <!-- records  -->
+
+<div>
+ <table class="table table-sm table-hover table-striped">
+  <tbody>
+        <tr>
+          <th> time </th>
+          <th> connection</th>
+          <th> dir</th>
+          <th> msgtype</th>
+          <th> exectype</th>
+          <th> clordid</th>
+          <th> origclordid</th>
+          <th> securityid</th>
+          <th> symbol</th>
+          <th> side</th>
+          <th> account</th>
+          <th> price</th>
+          <th> quantiy</th>
+          <th> timeinforce</th>
+        </tr>
+      <%= for r <- @records do %>
+        <tr>
+          <td> <%= r.time %></td>
+          <td> <%= r.connection %></td>
+          <td> <%= r.dir %></td>
+          <td> <%= r.msgtype %></td>
+          <td> <%= r.exectype %></td>
+          <td> <%= r.clordid %></td>
+          <td> <%= r.origclordid %></td>
+          <td> <%= r.securityid %></td>
+          <td> <%= r.symbol %></td>
+          <td> <%= r.side %></td>
+          <td> <%= r.account %></td>
+          <td> <%= r.price %></td>
+          <td> <%= r.quantity %></td>
+          <td> <%= r.timeinforce %></td>
+        </tr>
+      <% end %>
+    <tr>
+  </tbody>
+</table>
+</div>

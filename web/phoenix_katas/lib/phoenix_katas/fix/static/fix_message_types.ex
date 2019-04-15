@@ -22,7 +22,17 @@ defmodule Fix.Static.MsgTypes do
     end
   end
 
-  def get_name(_unknown) do
-    "unknown"
+  def get_name(unknown) do
+    "unknown message type name: #{unknown}"
+  end
+
+  for {code, name} <- @code_names do
+    def get_code(unquote(name)) do
+      unquote(code)
+    end
+  end
+
+  def get_code(unknown) do
+    "unknown message type code: #{unknown}"
   end
 end
