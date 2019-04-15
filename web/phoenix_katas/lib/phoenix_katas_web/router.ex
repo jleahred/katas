@@ -22,6 +22,7 @@ defmodule PhoenixKatasWeb.Router do
     get "/fix/tags", FixTagsController, :fix_tags
     get "/fix/msg_types", FixMsgTypesController, :fix_msg_types
     get "/fix/log", FixLogController, :fix_log
+    get "/fix/log/msg/:idmsg", FixLogMsgController, :show
   end
 
   # Other scopes may use custom stacks.

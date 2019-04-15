@@ -1,73 +1,23 @@
 defmodule Fix.Static.Tags do
-  @moduledoc """
-  Functions to work and convert tags atom, int, string
-  * atom -> int
-  * atom -> string
-  * int -> atom
-  """
-
   @external_resource Path.join(__DIR__, "tags.txt")
-  # @tag_file Path.join(__DIR__, "tags.txt")
-  @tag_atom File.stream!(@external_resource)
-            |> Stream.map(fn line -> List.to_tuple(String.split(line)) end)
-            |> Stream.map(fn {stag, satom} ->
-              {elem(Integer.parse(stag), 0), String.to_atom("#{satom}"), satom}
-            end)
+  @code_names File.stream!(@external_resource)
+              |> Stream.map(fn line -> List.to_tuple(String.split(line)) end)
 
-  @int_tags @tag_atom |> Enum.reverse() |> Enum.reduce([], fn {_i, a, _s}, acc -> [a | acc] end)
+  @all_codes @code_names
+             |> Enum.reverse()
+             |> Enum.reduce([], fn {c, _n}, acc -> [c | acc] end)
 
-  @doc """
-  Get a list with all tags
-  """
-  def list_of_tags() do
-    @int_tags
+  def list_all_codes() do
+    @all_codes
   end
 
-  for {tag_int, atom, _} <- @tag_atom do
-    def get_atom(unquote(tag_int)) do
-      unquote(atom)
+  for {code, name} <- @code_names do
+    def get_name(unquote(code)) do
+      unquote(name)
     end
   end
 
-  @doc """
-  Convert from int to atom
-      iex> FTags.get_atom(8)
-      :BeginString
-  If tag is not known, it will return the received integer
-  """
-  def get_atom(unknown) do
-    unknown
-  end
-
-  for {tag_int, atom, tag_name} <- @tag_atom do
-    def get_name(unquote(atom)) do
-      unquote("#{tag_name}(#{tag_int})")
-    end
-  end
-
-  @doc """
-  Convert from atom to string
-      iex> FTags.get_name(:BeginString)
-      "BeginString(8)"
-  If atom is not know, it will return  atom->string
-  """
-  def get_name(unknown) do
-    "#{unknown}"
-  end
-
-  for {tag_int, atom, _} <- @tag_atom do
-    def get_num(unquote(atom)) do
-      unquote(tag_int)
-    end
-  end
-
-  @doc """
-  Convert from atom to int
-      iex> FTags.get_num(:BeginString)
-      8
-  If atom is not known, it will return 0
-  """
-  def get_num(_unknown) do
-    0
+  def get_name(_unknown) do
+    "unknown"
   end
 end

@@ -6,7 +6,8 @@ defmodule PhoenixKatas.IndexContent do
     {"/factorial?num=123", "calculate a factorial"},
     {"/fix/tags", "show fix tags"},
     {"/fix/msg_types", "show fix message types"},
-    {"/fix/log", "filter and look for fix_log database"}
+    {"/fix/log", "filter and look for fix_log database"},
+    {"/fix/log/msg/0", "render a fix message by id (0) for testing"}
   ]
 
   @index_uc @index |> Enum.map(fn {i, d} -> {{i, d}, {String.upcase(i), String.upcase(d)}} end)

@@ -1,0 +1,15 @@
+<div>
+
+<table class="table">
+  <tbody>
+      <%= for {tag, tname, val} <- @fix_msg do %>
+        <tr>
+          <th scope="row"> <%= tag %></th>
+          <td> <%= tname %></td>
+          <td> <%= val %></td>
+        </tr>
+      <% end %>
+  </tbody>
+</table>
+
+</div>
