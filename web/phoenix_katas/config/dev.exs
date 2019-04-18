@@ -52,7 +52,8 @@ config :phoenix_katas, PhoenixKatasWeb.Endpoint,
       ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
       ~r{priv/gettext/.*(po)$},
       ~r{lib/phoenix_katas_web/views/.*(ex)$},
-      ~r{lib/phoenix_katas_web/templates/.*(eex)$}
+      ~r{lib/phoenix_katas_web/templates/.*(eex)$},
+      ~r{lib/phoenix_katas_web/live/.*(ex)$}
     ]
   ]
 

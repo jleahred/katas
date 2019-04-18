@@ -1,6 +1,8 @@
 defmodule PhoenixKatasWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :phoenix_katas
 
+  socket "/live", Phoenix.LiveView.Socket
+
   socket "/socket", PhoenixKatasWeb.UserSocket,
     websocket: true,
     longpoll: false

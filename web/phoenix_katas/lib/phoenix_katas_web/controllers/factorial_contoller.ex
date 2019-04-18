@@ -7,7 +7,9 @@ defmodule PhoenixKatasWeb.FactorialController do
   # end
   def factorial(conn, par) do
     {num, _} = Integer.parse(par["num"])
+
     render(conn, "factorial.html", num: num, fact: factorial(num))
+
     # text(conn, "#{inspect(par)}")
   end
 

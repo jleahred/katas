@@ -38,7 +38,7 @@
         <% end %>
     </select>
 
-    <input id="content" class="form-control input-group-lg reg_name" type="text" name="any"
+    <input id="content" class="form-control input-group-lg reg_name" type="search" name="any"
             title="Find in any field"
             placeholder="Find in any field"
             value="<%= @form["any"] %>"

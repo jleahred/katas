@@ -8,3 +8,5 @@ body {
     padding-top: 4.5rem;
 }
 
+
+@import "../../deps/phoenix_live_view/assets/css/live_view.css";

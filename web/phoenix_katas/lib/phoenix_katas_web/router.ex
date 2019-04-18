@@ -5,6 +5,7 @@ defmodule PhoenixKatasWeb.Router do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_flash
+    plug Phoenix.LiveView.Flash
     plug :protect_from_forgery
     plug :put_secure_browser_headers
   end
@@ -16,13 +17,17 @@ defmodule PhoenixKatasWeb.Router do
   scope "/", PhoenixKatasWeb do
     pipe_through :browser
 
-    get "/", MainPageController, :index
+    # get "/", MainPageController, :index
     # get "/search", SearchController, :search, as: :search
     get "/factorial", FactorialController, :factorial
     get "/fix/tags", FixTagsController, :fix_tags
     get "/fix/msg_types", FixMsgTypesController, :fix_msg_types
     get "/fix/log", FixLogController, :fix_log
     get "/fix/log/msg/:idmsg", FixLogMsgController, :show
+
+    live "/live/counter", CounterLive
+    live "/live/factorial", FactorialLive
+    live "/", MainPageLive
   end
 
   # Other scopes may use custom stacks.

@@ -15,7 +15,10 @@ config :phoenix_katas, PhoenixKatasWeb.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "a+Wla5Ir0t2jHwdXx15oeUElHQ0RwEbHaW48I0FZzmDlWrfTpKhneVF1wS+65yxZ",
   render_errors: [view: PhoenixKatasWeb.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: PhoenixKatas.PubSub, adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: PhoenixKatas.PubSub, adapter: Phoenix.PubSub.PG2],
+  live_view: [
+    signing_salt: "B18AW1EAWRrvwLG8V4CA9ggF/ginisoq"
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,
