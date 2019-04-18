@@ -6,6 +6,7 @@ defmodule PhoenixKatas.IndexContent do
     {"/factorial?num=123", "calculate a factorial"},
     {"/fix/tags", "show fix tags"},
     {"/fix/msg_types", "show fix message types"},
+    {"/live/fix/log", "LIVE filter and look for fix_log database"},
     {"/fix/log", "filter and look for fix_log database"},
     {"/fix/log/msg/0", "render a fix message by id (0) for testing"},
     {"/live/counter", "counter smallest live view example (no javascript)"},

@@ -17,6 +17,8 @@ defmodule PhoenixKatasWeb.Router do
   scope "/", PhoenixKatasWeb do
     pipe_through :browser
 
+    live "/", MainPageLive
+
     # get "/", MainPageController, :index
     # get "/search", SearchController, :search, as: :search
     get "/factorial", FactorialController, :factorial
@@ -27,7 +29,10 @@ defmodule PhoenixKatasWeb.Router do
 
     live "/live/counter", CounterLive
     live "/live/factorial", FactorialLive
-    live "/", MainPageLive
+
+    get "/live/fix/log", FixLogControllerLV, :show
+
+    # live "/live/fix/log", FixLogLive
   end
 
   # Other scopes may use custom stacks.
