@@ -40,13 +40,15 @@ defmodule PhoenixKatasWeb.FixLogLive do
       :noreply,
       socket
       |> update(:current_row, fn _ -> next_row end)
-      |> update(:fix_msg, fn _ -> fake_msg(next_row) |> parse_fix_msg end)
+      |> update(:fix_msg, fn _ ->
+        Enum.at(socket.assigns.records, next_row).fix |> parse_fix_msg
+      end)
     }
   end
 
   def render(assigns) do
     ~L"""
-    <%#div style="position:fixed;background:white;width:100%;"%>
+    <div style="position:fixed;background:white;width:100%;"%>
       <div>
       <%= render_form(assigns) %>
       </div>
@@ -54,13 +56,13 @@ defmodule PhoenixKatasWeb.FixLogLive do
       <div>
         <div class="row">
           <div class="col-lg-9">
-            <%#div phx-keydown="keydown"
+            <div phx-keydown="keydown"
               phx-target="window"
             %>
                 <%= render_table(assigns) %>
-            <%#/div%>
+            </div>
           </div>
-          <div class="col-lg-1">
+          <div class="col-lg-3">
               <%= render_msg(assigns) %>
           </div>
         </div>
@@ -192,22 +194,6 @@ defmodule PhoenixKatasWeb.FixLogLive do
       </tbody>
     </table>
     """
-  end
-
-  def fake_msg(row) do
-    case row do
-      0 ->
-        "8=FIX.4.4|9=126|35=A|49=theBroker.12345|56=CSERVER|34=1|52=20170117- 08:03:04|57=TRADE|50=any_string|98=0|108=30|141=Y|553=12345|554=passw0rd!|10=131|"
-
-      1 ->
-        "8=FIX.4.5|9=126|35=A|49=theBroker.12345|56=CSERVER|34=1|52=20170117- 08:03:04|57=TRADE|50=any_string|98=0|108=30|141=Y|553=12345|554=passw0rd!|10=131|"
-
-      2 ->
-        "8=FIX.4.6|9=126|35=A|49=theBroker.12345|56=CSERVER|34=1|52=20170117- 08:03:04|57=TRADE|50=any_string|98=0|108=30|141=Y|553=12345|554=passw0rd!|10=131|"
-
-      _ ->
-        "8=FIX.4.7|9=126|35=A|49=theBroker.12345|56=CSERVER|34=1|52=20170117- 08:03:04|57=TRADE|50=any_string|98=0|108=30|141=Y|553=12345|554=passw0rd!|10=131|"
-    end
   end
 
   def parse_fix_msg(fix_msg) do
