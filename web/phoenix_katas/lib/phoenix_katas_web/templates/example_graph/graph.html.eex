@@ -3,8 +3,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 </head>
 
-<canvas id="myChart"></canvas>
-<canvas id="myChart2"></canvas>
+
+  <div class="row">
+    <div class="col-sm">
+        <canvas id="myChart"></canvas>
+    </div>
+    <div class="col-sm">
+        <canvas id="myChart2"></canvas>
+    </div>
+  </div>
+
+
 
 <script>
 var ctx = document.getElementById('myChart').getContext('2d');
@@ -25,6 +34,7 @@ var chart = new Chart(ctx, {
 
     // Configuration options go here
     options: { 
+        legend: { display: false },
         elements: {
                 line: {
                     tension: 0
@@ -47,16 +57,16 @@ var scatterChart = new Chart(ctx, {
             pointRadius: 1,
             pointHoverRadius: 3,
             data: [
-                {x: new Date( Date.UTC(2012, 01, 1) ), y: 26 },
-                {x: new Date( Date.UTC(2012, 02, 1) ), y: 38  },
-                {x: new Date( Date.UTC(2012, 04, 1) ), y: 43 },
-                {x: new Date( Date.UTC(2012, 08, 1) ), y: 29},
-                {x: new Date( Date.UTC(2012, 09, 1) ), y: 41},
-                {x: new Date( Date.UTC(2012, 10, 1) ), y: 54},
-                {x: new Date( Date.UTC(2012, 11, 1) ), y: 66},
-                {x: new Date( Date.UTC(2012, 12, 1) ), y: 60},
-                {x: new Date( Date.UTC(2013, 02, 1) ), y: 53},
-                {x: new Date( Date.UTC(2013, 04, 1) ), y: 60}
+                {t: new Date( Date.UTC(2012, 01, 1) ), y: 26 },
+                {t: new Date( Date.UTC(2012, 02, 1) ), y: 38  },
+                {t: new Date( Date.UTC(2012, 04, 1) ), y: 43 },
+                {t: new Date( Date.UTC(2012, 08, 1) ), y: 29},
+                {t: new Date( Date.UTC(2012, 09, 1) ), y: 41},
+                {t: new Date( Date.UTC(2012, 10, 1) ), y: 54},
+                {t: new Date( Date.UTC(2012, 11, 1) ), y: 66},
+                {t: new Date( Date.UTC(2012, 12, 1) ), y: 60},
+                {t: new Date( Date.UTC(2013, 02, 1) ), y: 53},
+                {t: new Date( Date.UTC(2013, 04, 1) ), y: 60}
             ],
         }]
     },

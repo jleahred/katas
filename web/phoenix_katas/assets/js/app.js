@@ -11,7 +11,8 @@ import css from "../css/app.css"
 //
 import "phoenix_html"
 
-import "echarts"
+//import "echarts"
+//var echarts = require('echarts');
 
 // Import local files
 //
