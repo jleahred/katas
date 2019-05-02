@@ -14,7 +14,7 @@ defmodule PhoenixKatasWeb.FixLogControllerLV do
     LiveView.Controller.live_render(conn, PhoenixKatasWeb.FixLogLive,
       session: %{
         params: form_params,
-        records: records_db(form_params)
+        records: records_fake(form_params)
       }
     )
 

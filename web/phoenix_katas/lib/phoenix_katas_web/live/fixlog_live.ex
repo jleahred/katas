@@ -2,21 +2,14 @@ defmodule PhoenixKatasWeb.FixLogLive do
   use Phoenix.LiveView
   require Logger
 
-  defp get_fix_msg_first_record(records) do
-    first = Enum.at(records, 0)
-
-    case first do
-      nil -> []
-      f -> f.fix |> parse_fix_msg
-    end
-  end
-
   def mount(session, socket) do
     {:ok,
      assign(socket,
        form: session.params,
        records: session.records,
-       fix_msg: get_fix_msg_first_record(session.records),
+       fix_msg:
+         (session.records |> Enum.at(0, %{fix: ""})).fix
+         |> parse_fix_msg,
        current_row: 0
      )}
   end
