@@ -1,0 +1,398 @@
+AFA	Afghani
+DZD	Algerian Dinar
+ADP	Andorran Peseta
+ARS	Argentine Peso
+AMD	Armenian Dram
+AWG	Aruban Guilder
+AUD	Australian Dollar
+AZM	Azerbaijanian Manat
+BSD	Bahamian Dollar
+BHD	Bahraini Dinar
+THB	Baht
+PAB	Balboa
+BBD	Barbados Dollar
+BYB	Belarussian Ruble
+BEF	Belgian Franc
+BZD	Belize Dollar
+BMD	Bermudian Dollar
+VEB	Bolivar
+BOB	Boliviano
+BRL	Brazilian Real
+BND	Brunei Dollar
+BIF	Burundi Franc
+XOF	CFA Franc BCEAO+
+XAF	CFA Franc BEAC#
+XPF	CFP Franc
+CAD	Canadian Dollar
+CVE	Cape Verde Escudo
+KYD	Cayman Islands Dollar
+GHC	Cedi
+CLP	Chilean Peso
+COP	Colombian Peso
+KMF	Comoro Franc
+BAM	Convertible Marks
+NIO	Cordoba Oro
+CRC	Costa Rican Colon
+CUP	Cuban Peso
+CYP	Cyprus Pound
+CZK	Czech Koruna
+GMD	Dalasi
+DKK	Danish Krone
+MKD	Denar
+DEM	Deutsche Mark
+DJF	Djibouti Franc
+STD	Dobra
+DOP	Dominican Peso
+VND	Dong
+GRD	Drachma
+XCD	East Caribbean Dollar
+EGP	Egyptian Pound
+SVC	El Salvador Colon
+ETB	Ethiopian Birr
+EUR	Euro
+FKP	Falkland Islands Pound
+FJD	Fiji Dollar
+HUF	Forint
+CDF	Franc Congolais
+FRF	French Franc
+GIP	Gibraltar Pound
+HTG	Gourde
+PYG	Guarani
+GNF	Guinea Franc
+GWP	Guinea-Bissau Peso
+GYD	Guyana Dollar
+HKD	Hong Kong Dollar
+UAH	Hryvnia
+ISK	Iceland Krona
+INR	Indian Rupee
+IRR	Iranian Rial
+IQD	Iraqi Dinar
+IEP	Irish Pound
+ITL	Italian Lira
+JMD	Jamaican Dollar
+JOD	Jordanian Dinar
+KES	Kenyan Shilling
+PGK	Kina
+LAK	Kip
+EEK	Kroon
+HRK	Kuna
+KWD	Kuwaiti Dinar
+MWK	Kwacha
+ZMK	Kwacha
+AOR	Kwanza Reajustado
+MMK	Kyat
+GEL	Lari
+LVL	Latvian Lats
+LBP	Lebanese Pound
+ALL	Lek
+HNL	Lempira
+SLL	Leone
+ROL	Leu
+BGL	Lev
+LRD	Liberian Dollar
+LYD	Libyan Dinar
+SZL	Lilangeni
+LTL	Lithuanian Litas
+LSL	Loti
+LUF	Luxembourg Franc
+MGF	Malagasy Franc
+MYR	Malaysian Ringgit
+MTL	Maltese Lira
+TMM	Manat
+FIM	Markka
+MUR	Mauritius Rupee
+MZM	Metical
+MXN	Mexican Peso
+MXV	Mexican Unidad de Inversion (UDI)
+MDL	Moldovan Leu
+MAD	Moroccan Dirham
+BOV	Mvdol
+NGN	Naira
+ERN	Nakfa
+NAD	Namibia Dollar
+NPR	Nepalese Rupee
+ANG	Netherlands Antillian Guilder
+NLG	Netherlands Guilder
+YUM	New Dinar
+ILS	New Israeli Sheqel
+AON	New Kwanza
+TWD	New Taiwan Dollar
+ZRN	New Zaire
+NZD	New Zealand Dollar
+USN	Next day
+BTN	Ngultrum
+KPW	North Korean Won
+NOK	Norwegian Krone
+PEN	Nuevo Sol
+MRO	Ouguiya
+TOP	Paanga
+PKR	Pakistan Rupee
+MOP	Pataca
+UYU	Peso Uruguayo
+PHP	Philippine Peso
+PTE	Portuguese Escudo
+GBP	Pound Sterling
+BWP	Pula
+QAR	Qatari Rial
+GTQ	Quetzal
+ZAR	Rand
+OMR	Rial Omani
+KHR	Riel
+MVR	Rufiyaa
+IDR	Rupiah
+RUB	Russian Ruble
+RUR	Russian Ruble
+RWF	Rwanda Franc
+XDR	SDR
+USS	Same day
+SAR	Saudi Riyal
+ATS	Schilling
+SCR	Seychelles Rupee
+SGD	Singapore Dollar
+SKK	Slovak Koruna
+SBD	Solomon Islands Dollar
+KGS	Som
+SOS	Somali Shilling
+ESP	Spanish Peseta
+LKR	Sri Lanka Rupee
+SHP	St Helena Pound
+ECS	Sucre
+SDD	Sudanese Dinar
+SRG	Surinam Guilder
+SEK	Swedish Krona
+CHF	Swiss Franc
+SYP	Syrian Pound
+TJR	Tajik Ruble
+BDT	Taka
+WST	Tala
+TZS	Tanzanian Shilling
+KZT	Tenge
+TPE	Timor Escudo
+SIT	Tolar
+TTD	Trinidad and Tobago Dollar
+MNT	Tugrik
+TND	Tunisian Dinar
+TRL	Turkish Lira
+AED	UAE Dirham
+USD	US Dollar
+UGX	Uganda Shilling
+ECV	Unidad de Valor Constante (UVC)
+CLF	Unidades de fomento
+UZS	Uzbekistan Sum
+VUV	Vatu
+KRW	Won
+YER	Yemeni Rial
+JPY	Yen
+CNY	Yuan Renminbi
+ZWD	Zimbabwe Dollar
+PLN	Zloty
+ZAL	financial Rand
+004	Afghani
+01	Algerian Dinar
+020	Andorran Peseta
+032	Argentine Peso
+051	Armenian Dram
+533	Aruban Guilder
+036	Australian Dollar
+031	Azerbaijanian Manat
+044	Bahamian Dollar
+048	Bahraini Dinar
+764	Baht
+590	Balboa
+052	Barbados Dollar
+112	Belarussian Ruble
+056	Belgian Franc
+084	Belize Dollar
+060	Bermudian Dollar
+862	Bolivar
+068	Boliviano
+986	Brazilian Real
+096	Brunei Dollar
+108	Burundi Franc
+952	CFA Franc BCEAO+
+950	CFA Franc BEAC#
+953	CFP Franc
+124	Canadian Dollar
+132	Cape Verde Escudo
+136	Cayman Islands Dollar
+288	Cedi
+152	Chilean Peso
+170	Colombian Peso
+174	Comoro Franc
+977	Convertible Marks
+558	Cordoba Oro
+188	Costa Rican Colon
+192	Cuban Peso
+196	Cyprus Pound
+203	Czech Koruna
+270	Dalasi
+208	Danish Krone
+807	Denar
+280	Deutsche Mark
+262	Djibouti Franc
+678	Dobra
+214	Dominican Peso
+704	Dong
+300	Drachma
+951	East Caribbean Dollar
+818	Egyptian Pound
+222	El Salvador Colon
+230	Ethiopian Birr
+978	Euro
+238	Falkland Islands Pound
+242	Fiji Dollar
+348	Forint
+976	Franc Congolais
+250	French Franc
+292	Gibraltar Pound
+332	Gourde
+600	Guarani
+324	Guinea Franc
+624	Guinea-Bissau Peso
+328	Guyana Dollar
+344	Hong Kong Dollar
+980	Hryvnia
+352	Iceland Krona
+356	Indian Rupee
+364	Iranian Rial
+368	Iraqi Dinar
+372	Irish Pound
+380	Italian Lira
+388	Jamaican Dollar
+400	Jordanian Dinar
+404	Kenyan Shilling
+598	Kina
+418	Kip
+233	Kroon
+191	Kuna
+414	Kuwaiti Dinar
+454	Kwacha
+894	Kwacha
+982	Kwanza Reajustado
+104	Kyat
+981	Lari
+428	Latvian Lats
+422	Lebanese Pound
+008	Lek
+340	Lempira
+694	Leone
+642	Leu
+100	Lev
+430	Liberian Dollar
+434	Libyan Dinar
+748	Lilangeni
+440	Lithuanian Litas
+426	Loti
+442	Luxembourg Franc
+450	Malagasy Franc
+458	Malaysian Ringgit
+470	Maltese Lira
+795	Manat
+246	Markka
+480	Mauritius Rupee
+508	Metical
+484	Mexican Peso
+979	Mexican Unidad de Inversion (UDI)
+498	Moldovan Leu
+504	Moroccan Dirham
+984	Mvdol
+566	Naira
+232	Nakfa
+516	Namibia Dollar
+524	Nepalese Rupee
+532	Netherlands Antillian Guilder
+528	Netherlands Guilder
+891	New Dinar
+376	New Israeli Sheqel
+02	New Kwanza
+901	New Taiwan Dollar
+180	New Zaire
+554	New Zealand Dollar
+997	Next day
+064	Ngultrum
+408	North Korean Won
+578	Norwegian Krone
+604	Nuevo Sol
+478	Ouguiya
+776	Paanga
+586	Pakistan Rupee
+446	Pataca
+858	Peso Uruguayo
+608	Philippine Peso
+620	Portuguese Escudo
+826	Pound Sterling
+072	Pula
+634	Qatari Rial
+320	Quetzal
+710	Rand
+512	Rial Omani
+116	Riel
+462	Rufiyaa
+360	Rupiah
+643	Russian Ruble
+810	Russian Ruble
+646	Rwanda Franc
+960	SDR
+998	Same day
+682	Saudi Riyal
+040	Schilling
+690	Seychelles Rupee
+702	Singapore Dollar
+703	Slovak Koruna
+090	Solomon Islands Dollar
+417	Som
+706	Somali Shilling
+724	Spanish Peseta
+144	Sri Lanka Rupee
+654	St Helena Pound
+218	Sucre
+736	Sudanese Dinar
+740	Surinam Guilder
+752	Swedish Krona
+756	Swiss Franc
+760	Syrian Pound
+762	Tajik Ruble
+050	Taka
+882	Tala
+834	Tanzanian Shilling
+398	Tenge
+626	Timor Escudo
+705	Tolar
+780	Trinidad and Tobago Dollar
+496	Tugrik
+788	Tunisian Dinar
+792	Turkish Lira
+784	UAE Dirham
+840	US Dollar
+800	Uganda Shilling
+983	Unidad de Valor Constante (UVC)
+990	Unidades de fomento
+860	Uzbekistan Sum
+548	Vatu
+410	Won
+886	Yemeni Rial
+392	Yen
+156	Yuan Renminbi
+716	Zimbabwe Dollar
+985	Zloty
+991	financial Rand
+XAU	Gold
+XBA	European Composite Unit (EURCO)
+XBB	European Monetary Unit (E.M.U.-6)
+XBC	European Unit of Account 9 (E.U.A.- 9)
+XBD	European Unit of Account 17 (E.U.A.- 17)
+XPD	Palladium
+XPT	Platinum
+XAG	Silver
+XFU	UIC-Franc
+XFO	Gold-Franc
+XTS	Codes specifically reserved for testing purposes
+XXX	Codes assigned for transactions where no currency is involved
+959	Gold
+955	European Composite Unit (EURCO)
+956	European Monetary Unit (E.M.U.-6)
+957	European Unit of Account 9 (E.U.A.- 9)
+958	European Unit of Account 17 (E.U.A.- 17)
+964	Palladium
+962	Platinum
+961	Silver

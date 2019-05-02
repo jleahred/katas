@@ -6,7 +6,12 @@ defmodule Fix.Static.MsgTypes do
 
   @external_resource Path.join(__DIR__, "msg_types.txt")
   @code_names File.stream!(@external_resource)
-              |> Stream.map(fn line -> List.to_tuple(String.split(line)) end)
+              |> Stream.map(fn line ->
+                line
+                |> String.replace("\n", "")
+                |> String.split(" ", parts: 2)
+                |> List.to_tuple()
+              end)
 
   @all_codes @code_names
              |> Enum.reverse()

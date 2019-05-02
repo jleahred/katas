@@ -2,12 +2,21 @@ defmodule PhoenixKatasWeb.FixLogLive do
   use Phoenix.LiveView
   require Logger
 
+  defp get_fix_msg_first_record(records) do
+    first = Enum.at(records, 0)
+
+    case first do
+      nil -> []
+      f -> f.fix |> parse_fix_msg
+    end
+  end
+
   def mount(session, socket) do
     {:ok,
      assign(socket,
        form: session.params,
        records: session.records,
-       fix_msg: Enum.at(session.records, 0).fix |> parse_fix_msg,
+       fix_msg: get_fix_msg_first_record(session.records),
        current_row: 0
      )}
   end
@@ -46,9 +55,15 @@ defmodule PhoenixKatasWeb.FixLogLive do
     }
   end
 
+  def handle_event(unknown_event, context, socket) do
+    Logger.info("Recieve unknown event #{unknown_event} context: #{context}")
+
+    {:noreply, socket}
+  end
+
   def render(assigns) do
     ~L"""
-    <div style="position:fixed;background:white;width:100%;"%>
+    <div style="position:fixed;background:white;width:100%;">
       <div>
       <%= render_form(assigns) %>
       </div>
@@ -56,9 +71,10 @@ defmodule PhoenixKatasWeb.FixLogLive do
       <div>
         <div class="row">
           <div class="col-lg-9">
-            <div phx-keydown="keydown"
+            <div>
+            <!-- <div phx-keydown="keydown"
               phx-target="window"
-            %>
+            > -->
                 <%= render_table(assigns) %>
             </div>
           </div>
@@ -73,14 +89,14 @@ defmodule PhoenixKatasWeb.FixLogLive do
 
   def render_msg(assigns) do
     ~L"""
-    <div>
+    <div class="table_msg_scroll">
           <table class="table table-sm table-hover table-striped">
           <tbody>
               <%= for {tag, tname, val} <- @fix_msg do %>
-                  <tr>
+                  <tr class="small-font">
                   <th scope="row"> <%= tag %></th>
                   <td> <%= tname %></td>
-                  <td> <%= val %></td>
+                  <td> <%= val_riched(tag, val) %></td>
                   </tr>
               <% end %>
           </tbody>
@@ -92,99 +108,135 @@ defmodule PhoenixKatasWeb.FixLogLive do
 
   def render_form(assigns) do
     ~L"""
-    <form name="registration_form" id='registration_form' class="form-inline">
-    <!--  par example %{"any" => "abc", "connection" => "bloomb", "date" => "2019-04-17", "dir" => "out", "msg_type" => "bbva"} -->
+    <form name="filter" id='filter' class="form-inline">
+        <input class="form-control input-group-lg reg_name"
+                type="date"
+                name="date"
+                title="Day"
+                placeholder="Date"
+                value="<%= @form["date"] %>"
+                />
 
-    <input class="form-control input-group-lg reg_name"
-            type="date"
-            name="date"
-            title="Insert the day"
-            placeholder="Date"
-            value="<%= @form["date"] %>"
-            />
-
-    <select class="form-control"
-                name="dir">
-        <option value="both" <%=if @form["dir"] == "both" do "selected" else "" end %> >Both</option>
-        <option value="in"   <%=if @form["dir"] == "in"   do "selected" else "" end %>> In</option>
-        <option value="out"  <%=if @form["dir"] == "out"  do "selected" else "" end %> >Out</option>
-    </select>
-
-    <%#input list="lconnections" class="form-control">
-    <datalist id="lconnections">
-      <option value="Internet Explorer">
-      <option value="Firefox">
-      <option value="Chrome">
-      <option value="Opera">
-      <option value="Safari">
-    </datalist>
-    </input%>
-
-    <select class="selectpicker" data-live-search="true"
-        name="connection">
-
+        <input class="form-control"
+            type="search"
+            list="connections"
+            name="connection"
+            value= "<%=@form["connection"]%>"
+            >
+        <datalist id="connections">
         <option value="any"     <%=if @form["connection"] == "any" do "selected" else "" end %> > Any </option>
         <%= for c <- Fix.Static.Clients.all() do %>
             <option value="<%= c %>"     <%=if @form["connection"] == c do "selected" else "" end %> > <%= c %> </option>
         <% end %>
+        </datalist>
+        </input>
 
-    </select>
+        <!--  <select class="selectpicker" data-live-search="true"
+        <select class="form-control" data-live-search="true"
+            name="connection"
+            id="idconn">
 
-    <select class="selectpicker" data-live-search="true"
-        name="msg_type">
+            <option value="any"     <%=if @form["connection"] == "any" do "selected" else "" end %> > Any </option>
+            <%= for c <- Fix.Static.Clients.all() do %>
+                <option value="<%= c %>"     <%=if @form["connection"] == c do "selected" else "" end %> > <%= c %> </option>
+            <% end %>
 
-        <option value="any"     <%=if @form["msg_type"] == "any" do "selected" else "" end %> > Any </option>
-        <%= for c <- Fix.Static.MsgTypes.list_all_codes do %>
-            <option value="<%= c %>"     <%=if @form["msg_type"] == c do "selected" else "" end %> > <%= Fix.Static.MsgTypes.get_name(c) %> </option>
-        <% end %>
-    </select>
+        </select>  -->
+        <!--   <select class="selectpicker"  data-live-search="true -->
+        <select class="form-control"
+            name="msg_type"
+            id="idmsgtype">
 
+            <option value="any"     <%=if @form["msg_type"] == "any" do "selected" else "" end %> > Any </option>
+            <%= for c <- Fix.Static.MsgTypes.list_all_codes do %>
+                <option value="<%= c %>"     <%=if @form["msg_type"] == c do "selected" else "" end %> > <%= Fix.Static.MsgTypes.get_name(c) %> </option>
+            <% end %>
+        </select>
 
-    <input id="content" class="form-control input-group-lg reg_name" type="search" name="any"
+        <select class="form-control"
+            name="exec_type"
+            id="idexectype">
+
+            <option value="any"     <%=if @form["exec_type"] == "any" do "selected" else "" end %> > Any </option>
+            <%= for c <- Fix.Static.ExecTypes.list_all_codes do %>
+                <option value="<%= c %>"     <%=if @form["exec_type"] == c do "selected" else "" end %> > <%= Fix.Static.ExecTypes.get_name(c) %> </option>
+            <% end %>
+        </select>
+
+        <!-- <input id="content" class="form-control input-group-lg reg_name" type="search" name="any"  -->
+        <input id="content" class="form-control input-group-lg reg_name" type="search" name="any" autocomplete="off"
             title="Find in any field"
-            placeholder="Find in any field"
-            value="<%= @form["any"] %>"
-            />
+                placeholder="Find in any field"
+                value="<%= @form["any"] %>"
+                />
 
-    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>
+        <button onclick="reduce_page()" id="prev" class="btn btn-outline-prim my-2 my-sm-0 pl-4" type="button"> < </button>
+        <input id="page"
+                class="form-control input-group-lg page-input col-1 center"
+                type="number"
+                name="page"
+                title="Page"
+                placeholder="0"
+                min="0"
+                value="<%= @form["page"] %>"
+                />
+        <button onclick="increase_page()" id="next" class="btn btn-outline-prim my-2 my-sm-0 pr-4" type="button"> > </button>
+
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>
 
     </form>
+    <script>
+      function reduce_page() {
+          cv = document.getElementById('page').value = document.getElementById('page').value * 1
+          if(cv > 0) {
+            document.getElementById('page').value = document.getElementById('page').value*1 - 1;
+          }
+          document.getElementById("filter").submit();
+      }
+      function increase_page() {
+          document.getElementById('page').value = document.getElementById('page').value*1 + 1;
+          document.getElementById("filter").submit();
+      }
+      document.getElementById('idmsgtype').style.display = "block";
+      document.getElementById('idconn').style.display = "block";
+    </script>
     """
   end
 
   def render_table(assigns) do
     ~L"""
-      <table class="table table-sm table-hover table-striped localScroll">
+    <div class="table-wrapper-scroll-y my-custom-scrollbar">
+    <table class="table table-sm table-hover table-striped localScroll table_fixed">
       <tbody>
             <tr>
               <th> time </th>
-              <th> connection</th>
-              <th> msgtype</th>
-              <th> exectype</th>
-              <th> clordid</th>
-              <th> origclordid</th>
-              <th> securityid</th>
-              <th> symbol</th>
-              <th> side</th>
-              <th> account</th>
-              <th> price</th>
+              <th class="text-truncate"> connection</th>
+              <th class="text-truncate"> msgtype</th>
+              <th class="text-truncate"> exectype</th>
+              <th class="text-truncate"> clordid</th>
+              <th class="text-truncate"> origclordid</th>
+              <th class="text-truncate"> securityid</th>
+              <th class="text-truncate"> symbol</th>
+              <th class="text-truncate"> side</th>
+              <th class="text-truncate"> account</th>
+              <th class="text-truncate"> price</th>
               <th> quantiy</th>
               <th> timeinforce</th>
             </tr>
           <%= for {r, idx} <- @records |> Enum.with_index do %>
-            <tr  class='<%= if @current_row == idx, do: "table-primary", else: ""%>'
+            <tr  class='small-font <%= if @current_row == idx, do: "table-primary", else: ""%>'
                  phx-click=<%= "click-idx-#{idx}"
                  %> >
-              <td><a href="/fix/log/msg/0">  <%= r.time %> </a></td>
-              <td> <%= r.connection %></td>
-              <td> <%= r.msgtype %></td>
-              <td> <%= r.exectype %></td>
-              <td> <%= r.clordid %></td>
-              <td> <%= r.origclordid %></td>
-              <td> <%= r.securityid %></td>
-              <td> <%= r.symbol %></td>
-              <td> <%= r.side %></td>
-              <td> <%= r.account %></td>
+              <td><a href="/fix/log/msg/<%= r.id %>">  <%= r.time %> </a></td>
+              <td class="text-truncate"> <%= r.connection %></td>
+              <td class="text-truncate"> <%= r.msgtype %></td>
+              <td class="text-truncate"> <%= r.exectype %></td>
+              <td class="text-truncate"> <%= r.clordid %></td>
+              <td class="text-truncate"> <%= r.origclordid %></td>
+              <td class="text-truncate"> <%= r.securityid %></td>
+              <td class="text-truncate"> <%= r.symbol %></td>
+              <td class="text-truncate"> <%= r.side %></td>
+              <td class="text-truncate"> <%= r.account %></td>
               <td> <%= r.price %></td>
               <td> <%= r.quantity %></td>
               <td> <%= r.timeinforce %></td>
@@ -193,6 +245,7 @@ defmodule PhoenixKatasWeb.FixLogLive do
         <tr>
       </tbody>
     </table>
+    </div>
     """
   end
 
@@ -204,5 +257,24 @@ defmodule PhoenixKatasWeb.FixLogLive do
     |> Stream.filter(&(&1 != [""]))
     |> Stream.map(fn [tag, val] -> {tag, Fix.Static.Tags.get_name(tag), val} end)
     |> Enum.into([])
+  end
+
+  def val_riched(tag, val) do
+    case tag do
+      "35" -> "#{val} #(#{Fix.Static.MsgTypes.get_name(val)})"
+      "150" -> "#{val} #(#{Fix.Static.ExecTypes.get_name(val)})"
+      "59" -> "#{val} #(#{Fix.Static.TimeInForce.get_name(val)})"
+      "54" -> "#{val} #(#{side_text(val)})"
+      "15" -> "#{val} #(#{Fix.Static.Currencies.get_name(val)})"
+      _ -> "#{val}"
+    end
+  end
+
+  def side_text(s) do
+    case s do
+      "1" -> "Buy"
+      "2" -> "Sell"
+      _ -> ""
+    end
   end
 end

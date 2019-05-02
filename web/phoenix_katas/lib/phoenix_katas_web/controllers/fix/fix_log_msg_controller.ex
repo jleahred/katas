@@ -1,5 +1,7 @@
 defmodule PhoenixKatasWeb.FixLogMsgController do
   use PhoenixKatasWeb, :controller
+  alias PhoenixKatas.RepoTrading
+  alias PhoenixKatas.FixLogSch
 
   def show(conn, %{"idmsg" => "0"}) do
     render(conn, "fix_log_msg.html", fix_msg: parse_fix_msg(fake_msg()))
@@ -8,8 +10,9 @@ defmodule PhoenixKatasWeb.FixLogMsgController do
 
   # %{"idmsg" => "0"}
   def show(conn, %{"idmsg" => id}) do
-    # render(conn, "fix_log_msg.html", fix_msg: parse_fix_msg(get_msg_db(id)))
-    text(conn, "pending...#{inspect(id)}")
+    render(conn, "fix_log_msg.html", fix_msg: parse_fix_msg(record_db(id).fix))
+    # text(conn, "pending...#{inspect(id)}")
+    # text(conn, "pending...#{inspect(parse_fix_msg(record_db(id).fix))}")
   end
 
   def fake_msg() do
@@ -19,9 +22,15 @@ defmodule PhoenixKatasWeb.FixLogMsgController do
   def parse_fix_msg(fix_msg) do
     fix_msg
     |> String.split("|")
+    |> Stream.filter(&(&1 != "\n"))
     |> Stream.map(&String.split(&1, "="))
     |> Stream.filter(&(&1 != [""]))
     |> Stream.map(fn [tag, val] -> {tag, Fix.Static.Tags.get_name(tag), val} end)
     |> Enum.into([])
+  end
+
+  defp record_db(id) do
+    RepoTrading.get(FixLogSch, id)
+    |> FixLogSch.normalize_record()
   end
 end

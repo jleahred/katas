@@ -1,5 +1,5 @@
-defmodule Fix.Static.Tags do
-  @external_resource Path.join(__DIR__, "tags.txt")
+defmodule Fix.Static.TimeInForce do
+  @external_resource Path.join(__DIR__, "time_in_force.txt")
   @code_names File.stream!(@external_resource)
               |> Stream.map(fn line ->
                 line

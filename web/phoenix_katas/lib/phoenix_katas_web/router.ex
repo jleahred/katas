@@ -11,21 +11,22 @@ defmodule PhoenixKatasWeb.Router do
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
   end
 
   scope "/", PhoenixKatasWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
     live "/", MainPageLive
 
     # get "/", MainPageController, :index
     # get "/search", SearchController, :search, as: :search
     get "/factorial", FactorialController, :factorial
-    get "/fix/tags", FixTagsController, :fix_tags
-    get "/fix/msg_types", FixMsgTypesController, :fix_msg_types
     get "/fix/log", FixLogController, :fix_log
     get "/fix/log/msg/:idmsg", FixLogMsgController, :show
+    get("/fix/log/clordid/", FixLogClOrdIdController, :show)
+    get("/fix/static_tables/:type", FixStaticTableController, :index)
+    get("/cws/versions", CwsVersionsController, :index)
 
     live "/live/counter", CounterLive
     live "/live/factorial", FactorialLive
@@ -33,6 +34,7 @@ defmodule PhoenixKatasWeb.Router do
     get "/live/fix/log", FixLogControllerLV, :show
 
     # live "/live/fix/log", FixLogLive
+    # live("/", MainPageLive)
   end
 
   # Other scopes may use custom stacks.

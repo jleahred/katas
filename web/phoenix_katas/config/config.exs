@@ -8,7 +8,7 @@
 use Mix.Config
 
 config :phoenix_katas,
-  ecto_repos: [PhoenixKatas.Repo]
+  ecto_repos: [PhoenixKatas.RepoTrading, PhoenixKatas.RepoAlarms]
 
 # Configures the endpoint
 config :phoenix_katas, PhoenixKatasWeb.Endpoint,

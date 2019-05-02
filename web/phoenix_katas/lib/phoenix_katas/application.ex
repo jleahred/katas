@@ -9,7 +9,8 @@ defmodule PhoenixKatas.Application do
     # List all child processes to be supervised
     children = [
       # Start the Ecto repository
-      # PhoenixKatas.Repo,
+      # PhoenixKatas.RepoTrading,
+      # PhoenixKatas.RepoAlarms,
       # Start the endpoint when the application starts
       PhoenixKatasWeb.Endpoint
       # Starts a worker by calling: PhoenixKatas.Worker.start_link(arg)

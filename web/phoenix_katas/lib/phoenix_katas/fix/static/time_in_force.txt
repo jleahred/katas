@@ -1,0 +1,8 @@
+0 Day
+1 GTC
+2 OPG
+3 IOC
+4 FOK
+5 GTX
+6 GTD
+7 AtClose

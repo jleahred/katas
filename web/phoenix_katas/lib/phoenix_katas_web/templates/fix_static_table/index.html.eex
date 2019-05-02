@@ -1,0 +1,14 @@
+<div>
+
+<table class="table">
+  <tbody>
+      <%= for code <- @fn_all_codes.() do %>
+        <tr>
+          <th scope="row"> <%= code %></th>
+          <td> <%= @fn_get_name.(code) %></td>
+        </tr>
+      <% end %>
+  </tbody>
+</table>
+
+</div>

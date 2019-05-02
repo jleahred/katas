@@ -9,7 +9,7 @@
                 <tr>
                 <th scope="row"> <%= tag %></th>
                 <td> <%= tname %></td>
-                <td> <%= val %></td>
+                <td> <%= val_riched(tag, val) %></td>
                 </tr>
             <% end %>
         </tbody>

@@ -6,7 +6,7 @@ defmodule PhoenixKatasWeb.MainPageLive do
     ~L"""
     <div>
       <%#= inspect assigns %>
-      <div class="d-flex justify-content-end">
+      <div class="d-flex">
           <form phx-change="search_update"
             class="form-inline
             my-2
@@ -27,7 +27,7 @@ defmodule PhoenixKatasWeb.MainPageLive do
                 <tr class='clickable-row <%= if @current_row == idx, do: "table-primary", else: ""%>'
                   data-href='<%= route %>'
                 >
-                  <th scope="row"> <%= route %></th>
+                  <%#th scope="row"> < %= route % ></th%>
                   <td> <%= description %></td>
                 </tr>
               <% end %>
@@ -55,8 +55,6 @@ defmodule PhoenixKatasWeb.MainPageLive do
   end
 
   def handle_event("search_update", par, socket) do
-    Logger.info("received on search_update #{inspect(par)}")
-
     {
       :noreply,
       socket

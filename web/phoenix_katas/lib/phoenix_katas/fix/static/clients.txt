@@ -31,3 +31,5 @@ drop_copy_to_bia_eq
 cli_vt
 cli_unicorp
 cli_pt_bic
+cli_der_blo
+vcon

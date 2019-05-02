@@ -1,5 +1,5 @@
-defmodule Fix.Static.Tags do
-  @external_resource Path.join(__DIR__, "tags.txt")
+defmodule Fix.Static.ExecTypes do
+  @external_resource Path.join(__DIR__, "exec_types.txt")
   @code_names File.stream!(@external_resource)
               |> Stream.map(fn line ->
                 line

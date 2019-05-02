@@ -1,5 +1,5 @@
 <div>
-<form name="registration_form" id='registration_form' class="form-inline">
+<form name="filter" id='filter' class="form-inline">
 
     <!--  par example %{"any" => "abc", "connection" => "bloomb", "date" => "2019-04-17", "dir" => "out", "msg_type" => "bbva"} -->
 
@@ -7,20 +7,24 @@
     <input class="form-control input-group-lg reg_name" 
             type="date" 
             name="date"
-            title="Insert the day"
+            title="Day"
             placeholder="Date"
             value="<%= @form["date"] %>"
             />
 
     <select class="form-control"
-                name="dir">
+            name="dir"
+            title="dir"
+                >
         <option value="both" <%=if @form["dir"] == "both" do "selected" else "" end %> >Both</option>
         <option value="in"   <%=if @form["dir"] == "in"   do "selected" else "" end %>> In</option>
         <option value="out"  <%=if @form["dir"] == "out"  do "selected" else "" end %> >Out</option>
     </select>
 
     <select class="selectpicker" data-live-search="true" 
-        name="connection">
+            name="connection"
+            title="connection"
+        >
 
         <option value="any"     <%=if @form["connection"] == "any" do "selected" else "" end %> > Any </option>
         <%= for c <- Fix.Static.Clients.all() do %>
@@ -30,7 +34,9 @@
     </select>
 
     <select class="selectpicker" data-live-search="true"  
-        name="msg_type">
+            name="msg_type"
+            title="msg_type"
+        >
 
         <option value="any"     <%=if @form["msg_type"] == "any" do "selected" else "" end %> > Any </option>
         <%= for c <- Fix.Static.MsgTypes.list_all_codes do %>
@@ -43,6 +49,18 @@
             placeholder="Find in any field"
             value="<%= @form["any"] %>"
             />
+
+    <button onclick="reduce_page()" id="prev-next" class="btn btn-outline-prim my-2 my-sm-0 pl-4" type="button"> < </button>
+    <input id="page" 
+            class="form-control input-group-lg page-input col-1 center" 
+            type="number" 
+            name="page"
+            title="Page"
+            placeholder="0"
+            min="0"
+            value="<%= @form["page"] %>"
+            />
+    <button onclick="increase_page()" id="prev-next" class="btn btn-outline-prim my-2 my-sm-0 pr-4" type="button"> > </button>
 
     <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Go!</button>
 
@@ -73,10 +91,10 @@
         </tr>
       <%= for r <- @records do %>
         <!-- <tr class='clickable-row' data-href='99'> -->
-        <tr>
-          <td><a href="/fix/log/msg/0">  <%= r.time %> </a></td>
+        <tr class="small-font">
+          <td><a href="/fix/log/msg/<%= r.id %>">  <%= r.time %> </a></td>
           <td> <%= r.connection %></td>
-          <td> <%= r.dir %></td>
+          <td> ? </td>
           <td> <%= r.msgtype %></td>
           <td> <%= r.exectype %></td>
           <td> <%= r.clordid %></td>
@@ -94,3 +112,18 @@
   </tbody>
 </table>
 </div>
+
+<script>
+  function reduce_page() {
+      cv = document.getElementById('page').value = document.getElementById('page').value * 1
+      if(cv > 0) {
+        document.getElementById('page').value = document.getElementById('page').value*1 - 1;
+      }
+      document.getElementById("filter").submit();
+  }  
+  function increase_page() {
+      document.getElementById('page').value = document.getElementById('page').value*1 + 1;
+      document.getElementById("filter").submit();
+  }  
+</script>
+

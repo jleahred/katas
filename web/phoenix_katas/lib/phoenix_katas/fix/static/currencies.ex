@@ -1,10 +1,10 @@
-defmodule Fix.Static.Tags do
-  @external_resource Path.join(__DIR__, "tags.txt")
+defmodule Fix.Static.Currencies do
+  @external_resource Path.join(__DIR__, "currencies.txt")
   @code_names File.stream!(@external_resource)
               |> Stream.map(fn line ->
                 line
                 |> String.replace("\n", "")
-                |> String.split(" ", parts: 2)
+                |> String.split(["\t", "\n"], parts: 2)
                 |> List.to_tuple()
               end)
 
