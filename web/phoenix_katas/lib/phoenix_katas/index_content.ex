@@ -14,7 +14,8 @@ defmodule PhoenixKatas.IndexContent do
      "messages related to clordid"},
     {"/live/counter", "(live) counter smallest live view example (no javascript)"},
     {"/live/factorial", "(live) factorial smallest live view example (no javascript)"},
-    {"/cws/versions", "cws versions running"}
+    {"/cws/versions", "cws versions running"},
+    {"/example/graph", "Graph example"}
   ]
 
   @index_uc @index |> Enum.map(fn {i, d} -> {{i, d}, {String.upcase(i), String.upcase(d)}} end)

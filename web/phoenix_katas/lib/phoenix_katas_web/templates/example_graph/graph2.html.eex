@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html>
+<head>  
+  <script type="text/javascript">
+  window.onload = function () {
+    var chart = new CanvasJS.Chart("chartContainer",
+    {
+      zoomEnabled: true,      
+      
+      title:{
+       text: "Chart With Date-Time Stamps Inputs"       
+     },
+
+     data: [
+     {        
+        type: "area",
+        xValueType: "dateTime",
+        dataPoints: [
+                {x: new Date( Date.UTC(2012, 01, 1) ), y: 26 },
+                {x: new Date( Date.UTC(2012, 02, 1) ), y: 38  },
+                {x: new Date( Date.UTC(2012, 04, 1) ), y: 43 },
+                {x: new Date( Date.UTC(2012, 08, 1) ), y: 29},
+                {x: new Date( Date.UTC(2012, 09, 1) ), y: 41},
+                {x: new Date( Date.UTC(2012, 10, 1) ), y: 54},
+                {x: new Date( Date.UTC(2012, 11, 1) ), y: 66},
+                {x: new Date( Date.UTC(2012, 12, 1) ), y: 60},
+                {x: new Date( Date.UTC(2013, 02, 1) ), y: 53},
+                {x: new Date( Date.UTC(2013, 04, 1) ), y: 60}
+        ]
+    }
+    ]
+  });
+
+    chart.render();
+  }
+  </script>
+  <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+</head>
+<body>
+  <div id="chartContainer" style="height: 300px; width: 100%;">
+  </div>
+</body>
+</html>

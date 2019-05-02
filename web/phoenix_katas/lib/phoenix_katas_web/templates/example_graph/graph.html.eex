@@ -1,0 +1,73 @@
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+</head>
+
+<canvas id="myChart"></canvas>
+<canvas id="myChart2"></canvas>
+
+<script>
+var ctx = document.getElementById('myChart').getContext('2d');
+var chart = new Chart(ctx, {
+    // The type of chart we want to create
+    type: 'line',
+
+    // The data for our dataset
+    data: {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+        datasets: [{
+            label: 'My First dataset',
+            backgroundColor: 'rgb(255, 99, 132)',
+            borderColor: 'rgb(255, 99, 132)',
+            data: [0, 10, 5, 2, 20, 30, 45]
+        }]
+    },
+
+    // Configuration options go here
+    options: { 
+        elements: {
+                line: {
+                    tension: 0
+                }
+        }
+    }
+});
+</script>
+
+
+<script>
+var ctx = document.getElementById('myChart2').getContext('2d');
+var scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+        datasets: [{
+            label: 'Scatter Dataset',
+            borderColor: 'red',
+            backgroundColor: 'pink',
+            pointRadius: 1,
+            pointHoverRadius: 3,
+            data: [
+                {x: new Date( Date.UTC(2012, 01, 1) ), y: 26 },
+                {x: new Date( Date.UTC(2012, 02, 1) ), y: 38  },
+                {x: new Date( Date.UTC(2012, 04, 1) ), y: 43 },
+                {x: new Date( Date.UTC(2012, 08, 1) ), y: 29},
+                {x: new Date( Date.UTC(2012, 09, 1) ), y: 41},
+                {x: new Date( Date.UTC(2012, 10, 1) ), y: 54},
+                {x: new Date( Date.UTC(2012, 11, 1) ), y: 66},
+                {x: new Date( Date.UTC(2012, 12, 1) ), y: 60},
+                {x: new Date( Date.UTC(2013, 02, 1) ), y: 53},
+                {x: new Date( Date.UTC(2013, 04, 1) ), y: 60}
+            ],
+        }]
+    },
+    options: {
+        legend: {
+            display: false
+        },scales: {
+            xAxes: [{
+                type: 'time',
+                position: 'bottom'
+            }]
+        }
+    }
+});</script>
