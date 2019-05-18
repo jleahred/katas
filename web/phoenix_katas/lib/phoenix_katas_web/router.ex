@@ -35,6 +35,8 @@ defmodule PhoenixKatasWeb.Router do
 
     get "/example/graph", ExampleGraphController, :index
 
+    live "/batchs", BatchsLive
+
     # live "/live/fix/log", FixLogLive
     # live("/", MainPageLive)
   end

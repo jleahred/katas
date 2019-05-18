@@ -4,7 +4,7 @@ defmodule PhoenixKatasWeb.MainPageLive do
 
   def render(assigns) do
     ~L"""
-    <div>
+    <div class="container">
       <%#= inspect assigns %>
       <div class="d-flex">
           <form phx-change="search_update"
