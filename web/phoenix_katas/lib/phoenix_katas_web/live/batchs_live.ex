@@ -3,6 +3,7 @@ defmodule PhoenixKatasWeb.BatchsLive do
   require Logger
 
   @batchs_path "./local/batchs"
+  @update_millisecs 8000
 
   def render(assigns) do
     ~L"""
@@ -22,9 +23,9 @@ defmodule PhoenixKatasWeb.BatchsLive do
           <table class="table">
             <%= for f <- ff.files do %>
               <tr>
-              <td> <a href=<%= "/batchs/file/#{ff.folder}/#{f.name}" %>> <%= f.name %> </a> </td>
+              <td> <a href=<%= "/batchs/file?file_name=#{ff.folder}/#{f.name}" %>> <%= f.name %> </a> </td>
               <td> <%= f.date_time %> </td>
-              <td> <button phx-click="del-<%="#{ff.folder}/#{f.name}"%>"  type="button" class="btn btn-outline-danger btn-sm">del</button> </td>
+              <td><i phx-click="del-<%="#{ff.folder}/#{f.name}"%>" class="far fa-trash-alt"></i></td>
               </tr>
             <%= end %>
           </table>
@@ -36,7 +37,7 @@ defmodule PhoenixKatasWeb.BatchsLive do
   end
 
   def mount(_session, socket) do
-    if connected?(socket), do: :timer.send_interval(5000, self(), :tick)
+    if connected?(socket), do: :timer.send_interval(@update_millisecs, self(), :tick)
 
     {:ok, update_files(socket)}
   end

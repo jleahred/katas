@@ -36,6 +36,8 @@ defmodule PhoenixKatasWeb.Router do
     get "/example/graph", ExampleGraphController, :index
 
     live "/batchs", BatchsLive
+    # live "/batchs/file/:file_name", BatchsFileLive
+    get "/batchs/file", BatchsFileControllerLV, :show
 
     # live "/live/fix/log", FixLogLive
     # live("/", MainPageLive)
