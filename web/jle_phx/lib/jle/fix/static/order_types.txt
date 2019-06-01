@@ -1,0 +1,17 @@
+1 Market
+2 Limit
+3 Stop
+4 Stop limit
+6 With or without
+7 Limit or better (Deprecated)
+8 Limit with or without
+9 On basis
+D Previously quoted
+E Previously indicated
+G Forex - Swap
+I Funari (Limit Day Order with unexecuted portion handled as Market On Close. e.g. Japan)
+J MIT (Market If Touched)
+K Market with Leftover as Limit (market order then unexecuted quantity becomes limit order at last price)
+L Previous Fund Valuation Point (Historic pricing) (for CIV)
+M Next Fund Valuation Point (Forward pricing) (for CIV)
+P Pegged

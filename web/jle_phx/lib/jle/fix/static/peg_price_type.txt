@@ -1,0 +1,8 @@
+1 Last peg (last sale)
+2 Mid-price peg (midprice of inside quote)
+3 Opening peg
+4 Market peg
+5 Primary peg (primary market - buy at bid or sell at offer)
+7 Peg to VWAP
+8 Trailing Stop Peg
+9 Peg to Limit Price

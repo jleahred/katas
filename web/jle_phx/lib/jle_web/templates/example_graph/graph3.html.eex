@@ -1,0 +1,152 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ECharts</title>
+    <!-- including ECharts file -->
+    <script src="/js/echarts.min.js"></script>
+</head>
+<body>
+    <!-- prepare a DOM container with width and height -->
+    <div id="main" style="width: 800px;height:400px;"></div>
+
+    <div id="graph2" style="width: 800px;height:400px;"></div>
+    <div id="graph3" style="width: 800px;height:400px;"></div>
+    <div id="graph4" style="width: 800px;height:400px;"></div>
+    <div id="graph5" style="width: 800px;height:400px;"></div>
+
+    <script type="text/javascript">
+        //var echarts = require('echarts');
+        // based on prepared DOM, initialize echarts instance
+        var myChart = echarts.init(document.getElementById('main'));
+
+        // specify chart configuration item and data
+        var option = {
+            title: {
+                text: 'ECharts entry example'
+            },
+            tooltip: {},
+            legend: {
+                data:['Sales']
+            },
+            xAxis: {
+                data: ["shirt","cardign","chiffon shirt","pants","heels","socks"]
+            },
+            yAxis: {},
+            series: [{
+                name: 'Sales',
+                type: 'bar',
+                data: [5, 20, 36, 10, 10, 20]
+            }]
+        };
+
+        // use configuration item and data specified to show chart
+        myChart.setOption(option);
+    </script>
+
+
+    <script type="text/javascript">
+        //var echarts = require('echarts');
+        // based on prepared DOM, initialize echarts instance
+        var myChart = echarts.init(document.getElementById('graph2'));
+
+        // specify chart configuration item and data
+        option = {
+            xAxis: {
+                type: 'category',
+                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: [820, 932, 901, 934, 1290, 1330, 1320],
+                type: 'line'
+            }]
+        };
+        // use configuration item and data specified to show chart
+        myChart.setOption(option);
+    </script>
+
+    <script type="text/javascript">
+        //var echarts = require('echarts');
+        // based on prepared DOM, initialize echarts instance
+        var myChart = echarts.init(document.getElementById('graph3'));
+
+        // specify chart configuration item and data
+        option = {
+            xAxis: {
+                type: 'category',
+                data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                data: [820, 932, 901, 934, 1290, 1330, 1320],
+                type: 'line'
+            }]
+        };
+        // use configuration item and data specified to show chart
+        myChart.setOption(option);
+    </script>
+
+    <script type="text/javascript">
+        //var echarts = require('echarts');
+        // based on prepared DOM, initialize echarts instance
+        var myChart = echarts.init(document.getElementById('graph4'));
+
+        // specify chart configuration item and data
+        option = {
+            xAxis: {},
+            yAxis: {},
+            series: [{
+                symbolSize: 5,
+                data: [
+                    [10.0, 8.04],
+                    [8.0, 6.95],
+                    [13.0, 7.58],
+                    [9.0, 8.81],
+                    [11.0, 8.33],
+                    [14.0, 9.96],
+                    [6.0, 7.24],
+                    [4.0, 4.26],
+                    [12.0, 10.84],
+                    [7.0, 4.82],
+                    [5.0, 5.68]
+                ],
+                type: 'scatter'
+            }]
+        };        // use configuration item and data specified to show chart
+        myChart.setOption(option);
+    </script>
+
+
+    <script type="text/javascript">
+        //var echarts = require('echarts');
+        // based on prepared DOM, initialize echarts instance
+        var myChart = echarts.init(document.getElementById('graph5'));
+
+        // specify chart configuration item and data
+        option = {
+            xAxis: {},
+            yAxis: {},
+            series: [{
+                symbolSize: 5,
+                data: [
+                    [new Date( Date.UTC(2012, 01, 1) ), 26 ],
+                    [new Date( Date.UTC(2012, 02, 1) ), 38 ],
+                    [new Date( Date.UTC(2012, 04, 1) ), 43 ],
+                    [new Date( Date.UTC(2012, 08, 1) ), 29],
+                    [new Date( Date.UTC(2012, 09, 1) ), 41],
+                    [new Date( Date.UTC(2012, 10, 1) ), 54],
+                    [new Date( Date.UTC(2012, 11, 1) ), 66],
+                    [new Date( Date.UTC(2012, 12, 1) ), 60],
+                    [new Date( Date.UTC(2013, 02, 1) ), 53],
+                    [new Date( Date.UTC(2013, 04, 1) ), 6]
+                ],
+                type: 'scatter'
+            }]
+        };        // use configuration item and data specified to show chart
+        myChart.setOption(option);
+    </script></body>
+</html>

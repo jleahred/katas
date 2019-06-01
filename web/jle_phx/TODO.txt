@@ -1,0 +1,5 @@
+
+* fixlog: translate all shortcodes (bloomberg connection tag 109 BTR)
+* fixlog: Load connections on startup
+* fixlog: Keys on fixlog view
+* fixlog: errors on live view (fixlog concat templates ???)

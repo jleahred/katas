@@ -1,0 +1,22 @@
+<div>
+
+<table class="table table-striped">
+  <tbody>
+          <th> broker_code </th>
+          <th> process_name </th>
+          <th> machine </th>
+          <th> main_ver</th>
+          <th> process_version</th>
+      <%= for r <- @records do %>
+        <tr>
+          <td> <%= r.broker_code %></td>
+          <td> <%= r.process_name %></td>
+          <td> <%= r.machine %></td>
+          <td> <%= Enum.at(r.v, 1) %></td>
+          <td> <%= r.process_version %></td>
+        </tr>
+      <% end %>
+  </tbody>
+</table>
+
+</div>

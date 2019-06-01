@@ -1,0 +1,22 @@
+0 New
+1 PartialFill
+2 Fill
+3 DoneForDay
+4 Canceled
+5 Replace
+6 PendingCancel
+7 Stopped
+8 Rejected
+9 Suspended
+A PendingNew
+B Calculated
+C Expired
+D Restated
+E PendingReplace
+F Trade
+G TradeCorrect
+H TradeCancel
+I OrderStatus
+J Trade in a Clearing Hold
+K Trade has been released to Clearing
+L Triggered or Activated by System

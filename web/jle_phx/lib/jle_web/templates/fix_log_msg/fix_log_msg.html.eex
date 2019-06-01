@@ -1,0 +1,20 @@
+<div class="container">
+  <div class="row justify-content-md-center">
+
+        <div class="w-75">
+
+        <table class="table table-sm table-hover table-striped">
+        <tbody>
+            <%= for {tag, tname, val} <- @fix_msg do %>
+                <tr>
+                <th scope="row"> <%= tag %></th>
+                <td> <%= tname %></td>
+                <td> <%= val_riched(tag, val) %></td>
+                </tr>
+            <% end %>
+        </tbody>
+        </table>
+
+</div>
+</div>
+</div>

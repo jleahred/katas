@@ -1,0 +1,28 @@
+<div class="container">
+
+    <h2>FIX beautifier</h2>
+
+    fix text:
+    <form>
+    <textarea name="fix_msg" class="form-control" id="fix_msg" rows="3">
+    <%= @fix_msg %>
+    </textarea>
+    <p>
+    <p>
+    Separator
+    <input name="separator" class="form-control" id="separator" value="<%= @separator %>"\>
+    <p>
+    <button class="btn btn-success my-2 my-sm-0" type="submit">Go!</button>
+    </form>
+
+    <p>
+    <p>
+    Message:
+    <p>
+
+    <%= if @fix_parsed do %>
+        <%= render("fix_msg.html", fix_parsed: @fix_parsed) %>
+    <%= else %>
+        Error parsing
+    <%= end %>
+</div>

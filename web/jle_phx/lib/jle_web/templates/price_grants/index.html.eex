@@ -1,0 +1,29 @@
+    <div class="container">
+    <h1>Prices grants</h1>
+
+
+    <p><p>
+    <li> (2019-05-30) En proceso baja de usuario DANIEL.FERNANDEZ@RF que será reemplazado por... (pendiente que nos indiquen)</li>
+    <p><p>
+
+    <%= for {_prov, market} <- @rep_info.prov_markets do %>
+    <h2><%="#{market}"%></h2>
+
+      <table class="table table-striped">
+      <tbody>
+          <%= for cup <- filter_market_cup(market, @rep_info.cli_user_prods) do %>
+            <tr class="<%=hightlight_row(cup)%>">
+            <!-- <td> <%= "#{cup.market}" %></td> -->
+            <td> <%= "#{cup.cli}" %></td>
+            <td> <%= "#{cup.user}" %></td>
+            <td> <%= "#{cup.prods}" %></td>
+            <td> <%= "#{cup.last_login}" %></td>
+            <td> <%= "#{cup.inactivity_days}" %></td>
+            </tr>
+          <% end %>
+      </tbody>
+      </table>
+    <%= end %>
+
+
+    </div>

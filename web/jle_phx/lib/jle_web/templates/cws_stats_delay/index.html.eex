@@ -1,0 +1,51 @@
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+</head>
+
+  <div class="row">
+    <div class="col-sm">
+        <canvas id="myChart"></canvas>
+    </div>
+  </div>
+
+
+
+<script>
+var ctx = document.getElementById('myChart').getContext('2d');
+var scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+        datasets: [{
+            label: 'Scatter Dataset',
+            borderColor: 'red',
+            backgroundColor: 'pink',
+            pointRadius: 1,
+            pointHoverRadius: 3,
+            data: [
+                <%= for [date, _user, delay] <- @records do %>
+                    <%= "{t: #{js_date_time(date)}, y: #{delay}}," %>
+                <% end %>
+            ],
+        }]
+    },
+    options: {
+        legend: {
+            display: false
+        },scales: {
+            xAxes: [{
+                type: 'time',
+                position: 'bottom'
+            }],
+            yAxes: [{
+                // type: 'logarithmic',
+                type: 'linear',
+                ticks: {
+                    max: 5000
+                }
+            }]
+
+        }
+    }
+});
+</script>

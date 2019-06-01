@@ -1,0 +1,11 @@
+    <table class="table table-striped">
+    <tbody>
+        <%= for {tag, tname, val} <- @fix_parsed do %>
+            <tr>
+            <th scope="row"> <%= tag %></th>
+            <td> <%= tname %></td>
+            <td> <%= JLEWeb.FixLogMsgView.val_riched(tag, val) %></td>
+            </tr>
+        <% end %>
+    </tbody>
+    </table>
