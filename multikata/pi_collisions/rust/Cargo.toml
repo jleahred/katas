@@ -1,0 +1,7 @@
+[package]
+name = "pi_collisions"
+version = "0.1.0"
+authors = ["jleahred <jleahred@gmail.com>"]
+edition = "2018"
+
+[dependencies]
