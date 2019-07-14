@@ -1,0 +1,23 @@
+[[package]]
+name = "pi_collisions"
+version = "0.1.0"
+dependencies = [
+ "units 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "tylar"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "units"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "tylar 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[metadata]
+"checksum tylar 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "105766786ca6c3c6a1ad3cbd0a6ba4b290162013c7a28083a57ca91df0f24c9c"
+"checksum units 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "bae6cad1565a50ee44804ad412e44aef37f579fd12740a806d0dae616e9266a3"
