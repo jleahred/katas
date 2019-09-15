@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 peg = { git = "https://github.com/kevinmehall/rust-peg" }
+idata = "0.1.0"
+# rpds = "0.5.0"
