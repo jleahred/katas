@@ -1,13 +1,13 @@
 use idata::cont::IVec;
 use peg::parser;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Command {
     PushVal(f64),
     Fun(Function),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Function {
     Add,
     Subs,
@@ -17,7 +17,7 @@ enum Function {
 
 type Stack = Vec<f64>;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Program {
     commands: Vec<Command>,
     // stack: Stack,
@@ -35,7 +35,7 @@ impl Program {
         self
     }
 
-    fn add_prog(mut self, mut program: Program) -> Self {
+    fn add_program(mut self, mut program: Program) -> Self {
         self.commands.append(&mut program.commands);
         self
     }
@@ -53,6 +53,28 @@ impl Program {
                 .last()
                 .ok_or("Incorrect program!!! final program with empty stack")?)
         }
+    }
+
+    fn add_snumber(self, n: &str) -> Result<Program, &'static str> {
+        // match n.parse::<f64>() {
+        //     Ok(number) => Ok(Program::new().add_cmd(Command::PushVal(number))),
+        //     _ => Err("failed parsing number")
+        // }
+        n.parse()
+            .and_then(|number| Ok(self.add_cmd(Command::PushVal(number))))
+            .or_else(|_| Err("failed parsing number"))
+    }
+    fn add_number(self, n: f64) -> Program {
+        self.add_cmd(Command::PushVal(n))
+    }
+    fn add_oper(self, oper: Function) -> Program {
+        self.add_cmd(Command::Fun(oper))
+    }
+    fn mult_minus1(self) -> Program {
+        self.add_number(-1.0).add_oper(Function::Mult)
+    }
+    fn oper_program(self, r: Program, op: Function) -> Program {
+        self.add_program(r).add_oper(op)
     }
 }
 
@@ -120,75 +142,65 @@ pub fn test_machine() {
     assert!(eq_float(program.execute().unwrap(), 4.0f64));
 }
 
-fn prog_from_term(l: Program, r: Program, op: &str) -> Program {
-    let operation = match op {
-        "+" => Function::Add,
-        "-" => Function::Subs,
-        _ => unreachable!(),
-    };
-    Program::new()
-        .add_prog(l)
-        .add_prog(r)
-        .add_cmd(Command::Fun(operation))
-}
+// fn prog_from_term(l: Program, r: Program, op: &str) -> Program {
+//     let operation = match op {
+//         "+" => Function::Add,
+//         "-" => Function::Subs,
+//         _ => unreachable!(),
+//     };
+//     Program::new()
+//         .add_prog(l)
+//         .add_prog(r)
+//         .add_cmd(Command::Fun(operation))
+// }
 
-fn prog_from_number(n: &str) -> Result<Program, &'static str> {
-    // match n.parse::<f64>() {
-    //     Ok(number) => Ok(Program::new().add_cmd(Command::PushVal(number))),
-    //     _ => Err("failed parsing number")
-    // }
-    n.parse()
-        .and_then(|number| Ok(Program::new().add_cmd(Command::PushVal(number))))
-        .or_else(|_| Err("failed parsing number"))
-}
+// fn oper2programs(l: Program, r: Program, op: Function) -> Program {
+//     l.add_program(r).add_oper(op)
+// }
 
 parser! {
     grammar math_parser() for str {
-        pub rule compile() -> Program
-            = expr()
+        pub  rule  compile() -> Program
+            =  expr()
 
-        rule expr() -> Program
-            =   term()
+        pub  rule  expr() -> Program
+            = _() r:(
+                  "+" _() "("  _()  e:expr()  _() ")"  _()  { e }
+                / "-" _() "("  _()  e:expr()  _() ")"  _()  { e.mult_minus1() }
+                /         "("  _()  e:expr()  _() ")"  _()  { e }
+
+                / "+"     t:term()                { t }
+                / "-"     t:term()                { t.mult_minus1() }
+                /           term()
+                ) { r }
+
+
+        rule no_sign_expr() -> Program
+            = _() r:(
+                  "("  _()  e:expr()  _() ")"  _()  { e }
+                /             term()
+                ) { r }
 
         rule term() -> Program
-            =   l:number() spc()  op:$("+" / "-") spc() r:term()  {  prog_from_term(l, r, op) }
-            /   number()
-        // pub rule expr() -> f64
-        //     = _() r:(
-        //           "+" _() "("  _()  e:expr()  _() ")"  _()  { e }
-        //         / "-" _() "("  _()  e:expr()  _() ")"  _()  { -1.0 * e }
-        //         /         "("  _()  e:expr()  _() ")"  _()  { e }
+            =   spc()
+                r:( l:factor() spc() "+" spc() r:term()  { l.oper_program(r, Function::Add) }
+                /   l:factor() spc() "-" spc() s:factor() "+" spc() r:term()   
+                        { l.oper_program(s, Function::Subs).oper_program(r, Function::Add) }
+                /   l:factor() spc() "-" spc() s:factor()  { l.oper_program(s, Function::Subs) }
+                /     factor()
+                )   { r }
 
-        //         / "+"     t:term()                { t }
-        //         / "-"     t:term()                { -1.0 * t }
-        //         /           term()
-        //         ) { r }
-
-
-        // rule no_sign_expr() -> f64
-        //     = _() r:(
-        //           "("  _()  e:expr()  _() ")"  _()  { e }
-        //         /             term()
-        //         ) { r }
-
-        // rule term() -> f64
-        //     =   spc()
-        //         r:( l:factor() spc() "+" spc() r:term()  { l + r }
-        //         /   l:factor() spc() "-" spc() r:term()  { l - r }
-        //         /     factor()
-        //         )   { r }
-
-        // rule factor() -> f64
-        //     =   spc()
-        //         r:( l:number() spc() "*" spc() r:factor()  { l * r }
-        //         /   l:number() spc() "/" spc() r:factor()  { l / r }
-        //         /     number()
-        //         )   { r }
+        rule factor() -> Program
+            =   spc()
+                r:( l:number() spc() "*" spc() r:factor()  { l.oper_program(r, Function::Mult) }
+                /   l:number() spc() "/" spc() r:factor()  { l.oper_program(r, Function::Div) }
+                /     number()
+                )   { r }
 
 
         //  number      ------------------------
         rule number() -> Program
-            = n:$(['0'..='9']+("." ['0'..='9']+)?)    {? prog_from_number(n) }
+            = n:$(['0'..='9']+("." ['0'..='9']+)?)    {? Program::add_snumber(Program::new(), n) }
 
         //  spaces      ------------------------
         rule _()  = quiet!{[' ' | '\t' | '\n' | '\r']*}
@@ -196,7 +208,9 @@ parser! {
     }
 }
 
-pub fn main() {}
+pub fn main() {
+    println!("{:#?}", math_parser::compile("+1-2+3").unwrap())
+}
 
 #[test]
 pub fn test_1() {
@@ -206,17 +220,31 @@ pub fn test_1() {
         math_parser::compile("123.12").unwrap().execute(),
         Ok(123.12)
     );
-    // assert_eq!(math_parser::expr("+123.12"), Ok(123.12));
-    // assert_eq!(math_parser::expr("-123.12"), Ok(-123.12));
-    // assert_eq!(math_parser::expr("- 123.12"), Ok(-123.12));
+    assert_eq!(
+        math_parser::compile("+123.12").unwrap().execute(),
+        Ok(123.12)
+    );
+    assert_eq!(
+        math_parser::compile("-123.12").unwrap().execute(),
+        Ok(-123.12)
+    );
+    assert_eq!(
+        math_parser::compile("- 123.12").unwrap().execute(),
+        Ok(-123.12)
+    );
     assert_eq!(math_parser::compile("1+2").unwrap().execute(), Ok(3.0));
     assert_eq!(math_parser::compile("1-2").unwrap().execute(), Ok(-1.0));
-    // assert_eq!(math_parser::expr("+ 1 - 2"), Ok(-1.0));
-    // assert_eq!(math_parser::expr("(1)"), Ok(1.0));
-    // assert_eq!(math_parser::expr("((1))"), Ok(1.0));
-    // assert_eq!(math_parser::expr("+1+2+3"), Ok(6.0));
-    // assert_eq!(math_parser::expr("+1-2+3"), Ok(2.0));
-    // assert_eq!(math_parser::expr(" (  1 + (2 + 3) ) "), Ok(6.0));
+    assert_eq!(math_parser::compile("+ 1 - 2").unwrap().execute(), Ok(-1.0));
+    assert_eq!(math_parser::compile("(1)").unwrap().execute(), Ok(1.0));
+    assert_eq!(math_parser::compile("((1))").unwrap().execute(), Ok(1.0));
+    assert_eq!(math_parser::compile("+1+2+3").unwrap().execute(), Ok(6.0));
+    assert_eq!(math_parser::compile("+1-2+3").unwrap().execute(), Ok(2.0));
+    // assert_eq!(
+    //     math_parser::compile(" (  1 + (2 + 3) ) ")
+    //         .unwrap()
+    //         .execute(),
+    //     Ok(6.0)
+    // );
 }
 
 #[test]
