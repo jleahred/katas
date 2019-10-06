@@ -1,6 +1,12 @@
 use idata::cont::IVec;
 use peg::parser;
 
+pub fn main() {
+    let program = math_parser::compile("-2*3*4+1").unwrap();
+    println!("{:#?}", program);
+    println!("{:#?}", program.execute());
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Command {
     PushVal(f64),
@@ -20,7 +26,7 @@ type Stack = Vec<f64>;
 #[derive(Default, Debug)]
 pub struct Program {
     commands: Vec<Command>,
-    // stack: Stack,
+    // pc
 }
 
 impl Program {
@@ -142,61 +148,42 @@ pub fn test_machine() {
     assert!(eq_float(program.execute().unwrap(), 4.0f64));
 }
 
-// fn prog_from_term(l: Program, r: Program, op: &str) -> Program {
-//     let operation = match op {
-//         "+" => Function::Add,
-//         "-" => Function::Subs,
-//         _ => unreachable!(),
-//     };
-//     Program::new()
-//         .add_prog(l)
-//         .add_prog(r)
-//         .add_cmd(Command::Fun(operation))
-// }
-
-// fn oper2programs(l: Program, r: Program, op: Function) -> Program {
-//     l.add_program(r).add_oper(op)
-// }
-
 parser! {
     grammar math_parser() for str {
         pub  rule  compile() -> Program
             =  expr()
 
-        pub  rule  expr() -> Program
+        rule  expr() -> Program
             = _() r:(
-                  "+" _() "("  _()  e:expr()  _() ")"  _()  { e }
-                / "-" _() "("  _()  e:expr()  _() ")"  _()  { e.mult_minus1() }
-                /         "("  _()  e:expr()  _() ")"  _()  { e }
-
-                / "+"     t:term()                { t }
-                / "-"     t:term()                { t.mult_minus1() }
-                /           term()
-                ) { r }
-
-
-        rule no_sign_expr() -> Program
-            = _() r:(
-                  "("  _()  e:expr()  _() ")"  _()  { e }
-                /             term()
+                      "-"    spc()  l:factor() spc()  t:sub_terms()*
+                                    { t.into_iter().fold(
+                                        Program::new().add_number(0.0).add_program(l).add_oper(Function::Subs),
+                                        | acc , prg | { acc.add_program(prg)}) }
+                    / "+"?   spc()  t:term()              { t }
                 ) { r }
 
         rule term() -> Program
-            =   spc()
-                r:( l:factor() spc() "+" spc() r:term()  { l.oper_program(r, Function::Add) }
-                /   l:factor() spc() "-" spc() s:factor() "+" spc() r:term()   
-                        { l.oper_program(s, Function::Subs).oper_program(r, Function::Add) }
-                /   l:factor() spc() "-" spc() s:factor()  { l.oper_program(s, Function::Subs) }
-                /     factor()
-                )   { r }
+            =   spc()  l:factor() spc()  t:sub_terms()*
+                                    { t.into_iter().fold(l, | acc , prg | { acc.add_program(prg)}) }
+
+        rule sub_terms() -> Program
+            =   "+" spc() r:factor()  { r.add_oper(Function::Add) }
+            /   "-" spc() r:factor()  { r.add_oper(Function::Subs) }
 
         rule factor() -> Program
-            =   spc()
-                r:( l:number() spc() "*" spc() r:factor()  { l.oper_program(r, Function::Mult) }
-                /   l:number() spc() "/" spc() r:factor()  { l.oper_program(r, Function::Div) }
-                /     number()
-                )   { r }
+            =   spc()  l:numb_or_parenth() spc()  t:sub_factors()*
+                                    { t.into_iter().fold(l, |acc , prg | { acc.add_program(prg) }) }
 
+        rule sub_factors() -> Program
+            =   "*" spc() r:numb_or_parenth()  { r.add_oper(Function::Mult) }
+            /   "/" spc() r:numb_or_parenth()  { r.add_oper(Function::Div) }
+
+
+        rule parenth() -> Program
+            = _() "("  _()  e:expr()  _() ")"  _()  { e }
+
+        rule numb_or_parenth() -> Program
+            = (number() / parenth())
 
         //  number      ------------------------
         rule number() -> Program
@@ -206,10 +193,6 @@ parser! {
         rule _()  = quiet!{[' ' | '\t' | '\n' | '\r']*}
         rule spc()  = quiet!{" "*}
     }
-}
-
-pub fn main() {
-    println!("{:#?}", math_parser::compile("+1-2+3").unwrap())
 }
 
 #[test]
@@ -232,6 +215,7 @@ pub fn test_1() {
         math_parser::compile("- 123.12").unwrap().execute(),
         Ok(-123.12)
     );
+    assert_eq!(math_parser::compile("1-2-3").unwrap().execute(), Ok(-4.0));
     assert_eq!(math_parser::compile("1+2").unwrap().execute(), Ok(3.0));
     assert_eq!(math_parser::compile("1-2").unwrap().execute(), Ok(-1.0));
     assert_eq!(math_parser::compile("+ 1 - 2").unwrap().execute(), Ok(-1.0));
@@ -239,32 +223,56 @@ pub fn test_1() {
     assert_eq!(math_parser::compile("((1))").unwrap().execute(), Ok(1.0));
     assert_eq!(math_parser::compile("+1+2+3").unwrap().execute(), Ok(6.0));
     assert_eq!(math_parser::compile("+1-2+3").unwrap().execute(), Ok(2.0));
-    // assert_eq!(
-    //     math_parser::compile(" (  1 + (2 + 3) ) ")
-    //         .unwrap()
-    //         .execute(),
-    //     Ok(6.0)
-    // );
+    assert_eq!(
+        math_parser::compile(" (  1 + (2 + 3) ) ")
+            .unwrap()
+            .execute(),
+        Ok(6.0)
+    );
 }
 
 #[test]
 pub fn test_2() {
-    // assert_eq!(math_parser::expr("+(1)"), Ok(1.0));
-    // assert_eq!(math_parser::expr("+(+1)"), Ok(1.0));
-    // assert!(math_parser::expr("++(1)").is_err());
-    // assert!(math_parser::expr(" + + (1)").is_err());
-    // assert!(math_parser::expr("(++1)").is_err());
-    // assert!(math_parser::expr("+1 + +2").is_err());
+    assert_eq!(math_parser::compile("+(1)").unwrap().execute(), Ok(1.0));
+    assert_eq!(math_parser::compile("+(+1)").unwrap().execute(), Ok(1.0));
+    assert_eq!(math_parser::compile("3*2").unwrap().execute(), Ok(6.0));
+    assert_eq!(math_parser::compile("8/2").unwrap().execute(), Ok(4.0));
+    assert_eq!(math_parser::compile("+ 8 / 2").unwrap().execute(), Ok(4.0));
+    assert_eq!(math_parser::compile("- 8 / 2").unwrap().execute(), Ok(-4.0));
+    assert_eq!(math_parser::compile("1+2*3").unwrap().execute(), Ok(7.0));
+    assert_eq!(math_parser::compile("1+(2*3)").unwrap().execute(), Ok(7.0));
+    assert_eq!(math_parser::compile("(1+2)+3").unwrap().execute(), Ok(6.0));
+    assert_eq!(math_parser::compile("1*2+3").unwrap().execute(), Ok(5.0));
+    assert_eq!(math_parser::compile("(1+2)*3").unwrap().execute(), Ok(9.0));
+    assert_eq!(math_parser::compile("6/3*2").unwrap().execute(), Ok(4.0));
+    assert_eq!(
+        math_parser::compile("(+(+1)+2)*3").unwrap().execute(),
+        Ok(9.0)
+    );
 
-    // assert_eq!(math_parser::expr("3*2"), Ok(6.0));
-    // assert_eq!(math_parser::expr("8/2"), Ok(4.0));
-    // assert_eq!(math_parser::expr("+ 8 / 2"), Ok(4.0));
-    // assert_eq!(math_parser::expr("- 8 / 2"), Ok(-4.0));
+    assert_eq!(
+        math_parser::compile("(-(+1)+2)*3").unwrap().execute(),
+        Ok(-9.0)
+    );
 
-    // assert!(math_parser::expr("- +8 / 2").is_err());
-    // assert!(math_parser::expr("- 8 / -2").is_err());
+    assert_eq!(
+        math_parser::compile("(-(+1)+2)*(-3)").unwrap().execute(),
+        Ok(9.0)
+    );
 
-    // assert_eq!(math_parser::expr("1+2*3"), Ok(7.0));
-    // assert_eq!(math_parser::expr("1+(2*3)"), Ok(7.0));
-    // assert_eq!(math_parser::expr("(1+2)*3"), Ok(9.0));
+    assert_eq!(math_parser::compile("2*3*4").unwrap().execute(), Ok(24.0));
+    assert_eq!(math_parser::compile("2*3*4+1").unwrap().execute(), Ok(25.0));
+    assert_eq!(
+        math_parser::compile("-2*3*4+1").unwrap().execute(),
+        Ok(-25.0)
+    );
+}
+
+#[test]
+pub fn test_errors() {
+    assert!(math_parser::compile("+-1").is_err());
+    assert!(math_parser::compile("+*1").is_err());
+    assert!(math_parser::compile("(1").is_err());
+    assert!(math_parser::compile("1+(2*3))").is_err());
+    assert!(math_parser::compile("(1+(2*3)").is_err());
 }
