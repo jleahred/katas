@@ -1,11 +1,3 @@
-fn main() {
-    println!("Hello, world!");
-
-    // let fib = Fibonacci::new(4895);
-
-    // println!("{:?}", fib.last());
-}
-
 // fn product_fib(prod: u64) -> (u64, u64, bool) {
 //     let (mut a, mut b) = (0u64, 1u64);
 //     while a * b < prod {
@@ -27,9 +19,9 @@ impl Iterator for FibIter {
 
 fn product_fib(prod: u64) -> (u64, u64, bool) {
     FibIter(0, 1)
-    .find(|FibIter(a, b)| a*b >= prod)
-    .map(|FibIter(a, b)| (a, b, a*b==prod))
-    .unwrap()
+        .find(|FibIter(a, b)| a * b >= prod)
+        .map(|FibIter(a, b)| (a, b, a * b == prod))
+        .unwrap()
 
     // let FibIter(a, b) = FibIter(0, 1)
     //     .take_while(|FibIter(a, b)| a * b <= prod)
