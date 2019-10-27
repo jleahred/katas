@@ -64,28 +64,23 @@ impl OrderBookAcc {
         }
     }
     fn get_prev_bid_ask(&self, price: Price) -> QtyBidAsk {
-        let prev_bid = match self.limit.iter().find(|(p, _)| p.0 >= price.0) {
+        let prev_bid = match self.limit.iter().find(|(&p, _)| p >= price) {
             Some((_price, qba)) => qba.qbid,
             None => self.market.qbid,
         };
-        let prev_ask = match self.limit.iter().rev().find(|(p, _)| p.0 <= price.0) {
+        let prev_ask = match self.limit.iter().rev().find(|(&p, _)| p <= price) {
             Some((_price, qba)) => qba.qask,
             None => self.market.qask,
         };
         QtyBidAsk::new(prev_bid, prev_ask)
     }
     fn accumulate_bid_levels(&mut self, price: Price, qty: QtyBid) {
-        for (_price, qba) in self.limit.iter_mut().take_while(|(p, _)| p.0 <= price.0) {
+        for (_price, qba) in self.limit.iter_mut().take_while(|(&p, _)| p <= price) {
             qba.inc_bid(qty);
         }
     }
     fn accumulate_ask_levels(&mut self, price: Price, qty: QtyAsk) {
-        for (_price, qba) in self
-            .limit
-            .iter_mut()
-            .rev()
-            .take_while(|(p, _)| p.0 >= price.0)
-        {
+        for (_price, qba) in self.limit.iter_mut().rev().take_while(|(&p, _)| p >= price) {
             qba.inc_ask(qty);
         }
     }
