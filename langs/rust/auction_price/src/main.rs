@@ -29,19 +29,19 @@ struct QtyAsk(u64);
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 struct QtyBidAsk {
-    qty_bid: QtyBid,
-    qty_ask: QtyAsk,
+    qbid: QtyBid,
+    qask: QtyAsk,
 }
 
 impl QtyBidAsk {
-    fn new(qty_bid: QtyBid, qty_ask: QtyAsk) -> Self {
-        QtyBidAsk { qty_bid, qty_ask }
+    fn new(qbid: QtyBid, qask: QtyAsk) -> Self {
+        QtyBidAsk { qbid, qask }
     }
     fn inc_bid(&mut self, qty: QtyBid) {
-        self.qty_bid.0 += qty.0;
+        self.qbid.0 += qty.0;
     }
     fn inc_ask(&mut self, qty: QtyAsk) {
-        self.qty_ask.0 += qty.0;
+        self.qask.0 += qty.0;
     }
 }
 
@@ -65,12 +65,12 @@ impl OrderBookAcc {
     }
     fn get_prev_bid_ask(&self, price: Price) -> QtyBidAsk {
         let prev_bid = match self.limit.iter().find(|(p, _)| p.0 >= price.0) {
-            Some((_price, qba)) => qba.qty_bid,
-            None => self.market.qty_bid,
+            Some((_price, qba)) => qba.qbid,
+            None => self.market.qbid,
         };
         let prev_ask = match self.limit.iter().rev().find(|(p, _)| p.0 <= price.0) {
-            Some((_price, qba)) => qba.qty_ask,
-            None => self.market.qty_ask,
+            Some((_price, qba)) => qba.qask,
+            None => self.market.qask,
         };
         QtyBidAsk::new(prev_bid, prev_ask)
     }
@@ -102,16 +102,16 @@ impl OrderBookAcc {
     }
     fn add_market_order(mut self, side: Side, qty: Qty) -> Self {
         if side == Side::Bid {
-            let qty_bid = QtyBid(qty.0);
-            self.market.inc_bid(qty_bid);
+            let qbid = QtyBid(qty.0);
+            self.market.inc_bid(qbid);
             for (_price, qty_bid_ask) in self.limit.iter_mut() {
-                qty_bid_ask.inc_bid(qty_bid);
+                qty_bid_ask.inc_bid(qbid);
             }
         } else {
-            let qty_ask = QtyAsk(qty.0);
-            self.market.inc_ask(qty_ask);
+            let qask = QtyAsk(qty.0);
+            self.market.inc_ask(qask);
             for (_price, qty_bid_ask) in self.limit.iter_mut() {
-                qty_bid_ask.inc_ask(qty_ask);
+                qty_bid_ask.inc_ask(qask);
             }
         }
         self
@@ -121,15 +121,13 @@ impl OrderBookAcc {
         let some_max_qty_cross = self
             .limit
             .iter()
-            .map(|(_price, qba)| std::cmp::min(qba.qty_bid.0, qba.qty_ask.0))
+            .map(|(_price, qba)| std::cmp::min(qba.qbid.0, qba.qask.0))
             .max_by(|d1, d2| d1.cmp(d2));
         if let Some(max_qty_cross) = some_max_qty_cross {
             MoreExecLevels(
                 self.limit
                     .iter()
-                    .filter(|(_price, qba)| {
-                        std::cmp::min(qba.qty_bid.0, qba.qty_ask.0) == max_qty_cross
-                    })
+                    .filter(|(_price, qba)| std::cmp::min(qba.qbid.0, qba.qask.0) == max_qty_cross)
                     .map(|(&price, b_a)| Level(price, b_a.clone()))
                     .collect::<Vec<_>>(),
             )
@@ -147,14 +145,14 @@ impl MoreExecLevels {
         let some_min_abs_diff = self
             .0
             .iter()
-            .map(|Level(_price, qba)| (qba.qty_bid.0 as i64 - qba.qty_ask.0 as i64).abs())
+            .map(|Level(_price, qba)| (qba.qbid.0 as i64 - qba.qask.0 as i64).abs())
             .min();
 
         MinDiffLevels(if let Some(min_abs_diff) = some_min_abs_diff {
             self.0
                 .iter()
                 .filter(|Level(_price, qba)| {
-                    (qba.qty_bid.0 as i64 - qba.qty_ask.0 as i64).abs() == min_abs_diff
+                    (qba.qbid.0 as i64 - qba.qask.0 as i64).abs() == min_abs_diff
                 })
                 .cloned()
                 .collect::<Vec<_>>()
