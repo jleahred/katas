@@ -1,10 +1,10 @@
 fn main() {
-    let price = get_example_order_book()
+    let auction_pos = get_example_order_book()
         .get_more_qty_exec_levels()
         .get_min_diff_levels()
         .get_proxim2(Price(60));
 
-    println!("__ {:#?}", price);
+    println!("__ {:#?}", auction_pos);
 }
 
 //  ----------------------
@@ -27,11 +27,17 @@ struct QtyBid(u64);
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Copy, Clone)]
 struct QtyAsk(u64);
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+struct QtyBidAsk((QtyBid, QtyAsk));
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+struct Level(Price, QtyBidAsk);
+
 use std::collections::BTreeMap;
 
 #[derive(Debug, Eq, PartialEq)]
 struct OrderBookAcc {
-    limit: BTreeMap<Price, (QtyBid, QtyAsk)>,
+    limit: BTreeMap<Price, QtyBidAsk>,
     market: (QtyBid, QtyAsk),
 }
 
@@ -44,22 +50,24 @@ impl OrderBookAcc {
     }
     fn get_prev_bid_ask(&self, price: Price) -> (QtyBid, QtyAsk) {
         let prev_bid = match self.limit.iter().find(|(p, _)| p.0 >= price.0) {
-            Some((_price, (qty_bid, _qty_ask))) => QtyBid(qty_bid.0),
+            Some((_price, QtyBidAsk((qty_bid, _qty_ask)))) => QtyBid(qty_bid.0),
             None => self.market.0,
         };
         let prev_ask = match self.limit.iter().rev().find(|(p, _)| p.0 <= price.0) {
-            Some((_price, (_qty_bid, qty_ask))) => QtyAsk(qty_ask.0),
+            Some((_price, QtyBidAsk((_qty_bid, qty_ask)))) => QtyAsk(qty_ask.0),
             None => self.market.1,
         };
         (prev_bid, prev_ask)
     }
     fn accumulate_bid_levels(&mut self, price: Price, qty: QtyBid) {
-        for (_price, (bid, _ask)) in self.limit.iter_mut().take_while(|(p, _)| p.0 <= price.0) {
+        for (_price, QtyBidAsk((bid, _ask))) in
+            self.limit.iter_mut().take_while(|(p, _)| p.0 <= price.0)
+        {
             bid.0 += qty.0;
         }
     }
     fn accumulate_ask_levels(&mut self, price: Price, qty: QtyAsk) {
-        for (_price, (_bid, ask)) in self
+        for (_price, QtyBidAsk((_bid, ask))) in self
             .limit
             .iter_mut()
             .rev()
@@ -71,7 +79,9 @@ impl OrderBookAcc {
 
     fn add_limit_order(mut self, side: Side, price: Price, qty: Qty) -> Self {
         let (prev_bid, prev_ask) = self.get_prev_bid_ask(price);
-        self.limit.entry(price).or_insert((prev_bid, prev_ask));
+        self.limit
+            .entry(price)
+            .or_insert(QtyBidAsk((prev_bid, prev_ask)));
         if side == Side::Bid {
             self.accumulate_bid_levels(price, QtyBid(qty.0));
         } else {
@@ -82,12 +92,12 @@ impl OrderBookAcc {
     fn add_market_order(mut self, side: Side, qty: Qty) -> Self {
         if side == Side::Bid {
             (self.market.0).0 += qty.0;
-            for (_price, (bid, _ask)) in self.limit.iter_mut() {
+            for (_price, QtyBidAsk((bid, _ask))) in self.limit.iter_mut() {
                 bid.0 += qty.0;
             }
         } else {
             (self.market.1).0 += qty.0;
-            for (_price, (_bid, ask)) in self.limit.iter_mut() {
+            for (_price, QtyBidAsk((_bid, ask))) in self.limit.iter_mut() {
                 ask.0 += qty.0;
             }
         }
@@ -98,14 +108,14 @@ impl OrderBookAcc {
         let some_max_qty_cross = self
             .limit
             .iter()
-            .map(|(_price, (b, a))| std::cmp::min(b.0, a.0))
+            .map(|(_price, QtyBidAsk((b, a)))| std::cmp::min(b.0, a.0))
             .max_by(|d1, d2| d1.cmp(d2));
         if let Some(max_qty_cross) = some_max_qty_cross {
             MoreExecLevels(
                 self.limit
                     .iter()
-                    .filter(|(_price, (b, a))| std::cmp::min(b.0, a.0) == max_qty_cross)
-                    .map(|(price, (b, a))| (*price, (*b, *a)))
+                    .filter(|(_price, QtyBidAsk((b, a)))| std::cmp::min(b.0, a.0) == max_qty_cross)
+                    .map(|(&price, b_a)| Level(price, *b_a))
                     .collect::<Vec<_>>(),
             )
         } else {
@@ -115,21 +125,23 @@ impl OrderBookAcc {
 }
 
 #[derive(Debug)]
-struct MoreExecLevels(Vec<(Price, (QtyBid, QtyAsk))>);
+struct MoreExecLevels(Vec<Level>);
 
 impl MoreExecLevels {
     fn get_min_diff_levels(&self) -> MinDiffLevels {
         let some_min_abs_diff = self
             .0
             .iter()
-            .map(|(_price, (b, a))| (b.0 as i64 - a.0 as i64).abs())
+            .map(|Level(_price, QtyBidAsk((b, a)))| (b.0 as i64 - a.0 as i64).abs())
             .min();
 
         MinDiffLevels(if let Some(min_abs_diff) = some_min_abs_diff {
             self.0
                 .iter()
-                .filter(|(_price, (b, a))| (b.0 as i64 - a.0 as i64).abs() == min_abs_diff)
-                .map(|(price, _)| *price)
+                .filter(|Level(_price, QtyBidAsk((b, a)))| {
+                    (b.0 as i64 - a.0 as i64).abs() == min_abs_diff
+                })
+                .cloned()
                 .collect::<Vec<_>>()
         } else {
             vec![]
@@ -138,23 +150,23 @@ impl MoreExecLevels {
 }
 
 #[derive(Debug)]
-struct MinDiffLevels(Vec<Price>);
+struct MinDiffLevels(Vec<Level>);
 
 impl MinDiffLevels {
-    fn get_proxim2(&self, price: Price) -> Option<Price> {
-        let init: Option<(i64, Price)> = None; //  min diff, first found price
+    fn get_proxim2(&self, price: Price) -> Option<Level> {
+        let init: Option<(i64, Level)> = None; //  min diff, first found price
         self.0
             .iter()
-            .fold(init, |some_acc, &p| {
+            .fold(init, |some_acc, Level(p, b_a)| {
                 if let Some(acc) = some_acc {
                     let curr_diff = (p.0 - price.0).abs();
                     if curr_diff < acc.0 {
-                        Some((curr_diff, p))
+                        Some((curr_diff, Level(*p, *b_a).clone()))
                     } else {
                         Some(acc)
                     }
                 } else {
-                    Some(((p.0 - price.0).abs(), p))
+                    Some(((p.0 - price.0).abs(), Level(*p, *b_a).clone()))
                 }
             })
             .map(|(_diff, price)| price)
