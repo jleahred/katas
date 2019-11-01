@@ -12,3 +12,7 @@ The algorithm calculates the accumulated intra-price volumes on each order inser
 
 Then searches for the prices that cross the most volume.
 The algorithm then searches for the one that has the least difference between buying and selling, and ends up choosing the one that is closest to the reference price.
+
+Rules...
+
+![auction rules](auction_rules.png)

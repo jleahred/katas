@@ -1,10 +1,12 @@
 fn main() {
-    let auction_pos = get_example_order_book()
+    let auction_levels = get_example_order_book()
         .get_more_qty_exec_levels()
         .get_min_diff_levels()
-        .get_proxim2(Price(60));
+        .get_max_qty_levels()
+        .get_proxim2_levels(Price(60));
+        ;
 
-    println!("__ {:#?}", auction_pos);
+    println!("__ {:#?}", auction_levels);
 }
 
 //  ----------------------
@@ -112,14 +114,14 @@ impl OrderBookAcc {
         self
     }
 
-    fn get_more_qty_exec_levels(&self) -> MoreExecLevels {
+    fn get_more_qty_exec_levels(&self) -> AuctionLevelsTrait {
         let some_max_qty_cross = self
             .limit
             .iter()
             .map(|(_price, qba)| std::cmp::min(qba.qbid.0, qba.qask.0))
             .max_by(|d1, d2| d1.cmp(d2));
         if let Some(max_qty_cross) = some_max_qty_cross {
-            MoreExecLevels(
+            AuctionLevelsTrait(
                 self.limit
                     .iter()
                     .filter(|(_price, qba)| std::cmp::min(qba.qbid.0, qba.qask.0) == max_qty_cross)
@@ -127,23 +129,23 @@ impl OrderBookAcc {
                     .collect::<Vec<_>>(),
             )
         } else {
-            MoreExecLevels(vec![])
+            AuctionLevelsTrait(vec![])
         }
     }
 }
 
 #[derive(Debug)]
-struct MoreExecLevels(Vec<Level>);
+struct AuctionLevelsTrait(Vec<Level>);
 
-impl MoreExecLevels {
-    fn get_min_diff_levels(&self) -> MinDiffLevels {
+impl AuctionLevelsTrait {
+    fn get_min_diff_levels(&self) -> AuctionLevelsTrait {
         let some_min_abs_diff = self
             .0
             .iter()
             .map(|Level(_price, qba)| (qba.qbid.0 as i64 - qba.qask.0 as i64).abs())
             .min();
 
-        MinDiffLevels(if let Some(min_abs_diff) = some_min_abs_diff {
+        AuctionLevelsTrait(if let Some(min_abs_diff) = some_min_abs_diff {
             self.0
                 .iter()
                 .filter(|Level(_price, qba)| {
@@ -155,29 +157,41 @@ impl MoreExecLevels {
             vec![]
         })
     }
-}
-
-#[derive(Debug)]
-struct MinDiffLevels(Vec<Level>);
-
-impl MinDiffLevels {
-    fn get_proxim2(&self, price: Price) -> Option<Level> {
-        let init: Option<(i64, Level)> = None; //  min diff, first found price
-        self.0
+    fn get_max_qty_levels(&self) -> AuctionLevelsTrait {
+        let some_max_qty = self
+            .0
             .iter()
-            .fold(init, |some_acc, Level(p, b_a)| {
-                if let Some(acc) = some_acc {
-                    let curr_diff = (p.0 - price.0).abs();
-                    if curr_diff < acc.0 {
-                        Some((curr_diff, Level(*p, b_a.clone()).clone()))
-                    } else {
-                        Some(acc)
-                    }
-                } else {
-                    Some(((p.0 - price.0).abs(), Level(*p, b_a.clone()).clone()))
-                }
-            })
-            .map(|(_diff, price)| price)
+            .map(|Level(_price, qba)| std::cmp::max(qba.qbid.0 as i64, qba.qask.0 as i64))
+            .max();
+
+        AuctionLevelsTrait(if let Some(max_qty) = some_max_qty {
+            self.0
+                .iter()
+                .filter(|Level(_price, qba)| {
+                    qba.qbid.0 as i64 == max_qty || qba.qask.0 as i64 == max_qty
+                })
+                .cloned()
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        })
+    }
+    fn get_proxim2_levels(&self, price: Price) -> AuctionLevelsTrait {
+        let some_min_dif_ref_price = self
+            .0
+            .iter()
+            .map(|Level(p, _qba)| (p.0 - price.0).abs())
+            .min();
+
+        AuctionLevelsTrait(if let Some(min_dif_ref_price) = some_min_dif_ref_price {
+            self.0
+                .iter()
+                .filter(|Level(p, _qba)| (p.0 - price.0).abs() == min_dif_ref_price)
+                .cloned()
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        })
     }
 }
 
