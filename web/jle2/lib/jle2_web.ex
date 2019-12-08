@@ -24,6 +24,7 @@ defmodule Jle2Web do
       import Plug.Conn
       import Jle2Web.Gettext
       alias Jle2Web.Router.Helpers, as: Routes
+      import Phoenix.LiveView.Controller
     end
   end
 
@@ -42,6 +43,17 @@ defmodule Jle2Web do
       import Jle2Web.ErrorHelpers
       import Jle2Web.Gettext
       alias Jle2Web.Router.Helpers, as: Routes
+
+      import Phoenix.LiveView,
+        only: [
+          live_render: 2,
+          live_render: 3,
+          live_link: 1,
+          live_link: 2,
+          live_component: 2,
+          live_component: 3,
+          live_component: 4
+        ]
     end
   end
 
@@ -50,6 +62,7 @@ defmodule Jle2Web do
       use Phoenix.Router
       import Plug.Conn
       import Phoenix.Controller
+      import Phoenix.LiveView.Router
     end
   end
 

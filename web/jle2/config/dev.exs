@@ -52,7 +52,8 @@ config :jle2, Jle2Web.Endpoint,
       ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
       ~r{priv/gettext/.*(po)$},
       ~r{lib/jle2_web/views/.*(ex)$},
-      ~r{lib/jle2_web/templates/.*(eex)$}
+      ~r{lib/jle2_web/templates/.*(eex)$},
+      ~r{lib/jle2_web/live/.*(ex)$}
     ]
   ]
 

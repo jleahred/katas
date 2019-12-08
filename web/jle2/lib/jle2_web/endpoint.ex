@@ -1,6 +1,8 @@
 defmodule Jle2Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :jle2
 
+  socket "/live", Phoenix.LiveView.Socket
+
   socket "/socket", Jle2Web.UserSocket,
     websocket: true,
     longpoll: false

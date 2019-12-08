@@ -12,7 +12,10 @@ config :jle2, Jle2Web.Endpoint,
   url: [host: "localhost"],
   secret_key_base: "OKnOgzWl531tVPRVpzq5v2mWGv0ugRyMZ8HVM6ZP6KT3+TetfQgls1y3w8a6GvJd",
   render_errors: [view: Jle2Web.ErrorView, accepts: ~w(html json)],
-  pubsub: [name: Jle2.PubSub, adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: Jle2.PubSub, adapter: Phoenix.PubSub.PG2],
+  live_view: [
+    signing_salt: "aEyGnld2rlmLrtb/xTS3ytcANIZO61I/"
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,
