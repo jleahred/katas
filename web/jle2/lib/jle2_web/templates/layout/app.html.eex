@@ -17,12 +17,12 @@
       <header class="mdl-layout__header">
         <div class="mdl-layout__header-row">
           <!-- Title -->
-          <button class="mdl-layout-title mdl-color-text--white mdl-button mdl-js-button mdl-js-ripple-effect"  href="#">JLE</button>
-          <span class="mdl-layout-title" href="#">
-          <a class="mdl-navigation__link" href="/">(root)</a>
-          </span>
+          <span class="mdl-layout-title mdl-color-text--white"  href="/">JLE</span>
           <!-- Add spacer, to align navigation to the right -->
           <div class="mdl-layout-spacer"></div>
+          <span class="mdl-layout-title">
+            <a class="mdl-navigation__link" href="/">(root)</a>
+          </span>
           <!-- Navigation. We hide it in small screens. -->
           <nav class="mdl-navigation mdl-layout--large-screen-only">
             <a class="mdl-navigation__link" href="">Link</a>
@@ -42,8 +42,8 @@
         </nav>
       </div>
       <main class="mdl-layout__content">
-        <div class="page-content"><!-- Your content goes here --></div>
-
+        <div class="page-content" style="text-align:center;padding:20px">
+            <!-- Your content goes here -->
             <%= unless is_nil(get_flash(@conn, :info)) do %>
               <span class="mdl-chip mdl-chip--contact">
                   <span class="mdl-chip__contact mdl-color--red mdl-color-text--white">E</span>
@@ -58,6 +58,7 @@
             <% end %>
 
             <%= render @view_module, @view_template, assigns %>
+          </div>
       </main>
     </div>
 

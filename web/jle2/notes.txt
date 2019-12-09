@@ -1,0 +1,46 @@
+mix phx.new jle2 --no-ecto
+    $ cd jle2
+
+Start your Phoenix app with:
+
+    $ mix phx.server
+
+You can also run your app inside IEx (Interactive Elixir) as:
+
+    $ iex -S mix phx.server
+
+
+
+https://medium.com/@cedric_paumard/how-to-build-multiple-web-apps-with-elixir-thanks-to-umbrella-part-2-set-up-the-project-800d6d731dbd
+
+mix phx.new jle --umbrella --no-ecto
+mix phx.new admin --app admin --no-ecto
+mix new database --app database --sup
+mix phx.new api --app api --no-webpack --no-html --no-ecto
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+<style>
+#foo
+{
+  position: fixed;
+  bottom: 8px;
+  right: 20px;
+}
+
+</style>
+
+
+<!-- Colored FAB button with ripple -->
+<div class="foo2" id="foo">
+<button class="fab mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored">
+  <i class="material-icons">add</i>
+</button>
+</div>
