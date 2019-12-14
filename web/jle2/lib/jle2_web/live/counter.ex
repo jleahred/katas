@@ -52,8 +52,18 @@ defmodule Jle2Web.CounterLive do
   end
 
   def handle_params(params, _uri, socket) do
+    Logger.info("#{inspect(socket, pretty: true)}")
     status = socket.assigns.st
     {:noreply, socket |> assign(st: put_in(status.params, Params.from_url_params(params)))}
+    # redirect --
+    # current_path = "/#{uri |> String.split("/") |> Enum.take(-1)}"
+    # Logger.info("__path___  #{current_path}")
+    # {:stop,
+    #  socket
+    #  |> redirect(
+    #    to:
+    #    "/?orig_path=#{URI.encode_www_form(current_path)}}"
+    #  )}
   end
 
   def handle_event("inc", _id, socket) do
