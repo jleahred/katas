@@ -32,11 +32,14 @@ pub fn error(desc: &str, ast_context: Option<&str>) -> Error {
     Error(desc.to_string(), ast_context.map(|a| a.to_string()))
 }
 
+#[derive(Debug, PartialEq, Clone)]
+struct Named(String);
+
 /// Information of a node
 #[derive(Debug, PartialEq)]
 pub enum Node {
-    /// The node is terminal (atom) with a name
-    Val(String),
+    /// The node is terminal (atom) with a name and value
+    Val((Named, String)),
     /// The node is not terminal (rule)
     /// with a name and a vec of nodes
     Rule((String, Vec<Node>)),
@@ -173,11 +176,18 @@ impl Node {
     pub fn compact(&self) -> Self {
         fn concat_nodes(nodes: Vec<Node>, n: &Node) -> Vec<Node> {
             let get_val = |nodes: &Vec<Node>| match nodes.last() {
-                Some(Node::Val(ref v)) => Some(v.to_string()),
+                Some(Node::Val(ref v)) => Some((v.0.clone(), v.1.clone())),
                 _ => None,
             };
-            let concat_v = |v: &String, prev_v: &Option<String>| match (v, prev_v) {
-                (v, Some(pv)) => Some(format!("{}{}", pv, v)),
+            let concat_v = |v: &(Named, String), prev_v: &Option<(Named, String)>| match (v, prev_v)
+            {
+                (v, Some(pv)) => {
+                    if v.0 == pv.0 {
+                        Some((v.0, format!("{}{}", pv.1, v.1)))
+                    } else {
+                        None
+                    }
+                }
                 _ => None,
             };
 
@@ -186,7 +196,7 @@ impl Node {
                 (Node::Val(ref v), ref prev_v) => match concat_v(v, prev_v) {
                     Some(c) => {
                         let (_, nodes) = nodes.ipop();
-                        nodes.ipush(Node::Val(c.clone()))
+                        nodes.ipush(Node::Val((c.0.clone(), c.1.clone())))
                     }
                     _ => nodes.ipush(Node::Val(v.clone())),
                 },
@@ -239,9 +249,9 @@ pub fn get_nodename_and_nodes(node: &Node) -> Result<(&str, &[Node]), Error> {
 ///     
 ///     assert!(val == "hello");
 ///```
-pub fn get_node_val(node: &Node) -> Result<&str, Error> {
+pub fn get_node_val(node: &Node) -> Result<(&str, &Named), Error> {
     match node {
-        Node::Val(v) => Ok(v),
+        Node::Val(v) => Ok((&v.1, &v.0)),
         _ => Err(error("expected node::Val", None)),
     }
 }
@@ -269,7 +279,7 @@ pub fn get_node_val(node: &Node) -> Result<&str, Error> {
 ///     
 ///     assert!(ast::get_nodes_unique_val(&nodes).is_err());
 ///```
-pub fn get_nodes_unique_val(nodes: &[Node]) -> Result<&str, Error> {
+pub fn get_nodes_unique_val(nodes: &[Node]) -> Result<(&str, &Named), Error> {
     match (nodes.first(), nodes.len()) {
         (Some(n), 1) => get_node_val(n),
         _ => Err(error("expected only one value in nodes", None)),
@@ -297,10 +307,10 @@ pub fn get_nodes_unique_val(nodes: &[Node]) -> Result<&str, Error> {
 ///     assert!(nodes.len() == 0);
 ///```
 ///
-pub fn consume_val(nodes: &[Node]) -> Result<(&str, &[Node]), Error> {
+pub fn consume_val(nodes: &[Node]) -> Result<(&str, &Named, &[Node]), Error> {
     let (node, nodes) = split_first_nodes(nodes)?;
     match node {
-        Node::Val(v) => Ok((&v, nodes)),
+        Node::Val(v) => Ok((&v.1, &v.0, nodes)),
         _ => Err(error("expected Val node", None)),
     }
 }
@@ -352,7 +362,7 @@ pub fn split_first_nodes(nodes: &[Node]) -> Result<(&Node, &[Node]), Error> {
 pub fn consume_this_value<'a>(v: &str, nodes: &'a [Node]) -> Result<&'a [Node], Error> {
     let (node, nodes) = split_first_nodes(nodes)?;
 
-    let nv = get_node_val(node)?;
+    let (nv, _) = get_node_val(node)?;
     if nv == v {
         Ok(nodes)
     } else {
