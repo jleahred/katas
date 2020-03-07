@@ -20,34 +20,14 @@ mod test;
 
 struct Context {
     //  stack with the module paths we are inside
-    //  i.e.   mod_a, mod_a.mod_b, mod_a.mod_b, mod_c
-    inside_mods: Vec<String>,
+//  i.e.   mod_a, mod_a.mod_b, mod_a.mod_b, mod_c
+// _inside_mods__for_future: Vec<String>,
 }
 
 impl Context {
     fn new() -> Self {
         Context {
-            inside_mods: vec![],
-        }
-    }
-    fn add_module(mut self, mod_name: &str) -> Self {
-        match self.inside_mods.last().cloned() {
-            Some(mod_path) => self.inside_mods.push(format!("{}{}", mod_path, mod_name)),
-            None => self.inside_mods.push(mod_name.to_string()),
-        };
-        self
-    }
-    fn remove_module(mut self, mod_name: &str) -> result::Result<Self, Error> {
-        let last = self.inside_mods.last().cloned();
-        match last {
-            Some(_mod_path) => {
-                self.inside_mods.pop();
-                Ok(self)
-            }
-            None => Err(error_peg_s(&format!(
-                "remove module on empty path statck: <{}>",
-                mod_name
-            ))),
+            // _inside_mods__for_future: vec![],
         }
     }
 }
@@ -246,42 +226,18 @@ fn consume_grammar(
     nodes: &[flat::Node],
     context: Context,
 ) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
-    // grammar         =   (rule  /  module)+
+    // grammar         =   rule+
 
-    fn consume_rule_and_add_set_of_rules(
-        rules: expression::SetOfRules,
-        nodes: &[flat::Node],
-        context: Context,
-    ) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
-        let ((name, expr), nodes, context) = consume_rule(nodes, context)?;
-        let rules = rules.add(&name, expr);
-        Ok((rules, nodes, context))
-    }
-    fn consume_module_and_add_set_of_rules(
-        rules: expression::SetOfRules,
-        nodes: &[flat::Node],
-        context: Context,
-    ) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
-        let (mod_rules, nodes, context) = consume_module(nodes, context)?;
-        let rules = rules.merge(mod_rules);
-        Ok((rules, nodes, context))
-    }
-    fn rec_consume_rules_or_modules(
+    fn rec_consume_rules(
         rules: expression::SetOfRules,
         nodes: &[flat::Node],
         context: Context,
     ) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
         match flat::peek_first_node(nodes)? {
-            flat::Node::BeginRule(rule_or_module) => {
-                let (rules, nodes, context) = match rule_or_module.as_ref() {
-                    "rule" => consume_rule_and_add_set_of_rules(rules, nodes, context),
-                    "module" => consume_module_and_add_set_of_rules(rules, nodes, context),
-                    unknown => Err(error_peg_s(&format!(
-                        "expected rule or module, received: {}",
-                        unknown
-                    ))),
-                }?;
-                rec_consume_rules_or_modules(rules, nodes, context)
+            flat::Node::BeginRule(_) => {
+                let ((name, expr), nodes, context) = consume_rule(nodes, context)?;
+                let rules = rules.add(&name, expr);
+                rec_consume_rules(rules, nodes, context)
             }
             _ => Ok((rules, nodes, context)),
         }
@@ -289,35 +245,7 @@ fn consume_grammar(
     //  --------------------------
 
     consuming_rule("grammar", nodes, context, |nodes, context| {
-        rec_consume_rules_or_modules(rules!(), &nodes, context)
-    })
-}
-
-fn consume_module(
-    nodes: &[flat::Node],
-    context: Context,
-) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
-    // module          =   _  mod_name _ '{'  _ grammar  _ '}' _eol _
-
-    consuming_rule("module", nodes, context, |nodes, context| {
-        let (mod_name, nodes, context) = consume_mod_name(nodes, context)?;
-        let nodes = flat::consume_this_value("{", nodes)?;
-        let (rules, nodes, context) = consume_grammar(nodes, context.add_module(mod_name))?;
-        let nodes = flat::consume_this_value("}", nodes)?;
-        let context = context.remove_module(mod_name)?;
-        Ok((rules, nodes, context))
-    })
-}
-
-fn consume_mod_name(
-    nodes: &[flat::Node],
-    context: Context,
-) -> result::Result<(&str, &[flat::Node], Context), Error> {
-    // mod_name        =   symbol
-
-    consuming_rule("mod_name", nodes, context, |nodes, context| {
-        let (symbol, nodes, context) = consume_symbol(nodes, context)?;
-        Ok((symbol, nodes, context))
+        rec_consume_rules(rules!(), &nodes, context)
     })
 }
 

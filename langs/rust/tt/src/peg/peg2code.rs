@@ -30,10 +30,8 @@ fn text_peg2code() -> &'static str {
 
     main            =   grammar
 
-    grammar         =   (rule  /  module)+
+    grammar         =   rule+
     
-    module          =   _  mod_name _ '{'  _ grammar  _ '}' _eol _
-    mod_name        =   symbol
     symbol          =   [_a-zA-Z0-9] [_'"a-zA-Z0-9]*
 
     rule            =   _  rule_name  _  '='  _  expr  _eol _
