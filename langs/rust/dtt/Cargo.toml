@@ -1,12 +1,15 @@
 [package]
 name = "dtt"
 version = "0.1.0"
+edition = "2018"
 authors = ["jleahred <jleahred@gmail.com>"]
 license = "GPL-3.0"
-description = "Dynamic text to transform rules. Inputs: peg grammar and text to transform"
+description = "Dynamic parser and text transform. You can define rules at run time. It's possible to use peg format"
 readme = "README.md"
-repository = "https://github.com/jleahred/pending"
-keywords = ["parsing", "parser", "dynamic", "peg"]
+repository = "https://github.com/jleahred/dtt"
+keywords = ["parsing", "parser", "dynamic", "peg", "text", "transformation", "dsl"]
 
 [dependencies]
-dynparser = { git = "https://github.com/jleahred/dynparser.git" }
+idata = "0.1.0"
+dynparser = { git = "https://github.com/jleahred/dynparser" }
+# dynparser = {path = ""}

@@ -2,16 +2,11 @@
 //! Module with functions to generate rules from PEG grammar
 //!
 
-pub mod gcode;
+mod gcode;
 pub mod peg2code;
 mod rules;
 
-use crate::ast::{self, flat};
-use crate::parse;
-use crate::parser::{
-    self,
-    expression::{self, Expression},
-};
+use dynparser as dp;
 use idata::{self, cont::IVec};
 use std::{self, result};
 
@@ -35,16 +30,16 @@ impl Context {
 #[derive(Debug)]
 /// Most of peg functions will return a result with this type
 /// on Error side
-pub enum Error {
+pub(crate) enum Error {
     /// When error has been on `peg` side
     /// we will receive a description and
     /// optionally, a link to a stacked error
     /// Then, we can have a errors stack of ilimited size
     Peg((String, Option<Box<Error>>)),
     /// When error is on parser side
-    Parser(parser::Error),
+    Parser(dp::parser::Error),
     /// When error is on ast side
-    Ast(ast::Error),
+    Ast(dp::ast::Error),
 }
 
 fn error_peg_s(s: &str) -> Error {
@@ -57,14 +52,14 @@ impl Error {
     }
 }
 
-impl From<parser::Error> for Error {
-    fn from(e: parser::Error) -> Self {
+impl From<dp::parser::Error> for Error {
+    fn from(e: dp::parser::Error) -> Self {
         Error::Parser(e)
     }
 }
 
-impl From<ast::Error> for Error {
-    fn from(e: ast::Error) -> Self {
+impl From<dp::ast::Error> for Error {
+    fn from(e: dp::ast::Error) -> Self {
         Error::Ast(e)
     }
 }
@@ -82,7 +77,7 @@ impl std::fmt::Display for Error {
 
 /// Most of functions on peg module, will return a set of rules
 /// or an error
-pub type Result = result::Result<expression::SetOfRules, Error>;
+pub(crate) type Result = result::Result<dp::parser::expression::SetOfRules, Error>;
 
 // -------------------------------------------------------------------------------------
 //  A P I
@@ -93,7 +88,7 @@ pub type Result = result::Result<expression::SetOfRules, Error>;
 /// Next, is a full example showing the error messages, if so
 /// ```
 /// extern crate dynparser;
-/// use dynparser::{parse, rules_from_peg};
+/// use dp::{parse, rules_from_peg};
 ///
 /// fn main() {
 ///     let rules = rules_from_peg(
@@ -124,7 +119,7 @@ pub type Result = result::Result<expression::SetOfRules, Error>;
 /// and comments on peg grammar
 /// ```
 ///extern crate dynparser;
-///use dynparser::{parse, rules_from_peg};
+///use dp::{parse, rules_from_peg};
 ///
 ///    let rules = rules_from_peg(
 ///        r#"
@@ -143,7 +138,7 @@ pub type Result = result::Result<expression::SetOfRules, Error>;
 ///
 /// ```
 ///    extern crate dynparser;
-///    use dynparser::{parse, rules_from_peg};
+///    use dp::{parse, rules_from_peg};
 ///
 ///    let rules = rules_from_peg(
 ///        r#"
@@ -167,8 +162,8 @@ pub type Result = result::Result<expression::SetOfRules, Error>;
 ///     }
 /// ```
 
-pub fn rules_from_peg(peg: &str) -> Result {
-    let ast = parse(peg, &rules::parse_peg())?;
+pub(crate) fn rules_from_peg(peg: &str) -> Result {
+    let ast = dp::parse(peg, &rules::parse_peg())?;
     let nodes = ast.compact().prune(&["_", "_1", "_eol"]).flatten();
 
     rules_from_flat_ast(&nodes)
@@ -177,7 +172,7 @@ pub fn rules_from_peg(peg: &str) -> Result {
 //  A P I
 // -------------------------------------------------------------------------------------
 
-fn rules_from_flat_ast(nodes: &[flat::Node]) -> Result {
+fn rules_from_flat_ast(nodes: &[dp::ast::flat::Node]) -> Result {
     let (rules, nodes, _context) = consume_main(&nodes, Context::new())?;
     if !nodes.is_empty() {
         Err(error_peg_s("expected empty nodes after processing main"))
@@ -195,26 +190,36 @@ macro_rules! push_err {
 
 fn consuming_rule<'a, F, R>(
     rule_name: &str,
-    nodes: &'a [flat::Node],
+    nodes: &'a [dp::ast::flat::Node],
     context: Context,
     f: F,
-) -> result::Result<(R, &'a [flat::Node], Context), Error>
+) -> result::Result<(R, &'a [dp::ast::flat::Node], Context), Error>
 where
-    F: FnOnce(&'a [flat::Node], Context) -> result::Result<(R, &'a [flat::Node], Context), Error>, //result::Result<(expression::SetOfRules, &'a [flat::Node]), Error>
-                                                                                                   // R: std::ops::Try,
+    F: FnOnce(
+        &'a [dp::ast::flat::Node],
+        Context,
+    ) -> result::Result<(R, &'a [dp::ast::flat::Node], Context), Error>, //result::Result<(dp::parser::expression::SetOfRules, &'a [dp::ast::flat::Node]), Error>
+                                                                         // R: std::ops::Try,
 {
     push_err!(&format!("consuming {}", rule_name), {
-        let nodes = flat::consume_node_start_rule_name(rule_name, &nodes)?;
+        let nodes = dp::ast::flat::consume_node_start_rule_name(rule_name, &nodes)?;
         let (result, nodes, context) = f(&nodes, context)?;
-        let nodes = flat::consume_node_end_rule_name(rule_name, &nodes)?;
+        let nodes = dp::ast::flat::consume_node_end_rule_name(rule_name, &nodes)?;
         Ok((result, nodes, context))
     })
 }
 
 fn consume_main(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::SetOfRules,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // main            =   grammar
 
     consuming_rule("main", nodes, context, |nodes, context| {
@@ -223,18 +228,32 @@ fn consume_main(
 }
 
 fn consume_grammar(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::SetOfRules,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // grammar         =   rule+
 
     fn rec_consume_rules(
-        rules: expression::SetOfRules,
-        nodes: &[flat::Node],
+        rules: dp::parser::expression::SetOfRules,
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(expression::SetOfRules, &[flat::Node], Context), Error> {
-        match flat::peek_first_node(nodes)? {
-            flat::Node::BeginRule(_) => {
+    ) -> result::Result<
+        (
+            dp::parser::expression::SetOfRules,
+            &[dp::ast::flat::Node],
+            Context,
+        ),
+        Error,
+    > {
+        match dp::ast::flat::peek_first_node(nodes)? {
+            dp::ast::flat::Node::BeginRule(_) => {
                 let ((name, expr), nodes, context) = consume_rule(nodes, context)?;
                 let rules = rules.add(&name, expr);
                 rec_consume_rules(rules, nodes, context)
@@ -245,20 +264,20 @@ fn consume_grammar(
     //  --------------------------
 
     consuming_rule("grammar", nodes, context, |nodes, context| {
-        rec_consume_rules(rules!(), &nodes, context)
+        rec_consume_rules(dp::rules!(), &nodes, context)
     })
 }
 
-type StringExpression = (String, expression::Expression);
+type StringExpression = (String, dp::parser::expression::Expression);
 fn consume_rule(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(StringExpression, &[flat::Node], Context), Error> {
+) -> result::Result<(StringExpression, &[dp::ast::flat::Node], Context), Error> {
     // rule            =   _  rule_name  _  '='  _  expr  _eol _
 
     consuming_rule("rule", nodes, context, |nodes, context| {
         let (rule_name, nodes, context) = consume_rule_name(nodes, context)?;
-        let nodes = flat::consume_this_value("=", nodes)?;
+        let nodes = dp::ast::flat::consume_this_value("=", nodes)?;
         let (expr, nodes, context) = consume_peg_expr(nodes, context)?;
 
         Ok(((rule_name, expr), nodes, context))
@@ -266,20 +285,20 @@ fn consume_rule(
 }
 
 fn consume_rule_name(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(String, &[flat::Node], Context), Error> {
+) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
     // rule_name       =   '.'?  symbol  ('.' symbol)*
 
     fn rec_consume_dot_symbol(
         acc_name: String,
-        nodes: &[flat::Node],
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(String, &[flat::Node], Context), Error> {
-        match flat::peek_first_node(nodes)? {
-            flat::Node::Val(ch) => {
+    ) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
+        match dp::ast::flat::peek_first_node(nodes)? {
+            dp::ast::flat::Node::Val(ch) => {
                 if ch == "." {
-                    let (_, nodes) = flat::consume_val(nodes)?;
+                    let (_, nodes) = dp::ast::flat::consume_val(nodes)?;
                     let (symbol, nodes, context) = consume_symbol(nodes, context)?;
                     let acc_name = format!("{}.{}", acc_name, symbol);
                     rec_consume_dot_symbol(acc_name, nodes, context)
@@ -292,11 +311,11 @@ fn consume_rule_name(
     }
 
     let get_dot_or_empty =
-        |nodes, context| -> result::Result<(&str, &[flat::Node], Context), Error> {
-            match flat::peek_first_node(nodes)? {
-                flat::Node::Val(ch) => {
+        |nodes, context| -> result::Result<(&str, &[dp::ast::flat::Node], Context), Error> {
+            match dp::ast::flat::peek_first_node(nodes)? {
+                dp::ast::flat::Node::Val(ch) => {
                     if ch == "." {
-                        Ok((".", flat::consume_this_value(".", nodes)?, context))
+                        Ok((".", dp::ast::flat::consume_this_value(".", nodes)?, context))
                     } else {
                         Ok(("", nodes, context))
                     }
@@ -317,21 +336,28 @@ fn consume_rule_name(
 }
 
 fn consume_symbol(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(&str, &[flat::Node], Context), Error> {
+) -> result::Result<(&str, &[dp::ast::flat::Node], Context), Error> {
     // symbol          =   [_'a-zA-Z0-9] [_'"a-zA-Z0-9]*
 
     consuming_rule("symbol", nodes, context, |nodes, context| {
-        let (val, nodes) = flat::consume_val(nodes)?;
+        let (val, nodes) = dp::ast::flat::consume_val(nodes)?;
         Ok((val, nodes, context))
     })
 }
 
 fn consume_peg_expr(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     //  expr            =   or
 
     consuming_rule("expr", nodes, context, |nodes, context| {
@@ -342,12 +368,12 @@ fn consume_peg_expr(
 //  This is to manage And & Or multiexpressions
 //  in consume_or and consume_and
 enum ExprOrVecExpr {
-    Expr(Expression),
-    VExpr(Vec<Expression>),
+    Expr(dp::parser::expression::Expression),
+    VExpr(Vec<dp::parser::expression::Expression>),
     None,
 }
 impl ExprOrVecExpr {
-    fn ipush(self, expr: Expression) -> Self {
+    fn ipush(self, expr: dp::parser::expression::Expression) -> Self {
         match self {
             ExprOrVecExpr::Expr(e) => ExprOrVecExpr::VExpr(vec![e, expr]),
             ExprOrVecExpr::VExpr(v) => ExprOrVecExpr::VExpr(v.ipush(expr)),
@@ -357,24 +383,31 @@ impl ExprOrVecExpr {
 }
 
 fn consume_or(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // or              =   and         ( _  '/'  _  or )?
 
     fn rec_consume_or(
         eov: ExprOrVecExpr,
-        nodes: &[flat::Node],
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(ExprOrVecExpr, &[flat::Node], Context), Error> {
+    ) -> result::Result<(ExprOrVecExpr, &[dp::ast::flat::Node], Context), Error> {
         consuming_rule("or", nodes, context, |nodes, context| {
             let (expr, nodes, context) = consume_and(nodes, context)?;
             let eov = eov.ipush(expr);
-            let next_node = flat::peek_first_node(nodes)?;
+            let next_node = dp::ast::flat::peek_first_node(nodes)?;
 
             match next_node {
-                flat::Node::Val(_) => {
-                    let nodes = flat::consume_this_value("/", nodes)?;
+                dp::ast::flat::Node::Val(_) => {
+                    let nodes = dp::ast::flat::consume_this_value("/", nodes)?;
                     rec_consume_or(eov, nodes, context)
                 }
                 _ => Ok((eov, nodes, context)),
@@ -382,7 +415,8 @@ fn consume_or(
         })
     };
 
-    let build_or_expr = |vexpr| Expression::Or(expression::MultiExpr(vexpr));
+    let build_or_expr =
+        |vexpr| dp::parser::expression::Expression::Or(dp::parser::expression::MultiExpr(vexpr));
     //  --------------------------
 
     push_err!("or:", {
@@ -397,55 +431,69 @@ fn consume_or(
 }
 
 fn consume_error(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // error           =   'error' _ '('  _  literal  _  ')'
     let (val, nodes, context) = consuming_rule("error", nodes, context, |nodes, context| {
-        let nodes = flat::consume_this_value("error", nodes)?;
-        let nodes = flat::consume_this_value("(", nodes)?;
+        let nodes = dp::ast::flat::consume_this_value("error", nodes)?;
+        let nodes = dp::ast::flat::consume_this_value("(", nodes)?;
         let (text, nodes, context) = consume_literal_string(nodes, context)?;
-        let nodes = flat::consume_this_value(")", nodes)?;
+        let nodes = dp::ast::flat::consume_this_value(")", nodes)?;
         Ok((text, nodes, context))
     })?;
 
-    Ok((error!(val), nodes, context))
+    Ok((dp::error!(val), nodes, context))
 }
 
 fn consume_and(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // and             =   error
     //                 /   named? rep_or_neg  ( _1 _ !(rule_name _ ('=' / '{')) and )*
 
     fn consume_named(
-        nodes: &[flat::Node],
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(Option<&str>, &[flat::Node], Context), Error> {
+    ) -> result::Result<(Option<&str>, &[dp::ast::flat::Node], Context), Error> {
         println!("_____ {:#?}", nodes);
         consuming_rule("named", nodes, context, |nodes, context| {
             let (symbol, nodes, context) = consume_symbol(nodes, context)?;
-            let (_, nodes) = flat::consume_val(nodes)?; //  ':'
+            let (_, nodes) = dp::ast::flat::consume_val(nodes)?; //  ':'
             Ok((Some(symbol), nodes, context))
         })
     }
 
     fn rec_consume_and(
         eov: ExprOrVecExpr,
-        nodes: &[flat::Node],
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(ExprOrVecExpr, &[flat::Node], Context), Error> {
+    ) -> result::Result<(ExprOrVecExpr, &[dp::ast::flat::Node], Context), Error> {
         consuming_rule("and", nodes, context, |nodes, context| {
-            if "error" == flat::get_nodename(flat::peek_first_node(nodes)?)? {
+            if "error" == dp::ast::flat::get_nodename(dp::ast::flat::peek_first_node(nodes)?)? {
                 let (expr, nodes, context) = consume_error(nodes, context)?;
                 let eov = eov.ipush(expr);
                 Ok((eov, nodes, context))
             } else {
                 //  todo working
                 // println!("_________ {:#?}", nodes);
-                let (named, nodes, context) = match flat::peek_first_node(nodes)? {
-                    flat::Node::BeginRule(rule_name) => {
+                let (named, nodes, context) = match dp::ast::flat::peek_first_node(nodes)? {
+                    dp::ast::flat::Node::BeginRule(rule_name) => {
                         if rule_name == "named" {
                             consume_named(nodes, context)
                         } else {
@@ -457,17 +505,20 @@ fn consume_and(
 
                 let (expr, nodes, context) = consume_rep_or_neg(nodes, context)?;
                 let eov = eov.ipush(expr);
-                let next_node = flat::peek_first_node(nodes)?;
+                let next_node = dp::ast::flat::peek_first_node(nodes)?;
 
-                match (next_node, flat::get_nodename(next_node)) {
-                    (flat::Node::BeginRule(_), Ok("and")) => rec_consume_and(eov, nodes, context),
+                match (next_node, dp::ast::flat::get_nodename(next_node)) {
+                    (dp::ast::flat::Node::BeginRule(_), Ok("and")) => {
+                        rec_consume_and(eov, nodes, context)
+                    }
                     _ => Ok((eov, nodes, context)),
                 }
             }
         })
     }
 
-    let build_and_expr = |vexpr| Expression::And(expression::MultiExpr(vexpr));
+    let build_and_expr =
+        |vexpr| dp::parser::expression::Expression::And(dp::parser::expression::MultiExpr(vexpr));
     //  --------------------------
 
     let (eov, nodes, context) = rec_consume_and(ExprOrVecExpr::None, nodes, context)?;
@@ -479,20 +530,27 @@ fn consume_and(
 }
 
 fn consume_rep_or_neg(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // rep_or_neg      =   atom_or_par ("*" / "+" / "?")?
     //                 /   "!" atom_or_par
 
     fn process_repetition_indicator(
-        expr: Expression,
+        expr: dp::parser::expression::Expression,
         rsymbol: &str,
-    ) -> result::Result<Expression, Error> {
+    ) -> result::Result<dp::parser::expression::Expression, Error> {
         match rsymbol {
-            "+" => Ok(rep!(expr, 1)),
-            "*" => Ok(rep!(expr, 0)),
-            "?" => Ok(rep!(expr, 0, 1)),
+            "+" => Ok(dp::rep!(expr, 1)),
+            "*" => Ok(dp::rep!(expr, 0)),
+            "?" => Ok(dp::rep!(expr, 0, 1)),
             unknown => Err(error_peg_s(&format!(
                 "repetition symbol unknown {}",
                 unknown
@@ -502,30 +560,35 @@ fn consume_rep_or_neg(
 
     let atom_and_rep = |nodes, context| {
         let (expr, nodes, context) = consume_atom_or_par(nodes, context)?;
-        let next_node = flat::peek_first_node(nodes)?;
+        let next_node = dp::ast::flat::peek_first_node(nodes)?;
 
         match next_node {
-            flat::Node::Val(_) => {
-                let (sep, nodes) = flat::consume_val(nodes)?;
+            dp::ast::flat::Node::Val(_) => {
+                let (sep, nodes) = dp::ast::flat::consume_val(nodes)?;
                 Ok((process_repetition_indicator(expr, sep)?, nodes, context))
             }
             _ => Ok((expr, nodes, context)),
         }
     };
-    let neg_and_atom =
-        |nodes, context| -> result::Result<(Expression, &[flat::Node], Context), Error> {
-            let nodes = flat::consume_this_value(r#"!"#, nodes)?;
-            let (expr, nodes, context) = consume_atom_or_par(nodes, context)?;
-            Ok((not!(expr), nodes, context))
-        };
+    let neg_and_atom = |nodes,
+                        context|
+     -> result::Result<
+        (
+            dp::parser::expression::Expression,
+            &[dp::ast::flat::Node],
+            Context,
+        ),
+        Error,
+    > {
+        let nodes = dp::ast::flat::consume_this_value(r#"!"#, nodes)?;
+        let (expr, nodes, context) = consume_atom_or_par(nodes, context)?;
+        Ok((dp::not!(expr), nodes, context))
+    };
     //  --------------------------
 
-    consuming_rule(
-        "rep_or_neg",
-        nodes,
-        context,
-        |nodes, context| match flat::peek_first_node(nodes)? {
-            flat::Node::Val(v) => {
+    consuming_rule("rep_or_neg", nodes, context, |nodes, context| {
+        match dp::ast::flat::peek_first_node(nodes)? {
+            dp::ast::flat::Node::Val(v) => {
                 if v == "!" {
                     neg_and_atom(nodes, context)
                 } else {
@@ -533,19 +596,26 @@ fn consume_rep_or_neg(
                 }
             }
             _ => atom_and_rep(nodes, context),
-        },
-    )
+        }
+    })
 }
 
 fn consume_atom_or_par(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // atom_or_par     =   (atom / parenth)
 
     consuming_rule("atom_or_par", nodes, context, |nodes, context| {
-        let next_node = flat::peek_first_node(nodes)?;
-        let node_name = flat::get_nodename(next_node)?;
+        let next_node = dp::ast::flat::peek_first_node(nodes)?;
+        let node_name = dp::ast::flat::get_nodename(next_node)?;
 
         let (expr, nodes, context) = push_err!(&format!("n:{}", node_name), {
             match &node_name as &str {
@@ -560,17 +630,24 @@ fn consume_atom_or_par(
 }
 
 fn consume_atom(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // atom            =   literal
     //                 /   match
     //                 /   dot
     //                 /   rule_name
 
     consuming_rule("atom", nodes, context, |nodes, context| {
-        let next_node = flat::peek_first_node(nodes)?;
-        let node_name = flat::get_nodename(next_node)?;
+        let next_node = dp::ast::flat::peek_first_node(nodes)?;
+        let node_name = dp::ast::flat::get_nodename(next_node)?;
 
         let (expr, nodes, context) = push_err!(&format!("n:{}", node_name), {
             match &node_name as &str {
@@ -587,27 +664,34 @@ fn consume_atom(
 }
 
 fn consume_parenth(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     //  parenth         =   "("  _  expr  _  ")"
 
     consuming_rule("parenth", nodes, context, |nodes, context| {
-        let nodes = flat::consume_this_value(r#"("#, nodes)?;
+        let nodes = dp::ast::flat::consume_this_value(r#"("#, nodes)?;
         let (expr, nodes, context) = consume_peg_expr(nodes, context)?;
-        let nodes = flat::consume_this_value(r#")"#, nodes)?;
+        let nodes = dp::ast::flat::consume_this_value(r#")"#, nodes)?;
         Ok((expr, nodes, context))
     })
 }
 
 fn consume_literal_string(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(String, &[flat::Node], Context), Error> {
+) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
     // literal         =  lit_noesc  /  lit_esc
 
     consuming_rule("literal", nodes, context, |nodes, context| {
-        let next_node_name = flat::get_nodename(flat::peek_first_node(nodes)?)?;
+        let next_node_name = dp::ast::flat::get_nodename(dp::ast::flat::peek_first_node(nodes)?)?;
         match next_node_name {
             "lit_noesc" => consume_literal_no_esc(nodes, context),
             "lit_esc" => consume_literal_esc(nodes, context),
@@ -617,17 +701,24 @@ fn consume_literal_string(
 }
 
 fn consume_literal_expr(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     let (val, nodes, context) = consume_literal_string(nodes, context)?;
-    Ok((lit!(val), nodes, context))
+    Ok((dp::lit!(val), nodes, context))
 }
 
 fn consume_literal_esc(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(String, &[flat::Node], Context), Error> {
+) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
     // lit_esc         =   _"
     //                         (   esc_char
     //                         /   hex_char
@@ -635,21 +726,22 @@ fn consume_literal_esc(
     //                         )*
 
     fn consume_element(
-        nodes: &[flat::Node],
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(String, &[flat::Node], Context), Error> {
+    ) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
         let crule_name = |rule_name, nodes, context| match rule_name {
             "esc_char" => consume_esc_char(nodes, context),
             "hex_char" => consume_hex_char(nodes, context),
             _ => Err(error_peg_s(&format!("unknown rule_name: {}", rule_name))),
         };
 
-        let next_n = flat::peek_first_node(nodes)?;
+        let next_n = dp::ast::flat::peek_first_node(nodes)?;
 
         let (val, nodes, context) = match next_n {
-            flat::Node::BeginRule(r_name) => crule_name(r_name, nodes, context),
-            flat::Node::Val(_) => {
-                let (val, nodes) = flat::consume_val(nodes).map(|(v, n)| (v.to_string(), n))?;
+            dp::ast::flat::Node::BeginRule(r_name) => crule_name(r_name, nodes, context),
+            dp::ast::flat::Node::Val(_) => {
+                let (val, nodes) =
+                    dp::ast::flat::consume_val(nodes).map(|(v, n)| (v.to_string(), n))?;
                 Ok((val, nodes, context))
             }
             _ => Err(error_peg_s(&format!("looking for element {:#?}", next_n))),
@@ -660,10 +752,10 @@ fn consume_literal_esc(
 
     fn rec_consume_lit_esc_ch(
         s: String,
-        nodes: &[flat::Node],
+        nodes: &[dp::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(String, &[flat::Node], Context), Error> {
-        let next_node_name = flat::get_nodename(flat::peek_first_node(nodes)?);
+    ) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
+        let next_node_name = dp::ast::flat::get_nodename(dp::ast::flat::peek_first_node(nodes)?);
 
         match next_node_name {
             Ok("_\"") => Ok((s, nodes, context)),
@@ -688,9 +780,9 @@ fn consume_literal_esc(
 }
 
 fn consume_esc_char(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(String, &[flat::Node], Context), Error> {
+) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
     // esc_char        =   '\r'
     //                 /   '\n'
     //                 /   '\t'
@@ -698,7 +790,7 @@ fn consume_esc_char(
     //                 /   '\"'
 
     consuming_rule("esc_char", nodes, context, |nodes, context| {
-        let (val, nodes) = flat::consume_val(nodes)?;
+        let (val, nodes) = dp::ast::flat::consume_val(nodes)?;
         let val = match val {
             r#"\r"# => Ok("\r"),
             r#"\n"# => Ok("\n"),
@@ -712,15 +804,15 @@ fn consume_esc_char(
 }
 
 fn consume_hex_char(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(String, &[flat::Node], Context), Error> {
+) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
     // hex_char        =   '\0x' [0-9A-F] [0-9A-F]
 
     use std::u8;
 
     consuming_rule("hex_char", nodes, context, |nodes, context| {
-        let (val, nodes) = flat::consume_val(nodes)?;
+        let (val, nodes) = dp::ast::flat::consume_val(nodes)?;
         let val = &val[3..];
 
         let ch = match u8::from_str_radix(val, 16) {
@@ -732,15 +824,15 @@ fn consume_hex_char(
 }
 
 fn consume_literal_no_esc(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(String, &[flat::Node], Context), Error> {
+) -> result::Result<(String, &[dp::ast::flat::Node], Context), Error> {
     // lit_noesc       =   _'   (  !_' .  )*   _'
     // _'              =   "'"
 
     consuming_rule("lit_noesc", nodes, context, |nodes, context| {
         let (nodes, context) = consume_single_quote(nodes, context)?;
-        let (val, nodes) = flat::consume_val(nodes)?;
+        let (val, nodes) = dp::ast::flat::consume_val(nodes)?;
 
         let val = val.replace(r#"\"#, r#"\\"#);
         let vclone = val.clone();
@@ -752,56 +844,85 @@ fn consume_literal_no_esc(
 }
 
 fn consume_quote(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(&[flat::Node], Context), Error> {
+) -> result::Result<(&[dp::ast::flat::Node], Context), Error> {
     // _"              =   "\u{34}"
 
     let (_, nodes, context) = consuming_rule(r#"_""#, nodes, context, |nodes, context| {
-        Ok(((), flat::consume_this_value(r#"""#, nodes)?, context))
+        Ok((
+            (),
+            dp::ast::flat::consume_this_value(r#"""#, nodes)?,
+            context,
+        ))
     })?;
     Ok((nodes, context))
 }
 
 fn consume_single_quote(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(&[flat::Node], Context), Error> {
+) -> result::Result<(&[dp::ast::flat::Node], Context), Error> {
     // _'              =   "'"
 
     let (_, nodes, context) = consuming_rule(r#"_'"#, nodes, context, |nodes, context| {
-        Ok(((), flat::consume_this_value(r#"'"#, nodes)?, context))
+        Ok((
+            (),
+            dp::ast::flat::consume_this_value(r#"'"#, nodes)?,
+            context,
+        ))
     })?;
     Ok((nodes, context))
 }
 
 fn consume_dot(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     //  dot             =   "."
 
     consuming_rule("dot", nodes, context, |nodes, context| {
-        let (_, nodes) = flat::consume_val(nodes)?;
-        Ok((dot!(), nodes, context))
+        let (_, nodes) = dp::ast::flat::consume_val(nodes)?;
+        Ok((dp::dot!(), nodes, context))
     })
 }
 
 fn consume_rule_ref(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     push_err!("consuming symbol rule_ref", {
         let (symbol_name, nodes, context) = consume_rule_name(nodes, context)?;
 
-        Ok((ref_rule!(symbol_name), nodes, context))
+        Ok((dp::ref_rule!(symbol_name), nodes, context))
     })
 }
 
 fn consume_match(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(Expression, &[flat::Node], Context), Error> {
+) -> result::Result<
+    (
+        dp::parser::expression::Expression,
+        &[dp::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
     // match           =   "["
     //                         (
     //                             (mchars  mbetween*)
@@ -813,11 +934,11 @@ fn consume_match(
     consuming_rule("match", nodes, context, |nodes, context| {
         fn rec_consume_mbetween(
             acc: Vec<(char, char)>,
-            nodes: &[flat::Node],
+            nodes: &[dp::ast::flat::Node],
             context: Context,
-        ) -> result::Result<(VecChCh, &[flat::Node], Context), Error> {
-            let next_node = flat::peek_first_node(nodes)?;
-            let node_name = flat::get_nodename(next_node);
+        ) -> result::Result<(VecChCh, &[dp::ast::flat::Node], Context), Error> {
+            let next_node = dp::ast::flat::peek_first_node(nodes)?;
+            let node_name = dp::ast::flat::get_nodename(next_node);
             match node_name {
                 Ok("mbetween") => {
                     let ((from, to), nodes, context) = consume_mbetween(nodes, context)?;
@@ -828,52 +949,53 @@ fn consume_match(
         }
         //  --------------------------
 
-        let nodes = flat::consume_this_value("[", nodes)?;
+        let nodes = dp::ast::flat::consume_this_value("[", nodes)?;
 
-        let (omchars, nodes, context) = match flat::get_nodename(flat::peek_first_node(nodes)?)? {
-            "mchars" => {
-                let (mchars, nodes, context) = consume_mchars(nodes, context)?;
-                (Some(mchars), nodes, context)
-            }
-            _ => (None, nodes, context),
-        };
+        let (omchars, nodes, context) =
+            match dp::ast::flat::get_nodename(dp::ast::flat::peek_first_node(nodes)?)? {
+                "mchars" => {
+                    let (mchars, nodes, context) = consume_mchars(nodes, context)?;
+                    (Some(mchars), nodes, context)
+                }
+                _ => (None, nodes, context),
+            };
 
         let (vchars, nodes, context) = rec_consume_mbetween(vec![], nodes, context)?;
 
         let (expr, nodes) = match (omchars, vchars.is_empty()) {
-            (Some(chars), true) => Ok((ematch!(chlist chars, from2 vec![]), nodes)),
-            (Some(chars), false) => Ok((ematch!(chlist chars, from2 vchars), nodes)),
-            (None, false) => Ok((ematch!(chlist "", from2 vchars), nodes)),
+            (Some(chars), true) => Ok((dp::ematch!(chlist chars, from2 vec![]), nodes)),
+            (Some(chars), false) => Ok((dp::ematch!(chlist chars, from2 vchars), nodes)),
+            (None, false) => Ok((dp::ematch!(chlist "", from2 vchars), nodes)),
             _ => Err(error_peg_s("Invalid match combination")),
         }?;
 
-        let nodes = flat::consume_this_value("]", nodes)?;
+        let nodes = dp::ast::flat::consume_this_value("]", nodes)?;
 
         Ok((expr, nodes, context))
     })
 }
 
 fn consume_mchars(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(&str, &[flat::Node], Context), Error> {
+) -> result::Result<(&str, &[dp::ast::flat::Node], Context), Error> {
     // mchars          =   (!"]" !(. "-") .)+
 
     consuming_rule("mchars", nodes, context, |nodes, context| {
-        let (val, nodes) = flat::consume_val(nodes)?;
+        let (val, nodes) = dp::ast::flat::consume_val(nodes)?;
         Ok((val, nodes, context))
     })
 }
 
 type CharChar = (char, char);
 fn consume_mbetween(
-    nodes: &[flat::Node],
+    nodes: &[dp::ast::flat::Node],
     context: Context,
-) -> result::Result<(CharChar, &[flat::Node], Context), Error> {
+) -> result::Result<(CharChar, &[dp::ast::flat::Node], Context), Error> {
     // mbetween        =   (.  "-"  .)
 
     consuming_rule("mbetween", nodes, context, |nodes, context| {
-        let (from_to, nodes) = flat::consume_val(nodes)?;
+        let (from_to, nodes) = dp::ast::flat::consume_val(nodes)?;
 
         let (from, chars) = idata::consume_char(from_to.chars())
             .ok_or_else(|| error_peg_s("expected from char"))?;

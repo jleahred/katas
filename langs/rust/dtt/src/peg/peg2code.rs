@@ -20,7 +20,8 @@
 //! And the result, has to be pasted in peg::rules.rs
 //!
 
-use {crate::peg, crate::rules_from_peg};
+use crate::peg;
+use dynparser as dp;
 
 fn text_peg2code() -> &'static str {
     r#"
@@ -117,7 +118,7 @@ fn text_peg2code() -> &'static str {
 /// It will take the peg grammar to parse peg grammars
 ///
 pub fn print_rules2parse_peg() {
-    let rules = rules_from_peg(text_peg2code())
+    let rules = dp::rules_from_peg(text_peg2code())
         .map_err(|e| {
             println!("{}", e);
             panic!("FAIL");

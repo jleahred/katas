@@ -39,14 +39,16 @@
 //!    , "bs" => rep!(lit!("b"), 1)
 //! ```
 
-use crate::parser::{
-    atom,
-    atom::Atom,
-    expression::{self, Expression},
-};
+// use crate::parser::{
+//     atom,
+//     atom::Atom,
+//     expression::{self, Expression},
+// };
+
+use dynparser as dp;
 
 /// Generate a string with rust code from a ```expression::SetOfRules```
-pub fn rust_from_rules(rules: &expression::SetOfRules) -> String {
+pub(crate) fn rust_from_rules(rules: &dp::parser::expression::SetOfRules) -> String {
     let add_rule = |crules: String, rule: &str| -> String {
         let begin = if crules == "" { "  " } else { ", " };
         crules + "\n       " + begin + rule
@@ -57,22 +59,24 @@ pub fn rust_from_rules(rules: &expression::SetOfRules) -> String {
     })
 }
 
-fn rule2code(name: &str, expr: &Expression) -> String {
+fn rule2code(name: &str, expr: &dp::parser::expression::Expression) -> String {
     format!(r##"r#"{}"# => {}"##, name, expr2code(expr))
 }
 
-fn expr2code(expr: &Expression) -> String {
+fn expr2code(expr: &dp::parser::expression::Expression) -> String {
     match expr {
-        Expression::Simple(atom) => atom2code(atom),
-        Expression::And(mexpr) => format!("and!({})", mexpr2code(mexpr)),
-        Expression::Or(mexpr) => format!("or!({})", mexpr2code(mexpr)),
-        Expression::Not(e) => format!("not!({})", expr2code(e)),
-        Expression::Repeat(rep) => repeat2code(rep),
-        Expression::RuleName(rname) => format!(r##"ref_rule!(r#"{}"#)"##, rname),
+        dp::parser::expression::Expression::Simple(atom) => atom2code(atom),
+        dp::parser::expression::Expression::And(mexpr) => format!("and!({})", mexpr2code(mexpr)),
+        dp::parser::expression::Expression::Or(mexpr) => format!("or!({})", mexpr2code(mexpr)),
+        dp::parser::expression::Expression::Not(e) => format!("not!({})", expr2code(e)),
+        dp::parser::expression::Expression::Repeat(rep) => repeat2code(rep),
+        dp::parser::expression::Expression::RuleName(rname) => {
+            format!(r##"ref_rule!(r#"{}"#)"##, rname)
+        }
     }
 }
 
-fn mexpr2code(mexpr: &expression::MultiExpr) -> String {
+fn mexpr2code(mexpr: &dp::parser::expression::MultiExpr) -> String {
     mexpr
         .0
         .iter()
@@ -82,7 +86,7 @@ fn mexpr2code(mexpr: &expression::MultiExpr) -> String {
         })
 }
 
-fn atom2code(atom: &Atom) -> String {
+fn atom2code(atom: &dp::parser::atom::Atom) -> String {
     let replace_esc = |s: String| {
         s.replace("\n", r#"\n"#)
             .replace("\r", r#"\r"#)
@@ -91,15 +95,15 @@ fn atom2code(atom: &Atom) -> String {
     };
 
     match atom {
-        Atom::Literal(s) => format!(r#"lit!("{}")"#, replace_esc(s.to_string())),
-        Atom::Error(s) => format!(r#"error!("{}")"#, replace_esc(s.to_string())),
-        Atom::Match(mrules) => match_rules2code(mrules),
-        Atom::Dot => "dot!()".to_string(),
-        Atom::EOF => "eof!()".to_string(),
+        dp::parser::atom::Atom::Literal(s) => format!(r#"lit!("{}")"#, replace_esc(s.to_string())),
+        dp::parser::atom::Atom::Error(s) => format!(r#"error!("{}")"#, replace_esc(s.to_string())),
+        dp::parser::atom::Atom::Match(mrules) => match_rules2code(mrules),
+        dp::parser::atom::Atom::Dot => "dot!()".to_string(),
+        dp::parser::atom::Atom::EOF => "eof!()".to_string(),
     }
 }
 
-fn match_rules2code(mrules: &atom::MatchRules) -> String {
+fn match_rules2code(mrules: &dp::parser::atom::MatchRules) -> String {
     fn bounds2code(acc: String, bounds: &[(char, char)]) -> String {
         match bounds.split_first() {
             Some(((f, t), rest)) => {
@@ -111,18 +115,18 @@ fn match_rules2code(mrules: &atom::MatchRules) -> String {
 
     format!(
         r##"ematch!(chlist r#"{}"#  {})"##,
-        &mrules.0,
-        bounds2code(String::new(), &mrules.1)
+        &mrules.chars(),
+        bounds2code(String::new(), &mrules.ranges())
     )
 }
 
-fn repeat2code(rep: &expression::RepInfo) -> String {
+fn repeat2code(rep: &dp::parser::expression::RepInfo) -> String {
     "rep!(".to_owned()
         + &expr2code(&rep.expression)
         + ", "
-        + &rep.min.0.to_string()
+        + &rep.min.to_string()
         + &match rep.max {
-            Some(ref m) => format!(", {}", m.0),
+            Some(ref m) => format!(", {}", m.to_string()),
             None => "".to_owned(),
         }
         + ")"
