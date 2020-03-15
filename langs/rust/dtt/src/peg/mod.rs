@@ -30,7 +30,7 @@ impl Context {
 #[derive(Debug)]
 /// Most of peg functions will return a result with this type
 /// on Error side
-pub(crate) enum Error {
+pub enum Error {
     /// When error has been on `peg` side
     /// we will receive a description and
     /// optionally, a link to a stacked error
@@ -77,7 +77,7 @@ impl std::fmt::Display for Error {
 
 /// Most of functions on peg module, will return a set of rules
 /// or an error
-pub(crate) type Result = result::Result<dp::parser::expression::SetOfRules, Error>;
+pub type Result = result::Result<dp::parser::expression::SetOfRules, Error>;
 
 // -------------------------------------------------------------------------------------
 //  A P I
@@ -162,7 +162,7 @@ pub(crate) type Result = result::Result<dp::parser::expression::SetOfRules, Erro
 ///     }
 /// ```
 
-pub(crate) fn rules_from_peg(peg: &str) -> Result {
+pub fn rules_from_peg(peg: &str) -> Result {
     let ast = dp::parse(peg, &rules::parse_peg())?;
     let nodes = ast.compact().prune(&["_", "_1", "_eol"]).flatten();
 
