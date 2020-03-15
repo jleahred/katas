@@ -7,7 +7,7 @@
 Using [dynparser](https://github.com/jleahred/dynparser)
 
 
-Simple example
+## Simple example
 
 Peg:
 ```text
