@@ -1,0 +1,13 @@
+[package]
+name = "dpr"
+version = "0.1.0"
+edition = "2018"
+authors = ["jleahred <jleahred@gmail.com>"]
+license = "GPL-3.0"
+description = "Dynamic parser and replacer. You can define rules at run time. It's possible to use peg format"
+readme = "README.md"
+repository = "https://github.com/jleahred/dpr"
+keywords = ["parsing", "parser", "dynamic", "peg", "text processing"]
+
+[dependencies]
+idata = "0.1.0"
