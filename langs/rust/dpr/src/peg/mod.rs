@@ -379,6 +379,13 @@ impl ExprOrVecExpr {
             ExprOrVecExpr::None => ExprOrVecExpr::Expr(expr),
         }
     }
+    fn as_vec(self) -> Vec<crate::parser::expression::Expression> {
+        match self {
+            ExprOrVecExpr::Expr(e) => vec![e],
+            ExprOrVecExpr::VExpr(v) => v,
+            ExprOrVecExpr::None => vec![],
+        }
+    }
 }
 
 fn consume_or(
@@ -393,6 +400,7 @@ fn consume_or(
     Error,
 > {
     // or              =   and         ( _  '/'  _  or )?
+    // or              =   and  transf2?  ( _  '/'  _  or )?
 
     fn rec_consume_or(
         eov: ExprOrVecExpr,
@@ -400,10 +408,27 @@ fn consume_or(
         context: Context,
     ) -> result::Result<(ExprOrVecExpr, &[crate::ast::flat::Node], Context), Error> {
         consuming_rule("or", nodes, context, |nodes, context| {
-            let (expr, nodes, context) = consume_and(nodes, context)?;
-            let eov = eov.ipush(expr);
-            let next_node = crate::ast::flat::peek_first_node(nodes)?;
+            // and
+            let (eov_and, nodes, context) = {
+                let (expr, nodes, context) = consume_and(nodes, context)?;
+                let eov = eov.ipush(expr);
+                (eov, nodes, context)
+            };
 
+            // transf2?
+            let (eov, nodes, context) = {
+                let next_node = crate::ast::flat::peek_first_node(nodes)?;
+                match crate::ast::flat::get_nodename(next_node) {
+                    Ok("transf2") => {
+                        let (ot2expr, nodes, context) = consume_transf2(eov_and, nodes, context)?;
+                        (ExprOrVecExpr::Expr(ot2expr), nodes, context)
+                    }
+                    _ => (eov_and, nodes, context),
+                }
+            };
+
+            //  ( _  '/'  _  or )?
+            let next_node = crate::ast::flat::peek_first_node(nodes)?;
             match next_node {
                 crate::ast::flat::Node::Val(_) => {
                     let nodes = crate::ast::flat::consume_this_value("/", nodes)?;
@@ -428,6 +453,36 @@ fn consume_or(
             ExprOrVecExpr::VExpr(v) => Ok((build_or_expr(v), nodes, context)),
         }
     })
+}
+
+fn consume_transf2(
+    eov: ExprOrVecExpr,
+    nodes: &[crate::ast::flat::Node],
+    context: Context,
+) -> result::Result<
+    (
+        crate::parser::expression::Expression,
+        &[crate::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
+    use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
+    //  transf2         =   _1 _ '->'  ' '*  transf_rule
+    let nodes = crate::ast::flat::consume_node_start_rule_name("transf2", nodes)?;
+    let (_, nodes) = crate::ast::flat::consume_val(nodes)?;
+    let nodes = crate::ast::flat::consume_node_start_rule_name("transf_rule", nodes)?;
+    let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
+    let nodes = crate::ast::flat::consume_node_end_rule_name("transf_rule", nodes)?;
+    let nodes = crate::ast::flat::consume_node_end_rule_name("transf2", nodes)?;
+    Ok((
+        Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+            mexpr: MultiExpr(eov.as_vec()),
+            transf2_rules: rules.to_string(),
+        })),
+        nodes,
+        context,
+    ))
 }
 
 fn consume_error(
@@ -502,11 +557,12 @@ fn consume_and(
                 }?;
 
                 if let Some(named) = named {
-                    use crate::parser::expression::{ExprMeta, Expression, MultiExpr, Named};
+                    use crate::parser::expression::{Expression, MetaExpr, MultiExpr, NamedExpr};
                     let (expr, nodes, context) = consume_rep_or_neg(nodes, context)?;
-                    let eov = eov.ipush(Expression::ExprMeta(ExprMeta {
-                        named: Some((Named(named.to_string()), MultiExpr(vec![expr]))),
-                    }));
+                    let eov = eov.ipush(Expression::MetaExpr(MetaExpr::Named(NamedExpr {
+                        name: named.to_string(),
+                        mexpr: MultiExpr(vec![expr]),
+                    })));
 
                     let next_node = crate::ast::flat::peek_first_node(nodes)?;
                     match (next_node, crate::ast::flat::get_nodename(next_node)) {

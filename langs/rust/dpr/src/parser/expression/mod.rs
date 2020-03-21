@@ -109,9 +109,28 @@ impl SetOfRules {
 pub struct Named(pub(crate) String);
 
 #[allow(missing_docs)]
+#[derive(Debug, Clone)]
+pub struct Transf2(pub(crate) String);
+
+#[allow(missing_docs)]
 #[derive(Debug)]
-pub struct ExprMeta {
-    pub(crate) named: Option<(Named, MultiExpr)>,
+pub struct NamedExpr {
+    pub name: String,
+    pub mexpr: MultiExpr,
+}
+
+#[allow(missing_docs)]
+#[derive(Debug)]
+pub struct Transf2Expr {
+    pub mexpr: MultiExpr,
+    pub transf2_rules: String,
+}
+
+#[allow(missing_docs)]
+#[derive(Debug)]
+pub enum MetaExpr {
+    Named(NamedExpr),
+    Transf2(Transf2Expr),
 }
 
 #[allow(missing_docs)]
@@ -123,7 +142,7 @@ pub enum Expression {
     Not(Box<Expression>),
     Repeat(RepInfo),
     RuleName(String),
-    ExprMeta(ExprMeta),
+    MetaExpr(MetaExpr),
 }
 
 /// Opaque type to manage multiple expressions
@@ -218,23 +237,23 @@ fn parse_rule_name_as_expr<'a>(status: Status<'a>, rule_name: &str) -> ResultExp
     Ok((st, vec![ast]))
 }
 
-fn parse_metaexpr<'a>(status: Status<'a>, meta_expr: &'a ExprMeta) -> ResultExpr<'a> {
-    if let ExprMeta {
-        named: Some((named, multi_expr)),
-    } = meta_expr
-    {
-        let (status, nodes) = parse_and(status, multi_expr)?;
-        Ok((status, vec![ast::Node::Named((named.0.clone(), nodes))]))
-    } else {
-        Ok((status, vec![]))
+fn parse_metaexpr<'a>(status: Status<'a>, meta_expr: &'a MetaExpr) -> ResultExpr<'a> {
+    match meta_expr {
+        MetaExpr::Named(NamedExpr { name, mexpr }) => {
+            let (status, nodes) = parse_and(status, mexpr)?;
+            Ok((status, vec![ast::Node::Named((name.to_string(), nodes))]))
+        }
+        MetaExpr::Transf2(Transf2Expr {
+            mexpr,
+            transf2_rules,
+        }) => {
+            let (status, nodes) = parse_and(status, mexpr)?;
+            Ok((
+                status,
+                vec![ast::Node::Transf2((transf2_rules.to_string(), nodes))],
+            ))
+        }
     }
-    // let ExprMeta {
-    //     named: (named, multi_expr),
-    // } = meta_expr;
-    // match named {
-    //     Some(name) => Ok((status, vec![ast::Node::Named(((name.0).0.clone(), vec![]))])),
-    //     None => Ok((status, vec![])),
-    // }
 }
 
 fn parse_expr<'a>(status: Status<'a>, expression: &'a Expression) -> ResultExpr<'a> {
@@ -245,7 +264,7 @@ fn parse_expr<'a>(status: Status<'a>, expression: &'a Expression) -> ResultExpr<
         Expression::Not(ref val) => parse_not(status, &val),
         Expression::Repeat(ref val) => parse_repeat(status, &val),
         Expression::RuleName(ref val) => parse_rule_name_as_expr(status, &val),
-        Expression::ExprMeta(ref val) => parse_metaexpr(status, &val),
+        Expression::MetaExpr(ref val) => parse_metaexpr(status, &val),
     }
 }
 

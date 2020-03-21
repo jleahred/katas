@@ -42,6 +42,8 @@ pub enum Node {
     Rule((String, Vec<Node>)),
     /// Named nodes
     Named((String, Vec<Node>)),
+    /// Named nodes
+    Transf2((String, Vec<Node>)),
     /// Reached end of file
     EOF,
 }
@@ -91,6 +93,7 @@ impl Node {
             Node::Val(v) => Node::Val(v.clone()),
             Node::Rule((n, vn)) => Node::Rule((n.clone(), prune_vn(vn))),
             Node::Named((n, vn)) => Node::Named((n.clone(), prune_vn(vn))),
+            Node::Transf2((n, vn)) => Node::Transf2((n.clone(), prune_vn(vn))),
         }
     }
 
@@ -145,6 +148,7 @@ impl Node {
             Node::Val(v) => Node::Val(v.clone()),
             Node::Rule((n, vn)) => Node::Rule((n.clone(), pthr_vn(vn, nodes2keep))),
             Node::Named((n, vn)) => Node::Named((n.clone(), pthr_vn(vn, nodes2keep))),
+            Node::Transf2((n, vn)) => Node::Transf2((n.clone(), pthr_vn(vn, nodes2keep))),
         }
     }
 
@@ -200,6 +204,9 @@ impl Node {
                 (Node::Named((ref n, ref vn)), _) => {
                     nodes.ipush(Node::Rule((n.clone(), compact_nodes(vn))))
                 }
+                (Node::Transf2((ref n, ref vn)), _) => {
+                    nodes.ipush(Node::Rule((n.clone(), compact_nodes(vn))))
+                }
             }
         };
         fn compact_nodes(nodes: &[Node]) -> Vec<Node> {
@@ -212,6 +219,7 @@ impl Node {
             Node::Val(v) => Node::Val(v.clone()),
             Node::Rule((n, vn)) => Node::Rule((n.clone(), compact_nodes(vn))),
             Node::Named((n, vn)) => Node::Named((n.clone(), compact_nodes(vn))),
+            Node::Transf2((n, vn)) => Node::Transf2((n.clone(), compact_nodes(vn))),
         }
     }
 }

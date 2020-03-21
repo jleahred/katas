@@ -8,105 +8,13 @@
 //!
 //! A very basic example...
 //! ```rust
-//!    extern crate dpr;
-//!    use dpr::{parse, rules_from_peg};
-//!
-//!    fn main() {
-//!        let rules = rules_from_peg(
-//!            r#"
-//!
-//!    main            =   letter letter_or_num+
-//!
-//!    letter          =   [a-zA-Z]
-//!
-//!    letter_or_num   =   letter
-//!                    /   number
-//!
-//!    number          =   [0-9]
-//!
-//!            "#,
-//!        ).unwrap();
-//!
-//!        assert!(parse("a2AA456bzJ88", &rules).is_ok());
-//!    }
 //!```
 //!
 //!
-//! The classical calculator example
-//!
-//! ```rust
-//! extern crate dpr;
-//! use dpr::{parse, rules_from_peg};
-//!
-//!
-//! fn main() {
-//!     let rules = rules_from_peg(
-//!         r#"
-//!
-//!     main            =   _  expr  _
-//!
-//!     expr            =   add_t       (_  add_op  _   add_t)*
-//!                     /   portion_expr
-//!
-//!     add_t           =   fact_t      (_  fact_op _   fact_t)*
-//!
-//!     fact_t          =   portion_expr
-//!
-//!     portion_expr    =   '(' expr ')'
-//!                     /   item
-//!
-//!     item            =   num
-//!
-//!     num             =   [0-9]+ ('.' [0-9]+)?
-//!     add_op          =   '+'  /  '-'
-//!     fact_op         =   '*'  /  '/'
-//!
-//!     _               =   ' '*
-//!
-//!         "#,
-//!     ).map_err(|e| {
-//!         println!("{}", e);
-//!         panic!("FAIL");
-//!     })
-//!         .unwrap();
-//!
-//!     let result = parse(" 1 +  2*  3 +(5/5 - (8-7))", &rules);
-//!     match result {
-//!         Ok(ast) => println!(
-//!             "{:#?}",
-//!             ast.compact()
-//!                 .prune(&vec!["_"])
-//!                 .pass_through_except(&vec!["main", "add_t", "fact_t"])
-//!         ),
-//!         Err(e) => println!("Error: {:?}", e),
-//!     };
-//! }
-//! ```
 //!
 //! Please, read [README.md](https://github.com/jleahred/dpr) for
 //! more context information
 //!
-//! ```rust
-//! extern crate dpr;
-//! use dpr::{parse, rules_from_peg};
-//! fn main() {
-//!     let rules = rules_from_peg(
-//!         r#"
-//!
-//!     main    =   '('  main   ( ')'  /  error("unbalanced parenthesis") )
-//!             /   'hello'
-//!
-//!         "#,
-//!     ).unwrap();
-//!
-//!     match parse("((hello)", &rules) {
-//!         Ok(_) => panic!("It should fail"),
-//!         Err(e) => assert!(e.descr == "unbalanced parenthesis"),
-//!     }
-//! }
-//! ```
-
-extern crate idata;
 
 // -------------------------------------------------------------------------------------
 //  M A C R O S
@@ -446,6 +354,10 @@ macro_rules! ref_rule {
 //  M A C R O S
 // -------------------------------------------------------------------------------------
 
+extern crate idata;
+
+use std::result;
+
 pub mod ast;
 pub mod parser;
 pub mod peg;
@@ -459,41 +371,52 @@ pub mod peg;
 // -------------------------------------------------------------------------------------
 //  A P I
 
-/// Parse a string with a set of rules
-///
-/// the `main` rule is the starting point to parse
-///
-/// # Examples
-///
-/// Parse a simple literal
-///
-/// ```
-/// #[macro_use]  extern crate dpr;
-///
-/// fn main() {
-///     let rules = rules!{
-///        "main" => ref_rule!("3a"),
-///        "3a"   => lit!("aaa")
-///     };
-///
-///     assert!(dpr::parse("aaa", &rules).is_ok())
-/// }
-///
-/// ```
-/// More examples in macros
-///
+/// Peg type for fluent API
+pub struct Peg<'a>(&'a str);
 
-pub fn parse(s: &str, rules: &parser::expression::SetOfRules) -> Result<ast::Node, parser::Error> {
+/// Errors for fluent API
+#[derive(Debug)]
+pub enum Error {
+    /// error on generating rules
+    RulesErr(crate::peg::Error),
+    /// error on parsing
+    PaserErr(crate::parser::Error),
+}
+
+impl<'a> Peg<'a> {
+    /// create an instance of Peg
+    pub fn new(txt: &'a str) -> Self {
+        Self(txt)
+    }
+    /// generate rules from peg grammar (fluent API)
+    pub fn gen_rules(&self) -> result::Result<crate::parser::expression::SetOfRules, Error> {
+        crate::peg::rules_from_peg(&self.0).map_err(|e| Error::RulesErr(e))
+    }
+}
+
+impl crate::parser::expression::SetOfRules {
+    /// parse from a set of rules (fluent API)
+    pub fn parse(&self, text: &str) -> Result<ast::Node, Error> {
+        crate::parse(text, self).map_err(|e| Error::PaserErr(e))
+    }
+
+    /// parse with debug info
+    pub fn parse_debug(&self, text: &str) -> Result<ast::Node, Error> {
+        crate::parse_debug(text, self).map_err(|e| Error::PaserErr(e))
+    }
+}
+
+//  A P I
+// -------------------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------------------
+//  A P I
+
+fn parse(s: &str, rules: &parser::expression::SetOfRules) -> Result<ast::Node, parser::Error> {
     parse_with_debug(s, rules, false)
 }
 
-/// Same as parser, but with debug info
-///
-/// It will trace the rules called
-///
-/// It's expensive, use it just to develop and locate errors
-///
-pub fn parse_debug(
+fn parse_debug(
     s: &str,
     rules: &parser::expression::SetOfRules,
 ) -> Result<ast::Node, parser::Error> {
@@ -524,6 +447,3 @@ pub use peg::rules_from_peg;
 
 //  A P I
 // -------------------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------
-//  I N T E R N A L

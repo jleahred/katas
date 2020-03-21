@@ -35,6 +35,10 @@ pub enum Node {
     /// Ends a name
     EndNamed(String),
     /// Reached end of file
+    BeginTransf2(String),
+    /// Ends a name
+    EndTrasnf2(String),
+    /// Reached end of file
     EOF,
 }
 
@@ -96,6 +100,11 @@ impl ast::Node {
                     let acc = acc.ipush(Node::BeginNamed(n.to_string()));
                     let acc = vn.iter().fold(acc, |facc, n| flatten_acc(facc, n));
                     acc.ipush(Node::EndNamed(n.to_string()))
+                }
+                ast::Node::Transf2((n, vn)) => {
+                    let acc = acc.ipush(Node::BeginTransf2(n.to_string()));
+                    let acc = vn.iter().fold(acc, |facc, n| flatten_acc(facc, n));
+                    acc.ipush(Node::EndTrasnf2(n.to_string()))
                 }
             }
         }
