@@ -266,7 +266,7 @@ fn consume_grammar(
     //  --------------------------
 
     consuming_rule("grammar", nodes, context, |nodes, context| {
-        rec_consume_rules(crate::rules!(), &nodes, context)
+        rec_consume_rules(rules!(), &nodes, context)
     })
 }
 
@@ -792,7 +792,7 @@ fn consume_literal_expr(
     Error,
 > {
     let (val, nodes, context) = consume_literal_string(nodes, context)?;
-    Ok((crate::lit!(val), nodes, context))
+    Ok((lit!(val), nodes, context))
 }
 
 fn consume_literal_esc(
