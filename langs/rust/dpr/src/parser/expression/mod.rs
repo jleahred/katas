@@ -52,7 +52,6 @@ impl SetOfRules {
     ///
     /// ```
     /// #[macro_use]  extern crate dpr;
-    /// use dpr::parse;
     ///
     /// fn main() {
     ///     let rules = rules!{
@@ -64,7 +63,7 @@ impl SetOfRules {
     ///
     ///     let rules = rules.add("rule2", lit!("bcd"));
     ///
-    ///     assert!(parse("aabcd", &rules).is_ok())
+    ///     assert!(rules.parse("aabcd").is_ok())
     /// }
     /// ```
     pub fn add(mut self, name: &str, expr: Expression) -> Self {
@@ -84,7 +83,6 @@ impl SetOfRules {
     ///
     /// ```
     /// #[macro_use]  extern crate dpr;
-    /// use dpr::parse;
     ///
     /// fn main() {
     ///     let rules = rules!{
@@ -96,7 +94,7 @@ impl SetOfRules {
     ///
     ///     let rules = rules.merge(rules!{"rule2" => lit!("bcd")});
     ///
-    ///     assert!(parse("aabcd", &rules).is_ok())
+    ///     assert!(rules.parse("aabcd").is_ok())
     /// }
     /// ```
     pub fn merge(self, rules2merge: Self) -> Self {

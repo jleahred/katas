@@ -87,13 +87,13 @@ pub type Result = result::Result<crate::parser::expression::SetOfRules, Error>;
 /// Next, is a full example showing the error messages, if so
 /// ```
 /// extern crate dpr;
-/// use dpr::{parse, peg::rules_from_peg};
-/// fn main() {
+/// use dpr::peg::rules_from_peg;
+///
 ///     let rules = rules_from_peg(
 ///         r#"
-///             main    =   'hello'   ' '   'world'  dot
-///             dot     =   "\0x2E"
-///         "#,
+///              main    =   'hello'   ' '   'world'  dot
+///              dot     =   "\0x2E"
+///          "#,
 ///     )
 ///     .map_err(|e| {
 ///         println!("{}", e);
@@ -101,60 +101,67 @@ pub type Result = result::Result<crate::parser::expression::SetOfRules, Error>;
 ///     })
 ///     .unwrap();
 ///     println!("{:#?}", rules);
-///     let result = parse("hello world.", &rules);
+///     let result = rules.parse("hello world.");
 ///     assert!(result.is_ok());
 ///     match result {
 ///         Ok(ast) => println!("{:#?}", ast),
 ///         Err(e) => println!("Error: {:?}", e),
 ///     };
-/// }
 /// ```
 ///
 /// Next is an example with some ```and``` ```literals```
 /// and comments on peg grammar
 /// ```
 /// extern crate dpr;
-/// use dpr::{parse, peg::rules_from_peg};
+/// use dpr::peg::rules_from_peg;
 ///
-///    let rules = rules_from_peg(
-///        r#"
-///         //  classic hello world
-///         main    =   'hello'   ' '   'world'
+///     let ast = rules_from_peg(
+///         r#"
+///          //  classic hello world
+///          main    =   'hello'   ' '   'world'
 ///
-///         /*  with a multiline comment
-///         */
-///        "#,
-///    ).unwrap();
+///          /*  with a multiline comment
+///          */
+///         "#,
+///     )
+///     .unwrap()
+///     .parse("hello world");
 ///
-///     assert!(parse("hello world", &rules).is_ok());
+///     assert!(ast.is_ok());
 /// ```
 ///
 /// Next is an example with some  error info
 ///
 /// ```
-///    extern crate dpr;
-///    use dpr::{parse, peg::rules_from_peg};
+/// extern crate dpr;
+/// use dpr::peg::rules_from_peg;
 ///
-///    let rules = rules_from_peg(
-///        r#"
-///         main    =   '('  main  ( ')'  /  error("unbalanced parenthesys") )
-///                 /   'hello'
-///        "#,
-///    ).unwrap();
+///     let rules = rules_from_peg(
+///         r#"
+///              main    =   '('  main  ( ')'  /  error("unbalanced parenthesys") )
+///                      /   'hello'
+///             "#,
+///     )
+///     .unwrap();
 ///
-///     assert!(parse("hello", &rules).is_ok());
-///     println!("{:?}", parse("(hello)", &rules));
-///     assert!(parse("(hello)", &rules).is_ok());
-///     assert!(parse("((hello))", &rules).is_ok());
-///     assert!(parse("(((hello)))", &rules).is_ok());
-///     match parse("(hello", &rules) {
-///         Err(e) => {assert!(e.descr == "unbalanced parenthesys");},
-///         _ => ()
+///     assert!(rules.parse("hello").is_ok());
+///     println!("{:?}", rules.parse("(hello)"));
+///     assert!(rules.parse("(hello)").is_ok());
+///     assert!(rules.parse("((hello))").is_ok());
+///     assert!(rules.parse("(((hello)))").is_ok());
+///     match rules.parse("(hello") {
+///         Err(dpr::Error::PaserErr(e)) => {
+///             assert!(e.descr == "unbalanced parenthesys");
+///         }
+///         _ => panic!("testing"),
 ///     }
-///     match parse("((hello)", &rules) {
-///         Err(e) => {assert!(e.descr == "unbalanced parenthesys");},
-///         _ => ()
+///     match rules.parse("((hello)") {
+///         Err(dpr::Error::PaserErr(e)) => {
+///             assert!(e.descr == "unbalanced parenthesys");
+///         }
+///         _ => panic!("testing"),
 ///     }
+///
 /// ```
 
 pub fn rules_from_peg(peg: &str) -> Result {
