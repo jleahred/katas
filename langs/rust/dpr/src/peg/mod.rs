@@ -406,8 +406,7 @@ fn consume_or(
     ),
     Error,
 > {
-    // or              =   and         ( _  '/'  _  or )?
-    // or              =   and  transf2?  ( _  '/'  _  or )?
+    //  or              =   and     ( _  '/'  _  or )?
 
     fn rec_consume_or(
         eov: ExprOrVecExpr,
@@ -416,22 +415,10 @@ fn consume_or(
     ) -> result::Result<(ExprOrVecExpr, &[crate::ast::flat::Node], Context), Error> {
         consuming_rule("or", nodes, context, |nodes, context| {
             // and
-            let (eov_and, nodes, context) = {
+            let (eov, nodes, context) = {
                 let (expr, nodes, context) = consume_and(nodes, context)?;
                 let eov = eov.ipush(expr);
                 (eov, nodes, context)
-            };
-
-            // transf2?
-            let (eov, nodes, context) = {
-                let next_node = crate::ast::flat::peek_first_node(nodes)?;
-                match crate::ast::flat::get_nodename(next_node) {
-                    Ok("transf2") => {
-                        let (ot2expr, nodes, context) = consume_transf2(eov_and, nodes, context)?;
-                        (ExprOrVecExpr::Expr(ot2expr), nodes, context)
-                    }
-                    _ => (eov_and, nodes, context),
-                }
             };
 
             //  ( _  '/'  _  or )?
@@ -463,12 +450,12 @@ fn consume_or(
 }
 
 fn consume_transf2(
-    eov: ExprOrVecExpr,
+    eov: (ExprOrVecExpr, ExprOrVecExpr),
     nodes: &[crate::ast::flat::Node],
     context: Context,
 ) -> result::Result<
     (
-        crate::parser::expression::Expression,
+        (ExprOrVecExpr, ExprOrVecExpr),
         &[crate::ast::flat::Node],
         Context,
     ),
@@ -476,17 +463,28 @@ fn consume_transf2(
 > {
     use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
     //  transf2         =   _1 _ '->'  ' '*  transf_rule
+
+    let (eov_transf2, eov_free) = eov;
     let nodes = crate::ast::flat::consume_node_start_rule_name("transf2", nodes)?;
     let (_, nodes) = crate::ast::flat::consume_val(nodes)?;
     let nodes = crate::ast::flat::consume_node_start_rule_name("transf_rule", nodes)?;
     let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
     let nodes = crate::ast::flat::consume_node_end_rule_name("transf_rule", nodes)?;
     let nodes = crate::ast::flat::consume_node_end_rule_name("transf2", nodes)?;
+
     Ok((
-        Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
-            mexpr: MultiExpr(eov.as_vec()),
-            transf2_rules: rules.to_string(),
-        })),
+        (
+            eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+                mexpr: MultiExpr(eov_free.as_vec()),
+                transf2_rules: rules.to_string(),
+            }))),
+            ExprOrVecExpr::None,
+        ),
+        //
+        // Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+        //     mexpr: MultiExpr(eov.as_vec()),
+        //     transf2_rules: rules.to_string(),
+        // }))
         nodes,
         context,
     ))
@@ -527,7 +525,7 @@ fn consume_and(
     Error,
 > {
     // and             =   error
-    //                 /   named? rep_or_neg  ( _1 _ !(rule_name _ ('=' / '{')) and )*
+    //                 /   named? rep_or_neg  transf2?  ( _1 _  !(rule_name _ ('=' / '{'))  and )?
 
     fn consume_named(
         nodes: &[crate::ast::flat::Node],
@@ -541,16 +539,24 @@ fn consume_and(
     }
 
     fn rec_consume_and(
-        eov: ExprOrVecExpr,
+        eov: (ExprOrVecExpr, ExprOrVecExpr),
         nodes: &[crate::ast::flat::Node],
         context: Context,
-    ) -> result::Result<(ExprOrVecExpr, &[crate::ast::flat::Node], Context), Error> {
+    ) -> result::Result<
+        (
+            (ExprOrVecExpr, ExprOrVecExpr),
+            &[crate::ast::flat::Node],
+            Context,
+        ),
+        Error,
+    > {
         consuming_rule("and", nodes, context, |nodes, context| {
+            let (eov_transf2, eov_free) = eov;
             if "error" == crate::ast::flat::get_nodename(crate::ast::flat::peek_first_node(nodes)?)?
             {
                 let (expr, nodes, context) = consume_error(nodes, context)?;
-                let eov = eov.ipush(expr);
-                Ok((eov, nodes, context))
+                let eov_transf2 = eov_transf2.ipush(expr);
+                Ok(((eov_transf2, eov_free), nodes, context))
             } else {
                 let (named, nodes, context) = match crate::ast::flat::peek_first_node(nodes)? {
                     crate::ast::flat::Node::BeginRule(rule_name) => {
@@ -563,33 +569,40 @@ fn consume_and(
                     _ => Ok((None, nodes, context)),
                 }?;
 
-                if let Some(named) = named {
+                let (eov_free, nodes, context) = if let Some(named) = named {
                     use crate::parser::expression::{Expression, MetaExpr, MultiExpr, NamedExpr};
                     let (expr, nodes, context) = consume_rep_or_neg(nodes, context)?;
-                    let eov = eov.ipush(Expression::MetaExpr(MetaExpr::Named(NamedExpr {
-                        name: named.to_string(),
-                        mexpr: MultiExpr(vec![expr]),
-                    })));
-
-                    let next_node = crate::ast::flat::peek_first_node(nodes)?;
-                    match (next_node, crate::ast::flat::get_nodename(next_node)) {
-                        (crate::ast::flat::Node::BeginRule(_), Ok("and")) => {
-                            rec_consume_and(eov, nodes, context)
-                        }
-                        _ => Ok((eov, nodes, context)),
-                    }
+                    let eov_free =
+                        eov_free.ipush(Expression::MetaExpr(MetaExpr::Named(NamedExpr {
+                            name: named.to_string(),
+                            mexpr: MultiExpr(vec![expr]),
+                        })));
+                    (eov_free, nodes, context)
                 } else {
                     let (expr, nodes, context) = consume_rep_or_neg(nodes, context)?;
-                    let eov = eov.ipush(expr);
+                    let eov_free = eov_free.ipush(expr);
+                    (eov_free, nodes, context)
+                };
+
+                // transf2?
+                let ((eov_transf2, eov_free), nodes, context) = {
                     let next_node = crate::ast::flat::peek_first_node(nodes)?;
-                    let (eov, nodes, context) =
-                        match (next_node, crate::ast::flat::get_nodename(next_node)) {
-                            (crate::ast::flat::Node::BeginRule(_), Ok("and")) => {
-                                rec_consume_and(eov, nodes, context)
-                            }
-                            _ => Ok((eov, nodes, context)),
-                        }?;
-                    Ok((eov, nodes, context))
+                    match crate::ast::flat::get_nodename(next_node) {
+                        Ok("transf2") => {
+                            let ((eov_transf2, eov_free), nodes, context) =
+                                consume_transf2((eov_transf2, eov_free), nodes, context)?;
+                            ((eov_transf2, eov_free), nodes, context)
+                        }
+                        _ => ((eov_transf2, eov_free), nodes, context),
+                    }
+                };
+
+                let next_node = crate::ast::flat::peek_first_node(nodes)?;
+                match (next_node, crate::ast::flat::get_nodename(next_node)) {
+                    (crate::ast::flat::Node::BeginRule(_), Ok("and")) => {
+                        rec_consume_and((eov_transf2, eov_free), nodes, context)
+                    }
+                    _ => Ok(((eov_transf2, eov_free), nodes, context)),
                 }
             }
         })
@@ -600,12 +613,12 @@ fn consume_and(
     };
     //  --------------------------
 
-    let (eov, nodes, context) = rec_consume_and(ExprOrVecExpr::None, nodes, context)?;
-    match eov {
-        ExprOrVecExpr::None => Err(error_peg_s("logic error, empty or parsing???")),
-        ExprOrVecExpr::Expr(e) => Ok((e, nodes, context)),
-        ExprOrVecExpr::VExpr(v) => Ok((build_and_expr(v), nodes, context)),
-    }
+    let ((eov_transf2, eov_free), nodes, context) =
+        rec_consume_and((ExprOrVecExpr::None, ExprOrVecExpr::None), nodes, context)?;
+    let free_exprv = eov_free.as_vec();
+    let transf2_exprv = eov_transf2.as_vec();
+    let exprv = transf2_exprv.iappend(free_exprv);
+    Ok((build_and_expr(exprv), nodes, context))
 }
 
 fn consume_rep_or_neg(

@@ -39,11 +39,11 @@ fn text_peg2code() -> &'static str {
 
     expr            =   or
 
-    or              =   and  transf2?  ( _  '/'  _  or )?
+    or              =   and     ( _  '/'  _  or )?
     error           =   'error' _  '('  _  literal  _  ')'
 
     and             =   error 
-                    /   named? rep_or_neg  ( _1 _ !(rule_name _ ('=' / '{')) and )*
+                    /   named? rep_or_neg  transf2?  ( _1 _  !(rule_name _ ('=' / '{'))  and )?
     _1              =   (' ' / eol)     //  this is the and separator
 
     rep_or_neg      =   atom_or_par ('*' / '+' / '?')?
@@ -107,8 +107,8 @@ fn text_peg2code() -> &'static str {
     line_comment    =   '//' (!eol .)*
     mline_comment   =   '/*' (!'*/' .)* '*/'
 
-    transf2         =   _1 _ '->'  ' '*  transf_rule
-    transf_rule     =   (!eol .)*
+    transf2         =   _1 _  '->'  ' '*  transf_rule
+    transf_rule     =   (!eol .)+
     named           =   symbol ":"
     "#
 }
