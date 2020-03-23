@@ -45,6 +45,8 @@ pub enum Error {
     RulesErr(crate::peg::Error),
     /// error on parsing
     PaserErr(crate::parser::Error),
+    /// error on replace
+    ReplaceErr(String),
 }
 
 impl<'a> Peg<'a> {
@@ -67,6 +69,13 @@ impl crate::parser::expression::SetOfRules {
     /// parse with debug info
     pub fn parse_debug(&self, text: &str) -> Result<ast::Node, Error> {
         crate::parse_debug(text, self).map_err(|e| Error::PaserErr(e))
+    }
+}
+
+impl ast::Node {
+    /// run the tree replacing acording the rules
+    pub fn replace(&self) -> Result<String, Error> {
+        ast::replace::replace(&self).map_err(|e| Error::ReplaceErr(e))
     }
 }
 

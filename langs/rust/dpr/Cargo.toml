@@ -10,4 +10,4 @@ repository = "https://github.com/jleahred/dpr"
 keywords = ["parsing", "parser", "dynamic", "peg", "text processing"]
 
 [dependencies]
-idata = "0.1.0"
+idata = {git = "https://github.com/jleahred/idata" }

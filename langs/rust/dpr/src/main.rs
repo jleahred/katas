@@ -6,8 +6,9 @@
 // }
 
 extern crate dpr;
+
 fn main() -> Result<(), dpr::Error> {
-    let ast = dpr::Peg::new(
+    let result = dpr::Peg::new(
         "
         main    =   'b'  as:a+
         a       =   'a' -> r
@@ -15,8 +16,11 @@ fn main() -> Result<(), dpr::Error> {
     ",
     )
     .gen_rules()?
-    .parse_debug("babc")?;
+    .parse("babc")?
+    .replace()?
+    //  ...
+    ;
 
-    println!("{:#?}", ast);
+    println!("{:#?}", result);
     Ok(())
 }
