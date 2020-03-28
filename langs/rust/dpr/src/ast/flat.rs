@@ -101,10 +101,10 @@ impl ast::Node {
                     let acc = vn.iter().fold(acc, |facc, n| flatten_acc(facc, n));
                     acc.ipush(Node::EndNamed(n.to_string()))
                 }
-                ast::Node::Transf2((n, vn)) => {
-                    let acc = acc.ipush(Node::BeginTransf2(n.to_string()));
-                    let acc = vn.iter().fold(acc, |facc, n| flatten_acc(facc, n));
-                    acc.ipush(Node::EndTrasnf2(n.to_string()))
+                ast::Node::Transf2(ast::Transf2 { template, nodes }) => {
+                    let acc = acc.ipush(Node::BeginTransf2(template.clone()));
+                    let acc = nodes.iter().fold(acc, |facc, n| flatten_acc(facc, n));
+                    acc.ipush(Node::EndTrasnf2(template.to_string()))
                 }
             }
         }

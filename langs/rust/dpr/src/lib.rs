@@ -8,6 +8,26 @@
 //!
 //! A very basic example...
 //! ```rust
+//! extern crate dpr;
+//!
+//! fn main() -> Result<(), dpr::Error> {
+//!     let result = dpr::Peg::new(
+//!         "
+//!         main    =   char+
+//!         char    =   'a'     -> A
+//!                 /   'b'     -> B
+//!                 /   .
+//!     ",
+//!     )
+//!     .gen_rules()?
+//!     .parse("aaacbbabdef")?
+//!     .replace()?
+//!     //  ...
+//!     ;
+//!
+//!     assert_eq!(result, "AAAcBBABdef");
+//!     Ok(())
+//! }
 //!```
 //!
 //!

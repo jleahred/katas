@@ -106,9 +106,9 @@ impl SetOfRules {
 #[derive(Debug, Clone)]
 pub struct Named(pub(crate) String);
 
-#[allow(missing_docs)]
-#[derive(Debug, Clone)]
-pub struct Transf2(pub(crate) String);
+// #[allow(missing_docs)]
+// #[derive(Debug, Clone)]
+// pub struct Transf2(pub(crate) String);
 
 #[allow(missing_docs)]
 #[derive(Debug)]
@@ -248,7 +248,10 @@ fn parse_metaexpr<'a>(status: Status<'a>, meta_expr: &'a MetaExpr) -> ResultExpr
             let (status, nodes) = parse_and(status, mexpr)?;
             Ok((
                 status,
-                vec![ast::Node::Transf2((transf2_rules.to_string(), nodes))],
+                vec![ast::Node::Transf2(ast::Transf2 {
+                    template: transf2_rules.to_string(),
+                    nodes,
+                })],
             ))
         }
     }

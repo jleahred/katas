@@ -18,7 +18,8 @@ Add to `cargo.toml`
 
 ```toml
 [dependencies]
-dpr = "0.1.0"
+# dpr = "0.1.0" soon
+dpr = {git = "https://github.com/jleahred/dpr" }
 ```
 
 Watch examples below
@@ -45,20 +46,28 @@ Watch examples below
 
 ## Simple example
 
+Starting with this `peg`
+
 Peg:
 ```text
-    main    =   as:a+
-    a       =   a:'a'     ->b
+        main    =   char+
+        char    =   'a'     -> A
+                /   'b'     -> B
+                /   .
 ```
+
+Given this `input`
 
 Input:
 ```text
-    aaaaaa
+    aaacbbabdef
 ```
+
+We got as result:
 
 Output:
 ```text
-    bbbbbb
+    AAAcBBABdef
 ```
 
 Addition example
@@ -137,4 +146,256 @@ Basic text trasnformation flow.
                         '--------'
 
 
+```
+
+The `rust` code for first example...
+
+```rust
+extern crate dpr;
+
+fn main() -> Result<(), dpr::Error> {
+    let result = dpr::Peg::new(
+        "
+        main    =   char+
+        char    =   'a'     -> A
+                /   'b'     -> B
+                /   .
+    ",
+    )
+    .gen_rules()?
+    .parse("aaacbbabdef")?
+    .replace()?
+    //  ...
+    ;
+
+    println!("{:#?}", result);
+    Ok(())
+}
+```
+
+### Let's see step by step
+
+Creating rules...
+
+```rust
+extern crate dpr;
+
+fn main() -> Result<(), dpr::Error> {
+    let result = dpr::Peg::new(
+        "
+        main    =   char+
+        char    =   'a'     -> A
+                /   'b'     -> B
+                /   .
+    ",
+    )
+    .gen_rules()?
+    // .parse("aaacbbabdef")?
+    // .replace()?
+    //  ...
+    ;
+
+    println!("{:#?}", result);
+    Ok(())
+}
+```
+
+Produce a set of rules like...
+
+```text
+SetOfRules(
+    {
+        "main": And(
+            MultiExpr(
+                [
+                    Repeat(
+                        RepInfo {
+                            expression: RuleName(
+                                "char",
+                            ),
+                            min: NRep(
+                                1,
+                            ),
+                            max: None,
+                        },
+                    ),
+                ],
+            ),
+        ),
+        "char": Or(
+            MultiExpr(
+                [
+                    And(
+                        MultiExpr(
+                            [
+                                MetaExpr(
+                                    Transf2(
+                                        Transf2Expr {
+                                            mexpr: MultiExpr(
+                                                [
+                                                    Simple(
+                                                        Literal(
+                                                            "a",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                            transf2_rules: "A",
+                                        },
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    And(
+                        MultiExpr(
+                            [
+                                MetaExpr(
+                                    Transf2(
+                                        Transf2Expr {
+                                            mexpr: MultiExpr(
+                                                [
+                                                    Simple(
+                                                        Literal(
+                                                            "b",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                            transf2_rules: "B",
+                                        },
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                    And(
+                        MultiExpr(
+                            [
+                                Simple(
+                                    Dot,
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    },
+)
+```
+
+This set of rules will let us to `parse` and generate the `AST` for any `input`
+
+Next step, `parsing` the `input` with generated `rules`...
+
+Creating rules...
+(With a simplified input in order to reduce the `output` size)
+
+```rust
+extern crate dpr;
+
+fn main() -> Result<(), dpr::Error> {
+    let result = dpr::Peg::new(
+        "
+        main    =   char+
+        char    =   'a'     -> A
+                /   'b'     -> B
+                /   .
+    ",
+    )
+    .gen_rules()?
+    .parse("acb")?
+    // .replace()?
+    //  ...
+    ;
+
+    println!("{:#?}", result);
+    Ok(())
+}
+```
+
+Now you can see
+
+```text
+Rule(
+    (
+        "main",
+        [
+            Rule(
+                (
+                    "char",
+                    [
+                        Transf2(
+                            (
+                                "A",
+                                [
+                                    Val(
+                                        "a",
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+            Rule(
+                (
+                    "char",
+                    [
+                        Val(
+                            "c",
+                        ),
+                    ],
+                ),
+            ),
+            Rule(
+                (
+                    "char",
+                    [
+                        Transf2(
+                            (
+                                "B",
+                                [
+                                    Val(
+                                        "b",
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    ),
+)
+```
+
+And running the transformations...
+
+```rust
+extern crate dpr;
+
+fn main() -> Result<(), dpr::Error> {
+    let result = dpr::Peg::new(
+        "
+        main    =   char+
+        char    =   'a'     -> A
+                /   'b'     -> B
+                /   .
+    ",
+    )
+    .gen_rules()?
+    .parse("acb")?
+    .replace()?
+    //  ...
+    ;
+
+    println!("{:#?}", result);
+    Ok(())
+}
+```
+
+```txt
+"AcB"
 ```

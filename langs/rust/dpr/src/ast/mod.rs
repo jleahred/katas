@@ -33,6 +33,12 @@ pub fn error(desc: &str, ast_context: Option<&str>) -> Error {
     Error(desc.to_string(), ast_context.map(|a| a.to_string()))
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Transf2 {
+    pub template: String,
+    pub nodes: Vec<Node>,
+}
+
 /// Information of a node
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -44,7 +50,7 @@ pub enum Node {
     /// Named nodes
     Named((String, Vec<Node>)),
     /// Named nodes
-    Transf2((String, Vec<Node>)),
+    Transf2(Transf2),
     /// Reached end of file
     EOF,
 }
@@ -94,7 +100,10 @@ impl Node {
             Node::Val(v) => Node::Val(v.clone()),
             Node::Rule((n, vn)) => Node::Rule((n.clone(), prune_vn(vn))),
             Node::Named((n, vn)) => Node::Named((n.clone(), prune_vn(vn))),
-            Node::Transf2((n, vn)) => Node::Transf2((n.clone(), prune_vn(vn))),
+            Node::Transf2(Transf2 { template, nodes }) => Node::Transf2(Transf2 {
+                template: template.clone(),
+                nodes: prune_vn(nodes),
+            }),
         }
     }
 
@@ -149,7 +158,10 @@ impl Node {
             Node::Val(v) => Node::Val(v.clone()),
             Node::Rule((n, vn)) => Node::Rule((n.clone(), pthr_vn(vn, nodes2keep))),
             Node::Named((n, vn)) => Node::Named((n.clone(), pthr_vn(vn, nodes2keep))),
-            Node::Transf2((n, vn)) => Node::Transf2((n.clone(), pthr_vn(vn, nodes2keep))),
+            Node::Transf2(Transf2 { template, nodes }) => Node::Transf2(Transf2 {
+                template: template.clone(),
+                nodes: pthr_vn(nodes, nodes2keep),
+            }),
         }
     }
 
@@ -205,9 +217,16 @@ impl Node {
                 (Node::Named((ref n, ref vn)), _) => {
                     nodes.ipush(Node::Rule((n.clone(), compact_nodes(vn))))
                 }
-                (Node::Transf2((ref n, ref vn)), _) => {
-                    nodes.ipush(Node::Rule((n.clone(), compact_nodes(vn))))
-                }
+                (
+                    Node::Transf2(Transf2 {
+                        template,
+                        nodes: vn,
+                    }),
+                    _,
+                ) => nodes.ipush(Node::Transf2(Transf2 {
+                    template: template.clone(),
+                    nodes: compact_nodes(vn),
+                })),
             }
         };
         fn compact_nodes(nodes: &[Node]) -> Vec<Node> {
@@ -220,7 +239,10 @@ impl Node {
             Node::Val(v) => Node::Val(v.clone()),
             Node::Rule((n, vn)) => Node::Rule((n.clone(), compact_nodes(vn))),
             Node::Named((n, vn)) => Node::Named((n.clone(), compact_nodes(vn))),
-            Node::Transf2((n, vn)) => Node::Transf2((n.clone(), compact_nodes(vn))),
+            Node::Transf2(Transf2 { template, nodes }) => Node::Transf2(Transf2 {
+                template: template.clone(),
+                nodes: compact_nodes(nodes),
+            }),
         }
     }
 }

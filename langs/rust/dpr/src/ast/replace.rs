@@ -1,6 +1,15 @@
 use crate::ast::Node;
 use idata::IString;
 
+pub(crate) enum ReplaceItem {
+    Text(String),
+    Function(String),
+}
+
+pub(crate) struct ReplaceTemplate {
+    items: Vec<ReplaceItem>,
+}
+
 pub(crate) fn replace(ast: &Node) -> Result<String, String> {
     Ok(rec_replace(ast, Replaced("".to_string()))?.0)
 }
@@ -18,7 +27,9 @@ fn rec_replace(ast: &Node, repl: Replaced) -> Result<Replaced, String> {
         Node::EOF => Ok(repl),
         Node::Val(s) => Ok(repl.iappend(s)),
         Node::Named((_, nodes)) => rec_replace_nodes(nodes, repl),
-        Node::Transf2((tr2, nodes)) => rec_transf2_nodes(nodes, tr2, repl),
+        Node::Transf2(crate::ast::Transf2 { template, nodes }) => {
+            rec_transf2_nodes(nodes, template, repl)
+        }
         Node::Rule((_, nodes)) => rec_replace_nodes(nodes, repl),
     }
 }
