@@ -249,7 +249,9 @@ fn parse_metaexpr<'a>(status: Status<'a>, meta_expr: &'a MetaExpr) -> ResultExpr
             Ok((
                 status,
                 vec![ast::Node::Transf2(ast::Transf2 {
-                    template: transf2_rules.to_string(),
+                    template: ast::replace::Template {
+                        items: vec![ast::replace::Item::Text(transf2_rules.clone())],
+                    },
                     nodes,
                 })],
             ))

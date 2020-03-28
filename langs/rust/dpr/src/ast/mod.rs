@@ -33,9 +33,13 @@ pub fn error(desc: &str, ast_context: Option<&str>) -> Error {
     Error(desc.to_string(), ast_context.map(|a| a.to_string()))
 }
 
+/// template to transform and
+/// nodes to be used on transform
 #[derive(Debug, PartialEq)]
 pub struct Transf2 {
-    pub template: String,
+    /// template info to replace
+    pub template: replace::Template,
+    /// nodes on witch will be applied the transformation
     pub nodes: Vec<Node>,
 }
 

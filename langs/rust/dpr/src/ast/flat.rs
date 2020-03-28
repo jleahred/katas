@@ -35,9 +35,9 @@ pub enum Node {
     /// Ends a name
     EndNamed(String),
     /// Reached end of file
-    BeginTransf2(String),
+    BeginTransf2(crate::ast::replace::Template),
     /// Ends a name
-    EndTrasnf2(String),
+    EndTrasnf2,
     /// Reached end of file
     EOF,
 }
@@ -104,7 +104,7 @@ impl ast::Node {
                 ast::Node::Transf2(ast::Transf2 { template, nodes }) => {
                     let acc = acc.ipush(Node::BeginTransf2(template.clone()));
                     let acc = nodes.iter().fold(acc, |facc, n| flatten_acc(facc, n));
-                    acc.ipush(Node::EndTrasnf2(template.to_string()))
+                    acc.ipush(Node::EndTrasnf2)
                 }
             }
         }

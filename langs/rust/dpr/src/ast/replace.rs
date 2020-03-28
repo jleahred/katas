@@ -1,13 +1,15 @@
 use crate::ast::Node;
 use idata::IString;
 
-pub(crate) enum ReplaceItem {
+#[derive(Debug, PartialEq, Clone)]
+pub enum Item {
     Text(String),
     Function(String),
 }
 
-pub(crate) struct ReplaceTemplate {
-    items: Vec<ReplaceItem>,
+#[derive(Debug, PartialEq, Clone)]
+pub struct Template {
+    pub items: Vec<Item>,
 }
 
 pub(crate) fn replace(ast: &Node) -> Result<String, String> {
@@ -41,12 +43,26 @@ fn rec_replace_nodes(nodes: &[Node], repl: Replaced) -> Result<Replaced, String>
     })
 }
 
-fn rec_transf2_nodes(nodes: &[Node], transf2: &str, repl: Replaced) -> Result<Replaced, String> {
-    let _replaced = nodes
+fn rec_transf2_nodes(
+    nodes: &[Node],
+    template: &Template,
+    repl: Replaced,
+) -> Result<Replaced, String> {
+    let replaced = nodes //  todo
         .iter()
         .fold(Ok(Replaced("".to_string())), |acc, node| match acc {
             Ok(repl) => rec_replace(node, repl),
             Err(e) => Err(e),
         })?;
-    Ok(repl.iappend(transf2))
+    Ok(apply_transf2(template, repl))
+}
+
+fn apply_transf2(template: &Template, replaced: Replaced) -> Replaced {
+    template
+        .items
+        .iter()
+        .fold(replaced, |acc, repl_item| match repl_item {
+            Item::Text(txt) => acc.iappend(txt),
+            Item::Function(f) => acc.iappend(f),
+        })
 }
