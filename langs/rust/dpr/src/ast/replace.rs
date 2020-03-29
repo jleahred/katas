@@ -1,5 +1,5 @@
 use crate::ast::Node;
-use idata::IString;
+use idata::{cont::IVec, IString};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Item {
@@ -16,6 +16,7 @@ pub(crate) fn replace(ast: &Node) -> Result<String, String> {
     Ok(rec_replace(ast, Replaced("".to_string()))?.0)
 }
 
+#[derive(Debug)]
 struct Replaced(String);
 
 impl Replaced {
@@ -48,12 +49,34 @@ fn rec_transf2_nodes(
     template: &Template,
     repl: Replaced,
 ) -> Result<Replaced, String> {
-    let replaced = nodes //  todo
+    fn update_by_name(
+        node: &Node,
+        map: im::HashMap<String, String>,
+        repl: Replaced,
+    ) -> im::HashMap<String, String> {
+        match node {
+            Node::Named((name, _)) => map.update(name.clone(), repl.0),
+            Node::Rule((name, _nodes)) => map.update(name.clone(), repl.0),
+            Node::Val(_) => map,
+            Node::Transf2(_) => map,
+            Node::EOF => map,
+        }
+    }
+
+    let replaced_nodes = (Vec::<Replaced>::new(), im::HashMap::<String, String>::new());
+    let replaced_nodes = nodes
         .iter()
-        .fold(Ok(Replaced("".to_string())), |acc, node| match acc {
-            Ok(repl) => rec_replace(node, repl),
-            Err(e) => Err(e),
-        })?;
+        .fold(Ok(replaced_nodes), |acc, node| -> Result<_, String> {
+            let replaced_node = || rec_replace(node, Replaced("".to_string()));
+            match acc {
+                Ok((by_index, by_name)) => Ok((
+                    by_index.ipush(replaced_node()?),
+                    update_by_name(node, by_name, replaced_node()?),
+                )),
+                Err(e) => Err(e),
+            }
+        });
+    println!("#{:#?}", replaced_nodes);
     Ok(apply_transf2(template, repl))
 }
 
@@ -63,6 +86,6 @@ fn apply_transf2(template: &Template, replaced: Replaced) -> Replaced {
         .iter()
         .fold(replaced, |acc, repl_item| match repl_item {
             Item::Text(txt) => acc.iappend(txt),
-            Item::Function(f) => acc.iappend(f),
+            Item::Function(f) => acc.iappend(&format!("fn: {}", f)),
         })
 }

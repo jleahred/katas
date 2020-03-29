@@ -107,9 +107,12 @@ fn text_peg2code() -> &'static str {
     line_comment    =   '//' (!eol .)*
     mline_comment   =   '/*' (!'*/' .)* '*/'
 
-    transf2         =   _1 _  '->'  ' '*  transf_rule
-    transf_rule     =   (!eol .)+
     named           =   symbol ":"
+
+    transf2         =   _1 _  '->'  ' '*  transf_rule   eol
+    transf_rule     =   (text / funct)*
+    text            =   (!("$(" / eol) .)+
+    funct           =   "$("  (!(")" / eol) .)+  ")"
     "#
 }
 

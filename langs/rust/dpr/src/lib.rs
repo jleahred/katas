@@ -37,6 +37,7 @@
 //!
 
 extern crate idata;
+extern crate im;
 
 use std::result;
 

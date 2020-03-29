@@ -11,3 +11,4 @@ keywords = ["parsing", "parser", "dynamic", "peg", "text processing"]
 
 [dependencies]
 idata = {git = "https://github.com/jleahred/idata" }
+im = "14.3.0"

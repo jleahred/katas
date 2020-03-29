@@ -166,7 +166,12 @@ pub type Result = result::Result<crate::parser::expression::SetOfRules, Error>;
 
 pub fn rules_from_peg(peg: &str) -> Result {
     let ast = crate::parse(peg, &rules::parse_peg())?;
-    let nodes = ast.compact().prune(&["_", "_1", "_eol"]).flatten();
+    let nodes = ast
+        .compact()
+        .prune(&["_", "_1", "_eol"])
+        .flatten()
+        //...
+        ;
 
     rules_from_flat_ast(&nodes)
 }
@@ -461,33 +466,67 @@ fn consume_transf2(
     ),
     Error,
 > {
-    use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
     //  transf2         =   _1 _ '->'  ' '*  transf_rule
 
-    let (eov_transf2, eov_free) = eov;
-    let nodes = crate::ast::flat::consume_node_start_rule_name("transf2", nodes)?;
-    let (_, nodes) = crate::ast::flat::consume_val(nodes)?;
-    let nodes = crate::ast::flat::consume_node_start_rule_name("transf_rule", nodes)?;
-    let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
-    let nodes = crate::ast::flat::consume_node_end_rule_name("transf_rule", nodes)?;
-    let nodes = crate::ast::flat::consume_node_end_rule_name("transf2", nodes)?;
+    consuming_rule("transf2", nodes, context, |nodes, context| {
+        use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
 
-    Ok((
-        (
-            eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
-                mexpr: MultiExpr(eov_free.as_vec()),
-                transf2_rules: rules.to_string(),
-            }))),
-            ExprOrVecExpr::None,
-        ),
-        //
-        // Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
-        //     mexpr: MultiExpr(eov.as_vec()),
-        //     transf2_rules: rules.to_string(),
-        // }))
-        nodes,
-        context,
-    ))
+        // let (eov_transf2, eov_free) = eov;
+        //  ->
+        let (_, nodes) = crate::ast::flat::consume_val(nodes)?;
+        let ((eov_transf2, eov_free), nodes, context) = consume_transf_rule(eov, nodes, context)?;
+        // let nodes = crate::ast::flat::consume_node_start_rule_name("transf_rule", nodes)?;
+        // let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
+        // let nodes = crate::ast::flat::consume_node_end_rule_name("transf_rule", nodes)?;
+
+        Ok((
+            (
+                eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+                    mexpr: MultiExpr(eov_free.as_vec()),
+                    transf2_rules: "rules".to_string(), //  todo
+                }))),
+                ExprOrVecExpr::None,
+            ),
+            nodes,
+            context,
+        ))
+    })
+}
+
+fn consume_transf_rule(
+    eov: (ExprOrVecExpr, ExprOrVecExpr),
+    nodes: &[crate::ast::flat::Node],
+    context: Context,
+) -> result::Result<
+    (
+        (ExprOrVecExpr, ExprOrVecExpr),
+        &[crate::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
+    //      transf_rule     =   (text / funct)*
+
+    consuming_rule("transf_rule", nodes, context, |nodes, context| {
+        use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
+
+        let (eov_transf2, eov_free) = eov;
+        // let (_, nodes) = crate::ast::flat::consume_val(nodes)?; //  ->
+        println!("{:#?}", nodes.iter().take(3).collect::<Vec<_>>());
+        let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
+
+        Ok((
+            (
+                eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+                    mexpr: MultiExpr(eov_free.as_vec()),
+                    transf2_rules: rules.to_string(),
+                }))),
+                ExprOrVecExpr::None,
+            ),
+            nodes,
+            context,
+        ))
+    })
 }
 
 fn consume_error(
