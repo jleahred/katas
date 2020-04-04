@@ -10,6 +10,13 @@ pub enum Item {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Template(pub(crate) Vec<Item>);
 
+impl Template {
+    pub(crate) fn ipush(mut self, item: Item) -> Self {
+        self.0.push(item);
+        self
+    }
+}
+
 pub(crate) fn replace(ast: &Node) -> Result<String, String> {
     Ok(rec_replace(ast, Replaced("".to_string()))?.0)
 }
@@ -75,6 +82,8 @@ fn rec_transf2_nodes(
             }
         });
     dbg!(replaced_nodes?);
+    let repl = dbg!(repl);
+    dbg!(template);
     Ok(apply_transf2(template, repl))
 }
 
@@ -84,6 +93,6 @@ fn apply_transf2(template: &Template, replaced: Replaced) -> Replaced {
         .iter()
         .fold(replaced, |acc, repl_item| match repl_item {
             Item::Text(txt) => acc.iappend(txt),
-            Item::Function(f) => acc.iappend(&format!("fn: {}", f)),
+            Item::Function(f) => acc.iappend(&format!("fn<{}>", f)),
         })
 }
