@@ -1,0 +1,1 @@
+Just some basic examples of functional programming in `RUST`
