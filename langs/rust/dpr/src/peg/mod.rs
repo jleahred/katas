@@ -466,30 +466,35 @@ fn consume_transf2(
     ),
     Error,
 > {
-    //  transf2         =   _1 _ '->'  ' '*  transf_rule
+    //  transf2         =   _1 _  '->'  ' '*  transf_rule   eol
 
     consuming_rule("transf2", nodes, context, |nodes, context| {
-        use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
+        // use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
 
-        // let (eov_transf2, eov_free) = eov;
         //  ->
         let (_, nodes) = crate::ast::flat::consume_val(nodes)?;
         let ((eov_transf2, eov_free), nodes, context) = consume_transf_rule(eov, nodes, context)?;
-        // let nodes = crate::ast::flat::consume_node_start_rule_name("transf_rule", nodes)?;
-        // let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
-        // let nodes = crate::ast::flat::consume_node_end_rule_name("transf_rule", nodes)?;
 
-        Ok((
-            (
-                eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
-                    mexpr: MultiExpr(eov_free.as_vec()),
-                    transf2_rules: "rules".to_string(), //  todo
-                }))),
-                ExprOrVecExpr::None,
-            ),
-            nodes,
-            context,
-        ))
+        // let eov_transf2 = eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+        //     mexpr: MultiExpr(eov_free.as_vec()),
+        //     transf2_rules: "rules".to_string(), //  todo
+        // })));
+
+        let ((), nodes, context) = consume_eol(nodes, context)?;
+
+        Ok(((eov_transf2, ExprOrVecExpr::None), nodes, context))
+    })
+}
+
+fn consume_eol(
+    nodes: &[crate::ast::flat::Node],
+    context: Context,
+) -> result::Result<((), &[crate::ast::flat::Node], Context), Error> {
+    // eol             =   ("\r\n"  /  "\n"  /  "\r")
+
+    consuming_rule("eol", nodes, context, |nodes, context| {
+        let (_, nodes) = crate::ast::flat::consume_val(nodes)?;
+        Ok(((), nodes, context))
     })
 }
 
@@ -508,24 +513,95 @@ fn consume_transf_rule(
     //      transf_rule     =   (text / funct)*
 
     consuming_rule("transf_rule", nodes, context, |nodes, context| {
-        use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
-
-        let (eov_transf2, eov_free) = eov;
-        // let (_, nodes) = crate::ast::flat::consume_val(nodes)?; //  ->
-        println!("{:#?}", nodes.iter().take(3).collect::<Vec<_>>());
-        let (rules, nodes) = crate::ast::flat::consume_val(nodes)?;
-
-        Ok((
+        fn rec_consume_text_or_function(
+            eov: (ExprOrVecExpr, ExprOrVecExpr),
+            nodes: &[crate::ast::flat::Node],
+            context: Context,
+        ) -> result::Result<
             (
-                eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
-                    mexpr: MultiExpr(eov_free.as_vec()),
-                    transf2_rules: rules.to_string(),
-                }))),
-                ExprOrVecExpr::None,
+                (ExprOrVecExpr, ExprOrVecExpr),
+                &[crate::ast::flat::Node],
+                Context,
             ),
-            nodes,
-            context,
-        ))
+            Error,
+        > {
+            let consume_text_or_funct = |eov, nodes, context| -> result::Result<_, Error> {
+                match crate::ast::flat::get_nodename(crate::ast::flat::peek_first_node(nodes)?)?
+                    .as_ref()
+                {
+                    "text" => Ok((true, consume_text(eov, nodes, context)?)),
+                    "funct" => Ok((true, consume_function(eov, nodes, context)?)),
+                    _ => Ok((false, (eov, nodes, context))),
+                }
+            };
+            let (ok, (eov, nodes, context)) = consume_text_or_funct(eov, nodes, context)?;
+            if ok {
+                rec_consume_text_or_function(eov, nodes, context)
+            } else {
+                Ok((eov, nodes, context))
+            }
+        };
+        //  ------------
+        rec_consume_text_or_function(eov, nodes, context)
+    })
+}
+
+fn consume_text(
+    eov: (ExprOrVecExpr, ExprOrVecExpr),
+    nodes: &[crate::ast::flat::Node],
+    context: Context,
+) -> result::Result<
+    (
+        (ExprOrVecExpr, ExprOrVecExpr),
+        &[crate::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
+    //  text            =   (!("$(" / eol) .)+
+
+    consuming_rule("text", nodes, context, |nodes, context| {
+        use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
+        let (eov_transf2, eov_free) = eov;
+
+        let (text, nodes) = crate::ast::flat::consume_val(nodes)?;
+        let eov = (
+            eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+                mexpr: MultiExpr(eov_free.as_vec()),
+                transf2_rules: text.to_string(),
+            }))),
+            ExprOrVecExpr::None,
+        );
+        Ok((eov, nodes, context))
+    })
+}
+
+fn consume_function(
+    eov: (ExprOrVecExpr, ExprOrVecExpr),
+    nodes: &[crate::ast::flat::Node],
+    context: Context,
+) -> result::Result<
+    (
+        (ExprOrVecExpr, ExprOrVecExpr),
+        &[crate::ast::flat::Node],
+        Context,
+    ),
+    Error,
+> {
+    //  funct           =   "$("  (!(")" / eol) .)+  ")"
+    consuming_rule("funct", nodes, context, |nodes, context| {
+        use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
+        let (eov_transf2, eov_free) = eov;
+
+        let (text, nodes) = crate::ast::flat::consume_val(nodes)?;
+        let eov = (
+            eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
+                mexpr: MultiExpr(eov_free.as_vec()),
+                transf2_rules: text.to_string(),
+            }))),
+            ExprOrVecExpr::None,
+        );
+        Ok((eov, nodes, context))
     })
 }
 

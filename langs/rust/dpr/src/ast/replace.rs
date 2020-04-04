@@ -76,7 +76,7 @@ fn rec_transf2_nodes(
                 Err(e) => Err(e),
             }
         });
-    println!("#{:#?}", replaced_nodes);
+    dbg!(replaced_nodes?);
     Ok(apply_transf2(template, repl))
 }
 
