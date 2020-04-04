@@ -121,7 +121,7 @@ pub struct NamedExpr {
 #[derive(Debug)]
 pub struct Transf2Expr {
     pub mexpr: MultiExpr,
-    pub transf2_rules: String,
+    pub transf2_rules: ast::replace::Template,
 }
 
 #[allow(missing_docs)]
@@ -249,9 +249,7 @@ fn parse_metaexpr<'a>(status: Status<'a>, meta_expr: &'a MetaExpr) -> ResultExpr
             Ok((
                 status,
                 vec![ast::Node::Transf2(ast::Transf2 {
-                    template: ast::replace::Template {
-                        items: vec![ast::replace::Item::Text(transf2_rules.clone())],
-                    },
+                    template: transf2_rules.clone(),
                     nodes,
                 })],
             ))

@@ -568,7 +568,7 @@ fn consume_text(
         let eov = (
             eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
                 mexpr: MultiExpr(eov_free.as_vec()),
-                transf2_rules: text.to_string(),
+                transf2_rules: crate::ast::replace::Template(vec![]),
             }))),
             ExprOrVecExpr::None,
         );
@@ -597,7 +597,7 @@ fn consume_function(
         let eov = (
             eov_transf2.ipush(Expression::MetaExpr(MetaExpr::Transf2(Transf2Expr {
                 mexpr: MultiExpr(eov_free.as_vec()),
-                transf2_rules: text.to_string(),
+                transf2_rules: crate::ast::replace::Template(vec![]),
             }))),
             ExprOrVecExpr::None,
         );

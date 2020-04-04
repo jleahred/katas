@@ -8,9 +8,7 @@ pub enum Item {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Template {
-    pub items: Vec<Item>,
-}
+pub struct Template(pub(crate) Vec<Item>);
 
 pub(crate) fn replace(ast: &Node) -> Result<String, String> {
     Ok(rec_replace(ast, Replaced("".to_string()))?.0)
@@ -82,7 +80,7 @@ fn rec_transf2_nodes(
 
 fn apply_transf2(template: &Template, replaced: Replaced) -> Replaced {
     template
-        .items
+        .0
         .iter()
         .fold(replaced, |acc, repl_item| match repl_item {
             Item::Text(txt) => acc.iappend(txt),
