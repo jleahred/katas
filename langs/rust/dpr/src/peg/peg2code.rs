@@ -110,9 +110,15 @@ fn text_peg2code() -> &'static str {
     named           =   symbol ":"
 
     transf2         =   _1 _  '->'  ' '*  transf_rule   eol
-    transf_rule     =   (text / funct)*
-    text            =   (!("$(" / eol) .)+
-    funct           =   "$("  (!(")" / eol) .)+  ")"
+    transf_rule     =   ( tmpl_text  /  tmpl_rule )*
+    tmpl_text       =   (!("$(" / eol) .)+
+    tmpl_rule       =   "$("
+                            (
+                                symbol                      //  template by name
+                                /   "."  [0-9]+             //  by pos
+                                /   ":"  (!(")" / eol) .)+  //  by function
+                            )
+                        ")"
     "#
 }
 

@@ -4,6 +4,8 @@ use idata::{cont::IVec, IString};
 #[derive(Debug, PartialEq, Clone)]
 pub enum Item {
     Text(String),
+    Bypos(i32),
+    ByName(String),
     Function(String),
 }
 
@@ -93,6 +95,8 @@ fn apply_transf2(template: &Template, replaced: Replaced) -> Replaced {
         .iter()
         .fold(replaced, |acc, repl_item| match repl_item {
             Item::Text(txt) => acc.iappend(txt),
+            Item::Bypos(p) => acc.iappend(&format!("pos<{}>", p)),
+            Item::ByName(n) => acc.iappend(&format!("name<{}>", n)),
             Item::Function(f) => acc.iappend(&format!("fn<{}>", f)),
         })
 }

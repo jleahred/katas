@@ -496,10 +496,10 @@ fn consume_transf_rule(
     nodes: &[crate::ast::flat::Node],
     context: Context,
 ) -> result::Result<(ExprOrVecExpr, &[crate::ast::flat::Node], Context), Error> {
-    //      transf_rule     =   (text / funct)*
+    // transf_rule     =   ( tmpl_text  /  tmpl_rule )*
 
     consuming_rule("transf_rule", nodes, context, |nodes, context| {
-        fn rec_consume_text_or_function(
+        fn rec_consume_text_or_rule(
             template: crate::ast::replace::Template,
             nodes: &[crate::ast::flat::Node],
             context: Context,
@@ -515,14 +515,14 @@ fn consume_transf_rule(
                 match crate::ast::flat::get_nodename(crate::ast::flat::peek_first_node(nodes)?)?
                     .as_ref()
                 {
-                    "text" => Ok((true, consume_text(eov, nodes, context)?)),
-                    "funct" => Ok((true, consume_function(eov, nodes, context)?)),
+                    "text" => Ok((true, consume_tmpl_text(eov, nodes, context)?)),
+                    "funct" => Ok((true, consume_tmpl_rule(eov, nodes, context)?)),
                     _ => Ok((false, (eov, nodes, context))),
                 }
             };
             let (ok, (template, nodes, context)) = consume_text_or_funct(template, nodes, context)?;
             if ok {
-                rec_consume_text_or_function(template, nodes, context)
+                rec_consume_text_or_rule(template, nodes, context)
             } else {
                 Ok((template, nodes, context))
             }
@@ -531,7 +531,7 @@ fn consume_transf_rule(
         use crate::parser::expression::{Expression, MetaExpr, MultiExpr, Transf2Expr};
 
         let template = crate::ast::replace::Template(vec![]);
-        let (template, nodes, context) = rec_consume_text_or_function(template, nodes, context)?;
+        let (template, nodes, context) = rec_consume_text_or_rule(template, nodes, context)?;
 
         let eov = eov
             .0
@@ -543,7 +543,7 @@ fn consume_transf_rule(
     })
 }
 
-fn consume_text(
+fn consume_tmpl_text(
     template: crate::ast::replace::Template,
     nodes: &[crate::ast::flat::Node],
     context: Context,
@@ -555,7 +555,7 @@ fn consume_text(
     ),
     Error,
 > {
-    //  text            =   (!("$(" / eol) .)+
+    //  tmpl_text            =   (!("$(" / eol) .)+
 
     consuming_rule("text", nodes, context, |nodes, context| {
         let (text, nodes) = crate::ast::flat::consume_val(nodes)?;
@@ -564,7 +564,7 @@ fn consume_text(
     })
 }
 
-fn consume_function(
+fn consume_tmpl_rule(
     template: crate::ast::replace::Template,
     nodes: &[crate::ast::flat::Node],
     context: Context,
@@ -576,8 +576,14 @@ fn consume_function(
     ),
     Error,
 > {
-    //  funct           =   "$("  (!(")" / eol) .)+  ")"
-    consuming_rule("funct", nodes, context, |nodes, context| {
+    // tmpl_rule       =   "$("
+    //                         (
+    //                             symbol                  //  template by name
+    //                             /   "."  [0-9]+             //  by pos
+    //                             /   ":"  (!(")" / eol) .)+  //  by function
+    //                         )
+    //                     ")"
+    consuming_rule("tmpl_rule", nodes, context, |nodes, context| {
         let (text, nodes) = crate::ast::flat::consume_val(nodes)?;
         let template = template.ipush(crate::ast::replace::Item::Function(
             text[2..(text.len() - 1)].to_string(),
