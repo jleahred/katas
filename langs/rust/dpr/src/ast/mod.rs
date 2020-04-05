@@ -84,7 +84,7 @@ impl Node {
     ///    assert!(ast_before_prune.prune(&vec!["_1", "_2"]) == ast_after_prune)
     /// ```
 
-    pub fn prune(&self, nodes2prune: &[&str]) -> Self {
+    pub fn prune_rules_by_name(&self, nodes2prune: &[&str]) -> Self {
         let nname2prune = |nname: &str| nodes2prune.iter().find(|n| *n == &nname);
         let node2prune = |node: &Node| match node {
             Node::Rule((nname, _)) => nname2prune(nname).is_some(),
@@ -93,7 +93,36 @@ impl Node {
         let prune_vn = |vnodes: &[Node]| {
             vnodes.iter().fold(vec![], |acc, n| {
                 if !node2prune(n) {
-                    acc.ipush(n.prune(nodes2prune))
+                    acc.ipush(n.prune_rules_by_name(nodes2prune))
+                } else {
+                    acc
+                }
+            })
+        };
+        match self {
+            Node::EOF => Node::EOF,
+            Node::Val(v) => Node::Val(v.clone()),
+            Node::Rule((n, vn)) => Node::Rule((n.clone(), prune_vn(vn))),
+            Node::Named((n, vn)) => Node::Named((n.clone(), prune_vn(vn))),
+            Node::Transf2(Transf2 { template, nodes }) => Node::Transf2(Transf2 {
+                template: template.clone(),
+                nodes: prune_vn(nodes),
+            }),
+        }
+    }
+
+    /// Remove named nodes by name
+    /// It will remove the childs
+    pub fn prune_named(&self, names2prune: &[&str]) -> Self {
+        let nname2prune = |nname: &str| names2prune.iter().find(|n| *n == &nname);
+        let node2prune = |node: &Node| match node {
+            Node::Named((nname, _)) => nname2prune(nname).is_some(),
+            _ => false,
+        };
+        let prune_vn = |vnodes: &[Node]| {
+            vnodes.iter().fold(vec![], |acc, n| {
+                if !node2prune(n) {
+                    acc.ipush(n.prune_named(names2prune))
                 } else {
                     acc
                 }

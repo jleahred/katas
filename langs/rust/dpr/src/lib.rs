@@ -95,7 +95,7 @@ impl crate::parser::expression::SetOfRules {
 
 impl ast::Node {
     /// run the tree replacing acording the rules
-    pub fn replace(&self) -> Result<String, Error> {
+    pub fn replace(&self) -> Result<crate::ast::replace::Replaced, Error> {
         ast::replace::replace(&self).map_err(|e| Error::ReplaceErr(e))
     }
 }
