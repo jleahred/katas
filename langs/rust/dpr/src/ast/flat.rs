@@ -271,7 +271,7 @@ pub fn consume_this_value<'a>(v: &str, nodes: &'a [Node]) -> Result<&'a [Node], 
         Ok(nodes)
     } else {
         Err(error(
-            "trying get first element from nodes on empty slice",
+            &format!("consume this value failed  this_value: {}", v),
             None,
         ))
     }

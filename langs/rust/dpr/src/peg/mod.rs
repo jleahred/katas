@@ -515,8 +515,8 @@ fn consume_transf_rule(
                 match crate::ast::flat::get_nodename(crate::ast::flat::peek_first_node(nodes)?)?
                     .as_ref()
                 {
-                    "text" => Ok((true, consume_tmpl_text(eov, nodes, context)?)),
-                    "funct" => Ok((true, consume_tmpl_rule(eov, nodes, context)?)),
+                    "tmpl_text" => Ok((true, consume_tmpl_text(eov, nodes, context)?)),
+                    "tmpl_rule" => Ok((true, consume_tmpl_rule(eov, nodes, context)?)),
                     _ => Ok((false, (eov, nodes, context))),
                 }
             };
@@ -557,7 +557,7 @@ fn consume_tmpl_text(
 > {
     //  tmpl_text            =   (!("$(" / eol) .)+
 
-    consuming_rule("text", nodes, context, |nodes, context| {
+    consuming_rule("tmpl_text", nodes, context, |nodes, context| {
         let (text, nodes) = crate::ast::flat::consume_val(nodes)?;
         let template = template.ipush(crate::ast::replace::Item::Text(text.to_string()));
         Ok((template, nodes, context))
@@ -583,11 +583,28 @@ fn consume_tmpl_rule(
     //                             /   ":"  (!(")" / eol) .)+  //  by function
     //                         )
     //                     ")"
+
     consuming_rule("tmpl_rule", nodes, context, |nodes, context| {
-        let (text, nodes) = crate::ast::flat::consume_val(nodes)?;
-        let template = template.ipush(crate::ast::replace::Item::Function(
-            text[2..(text.len() - 1)].to_string(),
-        ));
+        // dbg!(nodes.iter().take(5).collect::<Vec<_>>());
+        //  "$("
+        dbg!(nodes.iter().take(3).collect::<Vec<_>>());
+        let nodes = crate::ast::flat::consume_this_value("$(", nodes)?;
+        let (template, nodes, context) = match crate::ast::flat::peek_first_node(nodes)? {
+            crate::ast::flat::Node::BeginRule(_symbol) => {
+                let (name, nodes, context) = consume_symbol(nodes, context)?;
+                let template =
+                    template.ipush(crate::ast::replace::Item::Function(name.to_string()));
+                Ok((template, nodes, context))
+            }
+            crate::ast::flat::Node::Val(_) => {
+                let (txt, nodes) = crate::ast::flat::consume_val(nodes)?;
+                let template = template.ipush(crate::ast::replace::Item::Function(txt.to_string()));
+                Ok((template, nodes, context))
+            }
+            _ => Err(error_peg_s("expected symbol rule or value")),
+        }?;
+        //  ")"
+        let nodes = crate::ast::flat::consume_this_value(")", nodes)?;
         Ok((template, nodes, context))
     })
 }

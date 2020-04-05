@@ -69,7 +69,13 @@ fn expr2code(expr: &Expression) -> String {
         Expression::Not(e) => format!("not!({})", expr2code(e)),
         Expression::Repeat(rep) => repeat2code(rep),
         Expression::RuleName(rname) => format!(r##"ref_rule!(r#"{}"#)"##, rname),
-        Expression::MetaExpr(_) => "".to_string(),
+        Expression::MetaExpr(me) => match me {
+            crate::parser::expression::MetaExpr::Named(crate::parser::expression::NamedExpr {
+                name: _,
+                mexpr,
+            }) => format!("{}", mexpr2code(mexpr)),
+            _ => "".to_string(),
+        },
     }
 }
 
