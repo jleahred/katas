@@ -326,5 +326,17 @@ macro_rules! ref_rule {
     }};
 }
 
+/// Add a metaexpression named
+#[macro_export]
+macro_rules! named {
+    ($name:expr, $mexpr:expr) => {{
+        use $crate::parser::expression::*;
+        Expression::MetaExpr(MetaExpr::Named(NamedExpr {
+            name: $name.to_string(),
+            mexpr: MultiExpr(vec![$mexpr]),
+        }))
+    }};
+}
+
 //  M A C R O S
 // -------------------------------------------------------------------------------------

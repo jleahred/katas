@@ -71,9 +71,9 @@ fn expr2code(expr: &Expression) -> String {
         Expression::RuleName(rname) => format!(r##"ref_rule!(r#"{}"#)"##, rname),
         Expression::MetaExpr(me) => match me {
             crate::parser::expression::MetaExpr::Named(crate::parser::expression::NamedExpr {
-                name: _,
+                name,
                 mexpr,
-            }) => format!("{}", mexpr2code(mexpr)),
+            }) => format!("named!(\"{}\", {})", name, mexpr2code(mexpr)),
             _ => "".to_string(),
         },
     }

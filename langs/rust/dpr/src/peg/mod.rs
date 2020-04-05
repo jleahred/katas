@@ -172,7 +172,6 @@ pub fn rules_from_peg(peg: &str) -> Result {
         .flatten()
         //...
         ;
-
     rules_from_flat_ast(&nodes)
 }
 
@@ -497,7 +496,6 @@ fn consume_transf_rule(
     context: Context,
 ) -> result::Result<(ExprOrVecExpr, &[crate::ast::flat::Node], Context), Error> {
     // transf_rule     =   ( tmpl_text  /  tmpl_rule )*
-
     consuming_rule("transf_rule", nodes, context, |nodes, context| {
         fn rec_consume_text_or_rule(
             template: crate::ast::replace::Template,
@@ -576,19 +574,19 @@ fn consume_tmpl_rule(
     ),
     Error,
 > {
-    // tmpl_rule       =   "$("
+    // tmpl_rule       =   _:"$("       //  trick to avoid compactation
     //                         (
     //                             symbol                  //  template by name
     //                             /   "."  [0-9]+             //  by pos
     //                             /   ":"  (!(")" / eol) .)+  //  by function
     //                         )
-    //                     ")"
+    //                     :_")"
 
     consuming_rule("tmpl_rule", nodes, context, |nodes, context| {
-        // dbg!(nodes.iter().take(5).collect::<Vec<_>>());
-        //  "$("
-        dbg!(nodes.iter().take(3).collect::<Vec<_>>());
+        //  _:"$("
+        let nodes = crate::ast::flat::consume_node_start_named("_", nodes)?;
         let nodes = crate::ast::flat::consume_this_value("$(", nodes)?;
+        let nodes = crate::ast::flat::consume_node_end_named("_", nodes)?;
         let (template, nodes, context) = match crate::ast::flat::peek_first_node(nodes)? {
             crate::ast::flat::Node::BeginRule(_symbol) => {
                 let (name, nodes, context) = consume_symbol(nodes, context)?;
@@ -604,7 +602,9 @@ fn consume_tmpl_rule(
             _ => Err(error_peg_s("expected symbol rule or value")),
         }?;
         //  ")"
+        let nodes = crate::ast::flat::consume_node_start_named("_", nodes)?;
         let nodes = crate::ast::flat::consume_this_value(")", nodes)?;
+        let nodes = crate::ast::flat::consume_node_end_named("_", nodes)?;
         Ok((template, nodes, context))
     })
 }

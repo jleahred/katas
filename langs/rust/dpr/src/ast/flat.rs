@@ -108,7 +108,6 @@ impl ast::Node {
                 }
             }
         }
-
         flatten_acc(vec![], self)
     }
 }
@@ -323,5 +322,45 @@ pub fn consume_val(nodes: &[Node]) -> Result<(&str, &[Node]), Error> {
     match node {
         Node::Val(v) => Ok((&v, nodes)),
         _ => Err(error("expected Val node", None)),
+    }
+}
+
+/// Consume a ast::flat::Node if it's a Named kind with a specific value
+/// and return the rest of nodes
+///
+///
+pub fn consume_node_start_named<'a>(name: &str, nodes: &'a [Node]) -> Result<&'a [Node], Error> {
+    let (node, nodes) = split_first_nodes(nodes)?;
+    let node_name = match node {
+        Node::BeginNamed(n) => Ok(n),
+        _ => Err(error(&format!("expected begin named for {}", name), None)),
+    }?;
+    if node_name == name {
+        Ok(nodes)
+    } else {
+        Err(error(
+            &format!("expected {} node, received {}", name, node_name),
+            None,
+        ))
+    }
+}
+
+/// Consume a ast::flat::Node if it's a EndNamed kind with a specific value
+/// and return the rest of nodes
+///
+///
+pub fn consume_node_end_named<'a>(name: &str, nodes: &'a [Node]) -> Result<&'a [Node], Error> {
+    let (node, nodes) = split_first_nodes(nodes)?;
+    let node_name = match node {
+        Node::EndNamed(n) => Ok(n),
+        _ => Err(error(&format!("expected end named for {}", name), None)),
+    }?;
+    if node_name == name {
+        Ok(nodes)
+    } else {
+        Err(error(
+            &format!("expected {} node, received {}", name, node_name),
+            None,
+        ))
     }
 }

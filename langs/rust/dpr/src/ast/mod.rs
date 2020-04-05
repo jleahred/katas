@@ -219,7 +219,7 @@ impl Node {
                     nodes.ipush(Node::Rule((n.clone(), compact_nodes(vn))))
                 }
                 (Node::Named((ref n, ref vn)), _) => {
-                    nodes.ipush(Node::Rule((n.clone(), compact_nodes(vn))))
+                    nodes.ipush(Node::Named((n.clone(), compact_nodes(vn))))
                 }
                 (
                     Node::Transf2(Transf2 {
