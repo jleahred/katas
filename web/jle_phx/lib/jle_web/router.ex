@@ -41,6 +41,7 @@ defmodule JLEWeb.Router do
     live "/logs", LogsLive
     # live "/logs/file/:file_name", LogsFileLive
     get "/logs/file", LogsFileControllerLV, :show
+    live "/pubsub/ex", PubSubExLive
   end
 
   # Other scopes may use custom stacks.

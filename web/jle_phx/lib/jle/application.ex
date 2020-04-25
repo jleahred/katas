@@ -9,10 +9,15 @@ defmodule JLE.Application do
     # List all child processes to be supervised
     children = [
       # Start the Ecto repository
-      JLE.RepoTrading,
-      JLE.RepoAlarms,
+      # JLE.RepoTrading,
+      # JLE.RepoAlarms,
       # Start the endpoint when the application starts
-      JLEWeb.Endpoint
+      JLEWeb.Endpoint,
+      %{
+        id: Phoenix.PubSub.PG2,
+        start: {Phoenix.PubSub.PG2, :start_link, [:testing_pubsub, []]}
+      },
+      JLEWeb.PubSubExLive.GenServer
       # Starts a worker by calling: JLE.Worker.start_link(arg)
       # {JLE.Worker, arg},
     ]

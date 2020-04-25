@@ -20,7 +20,8 @@ defmodule JLE.IndexContent do
     {"/cws/stats/delay", "cimd work station delays (local:pp)"},
     {"/logs", "logs processes output"},
     {"/price_grants", "Prices grants"},
-    {"/fix/beautifier", "FIX protocol beautifier"}
+    {"/fix/beautifier", "FIX protocol beautifier"},
+    {"/pubsub/ex", "Pubsub simple example"}
   ]
 
   @index_uc @index

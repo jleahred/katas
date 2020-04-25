@@ -68,16 +68,16 @@ config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
 # Configure your database
-config :jle, JLE.RepoTrading,
-  username: "developer",
-  password: "xxxx",
-  database: "TRADING",
-  hostname: "192.168.7.103",
-  pool_size: 10
+# config :jle, JLE.RepoTrading,
+#   username: "developer",
+#   password: "xxxx",
+#   database: "TRADING",
+#   hostname: "192.168.7.103",
+#   pool_size: 10
 
-config :jle, JLE.RepoAlarms,
-  username: "developer",
-  password: "xxxx",
-  database: "ALARMAS",
-  hostname: "192.168.7.105",
-  pool_size: 10
+# config :jle, JLE.RepoAlarms,
+#   username: "developer",
+#   password: "xxxx",
+#   database: "ALARMAS",
+#   hostname: "192.168.7.105",
+#   pool_size: 10
