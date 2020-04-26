@@ -64,6 +64,9 @@ impl Replaced {
     fn iappend(self, txt: &str) -> Self {
         Self(self.0.iappend(txt))
     }
+    pub fn str(&self) -> &str {
+        &self.0
+    }
 }
 
 fn rec_replace(ast: &Node, repl: Replaced) -> Result<Replaced, String> {
@@ -118,6 +121,18 @@ fn apply_transf2(
                 Some(rn) => acc.iappend(&format!("{}", rn.0)),
                 None => acc.iappend(&format!("name<{}/missing>", n)),
             },
-            Item::Function(f) => acc.iappend(&format!("fn<{}>", f)),
+            Item::Function(f) => acc.iappend(replace_fn(&f)),
         })
+}
+
+fn replace_fn(fn_name: &str) -> &str {
+    match fn_name {
+        "endl" => "\n",
+        "spc" => " ",
+        "_" => " ",
+        "tab" => "\t",
+        "(" => "\t",
+        // "now" => " ",
+        _ => "?unknown_fn?",
+    }
 }
