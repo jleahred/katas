@@ -33,8 +33,8 @@ tasks:
               required_time: 3m
   t2:
     description: task 2
-    start_after: 20m
-    priority: Mandatory
+    start_after: 21m
+    priority: High
     process:
       - description: process 1
         inputs:
@@ -73,6 +73,7 @@ products:
     //     serde_yaml::to_string(&status.dynamic_data.executions).unwrap()
     // );
 
+    println!("\n\nVALUE {:?} \n", value);
     println!(
         "++++++++++++++++++\nlast_status:\nstatus:{}\n",
         serde_yaml::to_string(&status.dynamic_data).unwrap()
@@ -489,26 +490,45 @@ fn get_start_max_waitting(
         .and_then(|ap| Some((ap.created_on, ap.prod.max_waitting)))
 }
 
-fn rec_process_pending_tasks(st: &Status) -> Result<(Status, u32), InternalError> {
-    let first_is_better = |r0: (_, u32), r1: (_, u32)| {
-        if r0.1 > r1.1 {
-            r0
-        } else {
-            r1
+fn rec_process_pending_tasks(st: &Status) -> Result<(Status, Option<i32>), InternalError> {
+    let get_better = |r0: (_, Option<i32>), r1: (_, Option<i32>)| match (r0, r1) {
+        ((st0, Some(v0)), (st1, Some(v1))) => {
+            if v0 > v1 {
+                (st0, Some(v0))
+            } else {
+                (st1, Some(v1))
+            }
         }
+        ((_st0, None), (st1, Some(v1))) => (st1, Some(v1)),
+        ((st0, Some(v0)), (_st1, None)) => (st0, Some(v0)),
+        ((st0, None), (_st1, None)) => (st0, None),
     };
 
     let mut st = st.clone();
 
-    let mut result = (st.clone(), 0);
+    let mut result = (st.clone(), None);
     let taskid_ready2process = st.get_ready2process_taskid()?;
     if taskid_ready2process.is_empty() {
-        Ok((st.clone(), 0))
+        Ok((st.clone(), ponderate_solution(&st)?))
     } else {
         for tid in taskid_ready2process.iter() {
             st = st.process_task(tid)?;
-            result = first_is_better(result, rec_process_pending_tasks(&st)?);
+            result = get_better(result, rec_process_pending_tasks(&st)?);
         }
         Ok(result)
     }
+}
+
+fn ponderate_solution(st: &Status) -> Result<Option<i32>, InternalError> {
+    let mut result = 0i32;
+    for ptid in st.dynamic_data.pending_tasks.iter() {
+        let task = st.get_task(ptid)?;
+        match task.priority {
+            Priority::Mandatory => return Ok(None),
+            Priority::High => result += 100,
+            Priority::Medium => result += 10,
+            Priority::Low => result += 1,
+        }
+    }
+    Ok(Some(-result))
 }
