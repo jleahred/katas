@@ -12,6 +12,188 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 // use time::Duration;
 
+fn main() {
+    let init_config_yaml = "
+---
+tasks:
+  t1:
+    description: task 1
+    start_after: 2m
+    priority: Mandatory
+    process:
+      - description: process 1
+        inputs:
+          - prod_i
+        outputs:
+          - id: prod_t1
+            description: result product
+            max_waitting: 15m
+        actions:
+            - description: action t1.1
+              required_time: 3m
+  t2:
+    description: task 2
+    start_after: 20m
+    priority: Mandatory
+    process:
+      - description: process 1
+        inputs:
+          - prod_t1
+        outputs:
+          - id: prod_r1
+            description: result product t2
+            max_waitting: 15s
+          - id: prod_r12
+            description: result product t22
+            max_waitting: 5h
+        actions:
+            - description: action t2.1
+              required_time: 6m
+products:
+  - id: prod_i
+    description: initial product
+    max_waitting: 15m
+";
+
+    let init_config: InitStatus = serde_yaml::from_str(init_config_yaml).unwrap();
+
+    println!(
+        "\ninitial config:\n{}",
+        serde_yaml::to_string(&init_config).unwrap()
+    );
+
+    let init_status = get_status_from_init_cfg(&init_config);
+
+    let status = init_status;
+
+    let (status, value) = rec_process_pending_tasks(&status).unwrap();
+    // println!(
+    //     ">>>>>>>>>>>>>>>>>>>\nprocessed:\nvalue:{}\nexecs:\n{}",
+    //     value,
+    //     serde_yaml::to_string(&status.dynamic_data.executions).unwrap()
+    // );
+
+    println!(
+        "++++++++++++++++++\nlast_status:\nstatus:{}\n",
+        serde_yaml::to_string(&status.dynamic_data).unwrap()
+    );
+}
+
+fn get_status_from_init_cfg(init_config: &InitStatus) -> Status {
+    let init_status_dyn = StatusDynamicData {
+        pending_tasks: init_config
+            .tasks
+            .iter()
+            .fold(HashTrieSet::new(), |acc, t| acc.insert(t.0.clone())),
+        available_products: init_config.products.iter().fold(ht_map![], |acc, p| {
+            acc.insert(
+                p.id.clone(),
+                AvailableProduct {
+                    prod: p.clone(),
+                    created_on: Duration::from_secs(0),
+                },
+            )
+        }),
+        executions: Executions {
+            execs: vector![],
+            log: vector![],
+        },
+    };
+    Status {
+        dynamic_data: init_status_dyn,
+        static_data: StatusStaticData {
+            tasks: init_config.tasks.clone(),
+        },
+    }
+}
+
+// fn main() {
+//     let prodi = Product {
+//         id: ProdId("prod_i".to_string()),
+//         description: "initial product".to_string(),
+//         max_waitting: minutes(15),
+//     };
+//     let prodr = Product {
+//         id: ProdId("prod_r".to_string()),
+//         description: "result product".to_string(),
+//         max_waitting: Duration::from_secs(15),
+//     };
+//     let action = Action {
+//         description: "action 1".to_string(),
+//         required_time: minutes(3),
+//     };
+//     let proc1 = Process {
+//         description: "process 1".to_string(),
+//         inputs: vec![prodi.id.clone()],
+//         outputs: vec![prodr],
+//         actions: vec![action],
+//     };
+//     let t1 = Task {
+//         description: "task 1".to_string(),
+//         start_after: minutes(2),
+//         // ends_before: minutes(15),
+//         priority: Priority::Mandatory,
+//         process: vector![proc1],
+//     };
+
+//     let init_config = InitStatus {
+//         tasks: rpds::ht_map![TaskId("t1".to_string()) => t1],
+//         products: vector![prodi],
+//     };
+
+//     println!("INIT:\n{}", serde_yaml::to_string(&init_config).unwrap());
+
+//     let init_status_dyn = StatusDynamicData {
+//         pending_tasks: init_config
+//             .tasks
+//             .iter()
+//             .fold(HashTrieSet::new(), |acc, t| acc.insert(t.0.clone())),
+//         available_products: init_config.products.iter().fold(ht_map![], |acc, p| {
+//             acc.insert(
+//                 p.id.clone(),
+//                 AvailableProduct {
+//                     prod: p.clone(),
+//                     created_on: Duration::from_secs(0),
+//                 },
+//             )
+//         }),
+//         executions: Executions { execs: vector![] },
+//     };
+//     let init_status = Status {
+//         dynamic_data: init_status_dyn,
+//         static_data: StatusStaticData {
+//             tasks: init_config.tasks,
+//         },
+//     };
+
+//     println!(
+//         "\ninitial dyn status:\n{}",
+//         serde_yaml::to_string(&init_status.dynamic_data).unwrap()
+//     );
+
+//     let status = init_status;
+
+//     // let status = status.process_task(&TaskId("t1".to_string())).unwrap();
+
+//     // println!(
+//     //     "\nprocess task 1:\n{}",
+//     //     serde_yaml::to_string(&status.dynamic_data).unwrap()
+//     // );
+
+//     let result = rec_process_pending_tasks(&status).unwrap();
+//     println!(
+//         ">>>>>>>>>>>>>>>>>>>\nprocessed:\nvalue:{}\nexecs:\n{}",
+//         result.1,
+//         serde_yaml::to_string(&result.0).unwrap()
+//     );
+// }
+
+macro_rules! ierr {
+    ($($arg:tt)*) => {{
+        Err(InternalError(format!($($arg)*)))
+    }}
+}
+
 #[derive(Debug)]
 struct InternalError(String);
 
@@ -29,9 +211,26 @@ struct Execution {
     start_at: Duration,
     #[serde(with = "humantime_serde")]
     duration: Duration,
-    task_desc: String,
-    process_desc: String,
+    // task_desc: String,
+    // process_desc: String,
     action_desc: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct Executions {
+    execs: Vector<Execution>,
+    log: Vector<String>,
+}
+
+impl Executions {
+    fn push_action(mut self, start_at: Duration, a: &Action) -> Self {
+        self.execs = self.execs.push_back(Execution {
+            start_at,
+            duration: a.required_time,
+            action_desc: a.description.to_string(),
+        });
+        self
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -65,10 +264,7 @@ impl Task {
                 .max_by(|a, b| a.required_time.cmp(&b.required_time));
             match max_time_action {
                 Some(action) => Ok(action.required_time),
-                None => Err(InternalError(format!(
-                    "error on get_output_prods_time, no actions {:?}",
-                    self
-                ))),
+                None => ierr!("error on get_output_prods_time, no actions {:?}", self),
             }
         };
         self.process.iter().fold(Ok(vector![]), |acc, p| {
@@ -114,83 +310,9 @@ struct Action {
     required_time: Duration,
 }
 
-fn main() {
-    let prodi = Product {
-        id: ProdId("prod_i".to_string()),
-        description: "initial product".to_string(),
-        max_waitting: minutes(15),
-    };
-    let prodr = Product {
-        id: ProdId("prod_r".to_string()),
-        description: "result product".to_string(),
-        max_waitting: Duration::from_secs(15),
-    };
-    let action = Action {
-        description: "action 1".to_string(),
-        required_time: minutes(3),
-    };
-    let proc1 = Process {
-        description: "process 1".to_string(),
-        inputs: vec![prodi.id.clone()],
-        outputs: vec![prodr],
-        actions: vec![action],
-    };
-    let t1 = Task {
-        description: "task 1".to_string(),
-        start_after: minutes(2),
-        // ends_before: minutes(15),
-        priority: Priority::Mandatory,
-        process: vector![proc1],
-    };
-
-    let init_config = InitStatus {
-        tasks: rpds::ht_map![TaskId("t1".to_string()) => t1],
-        products: vector![prodi],
-    };
-
-    println!("INIT:\n{}", serde_yaml::to_string(&init_config).unwrap());
-
-    let init_status_dyn = StatusDynamicData {
-        pending_tasks: init_config
-            .tasks
-            .iter()
-            .fold(HashTrieSet::new(), |acc, t| acc.insert(t.0.clone())),
-        available_products: init_config.products.iter().fold(ht_map![], |acc, p| {
-            acc.insert(
-                p.id.clone(),
-                AvailableProduct {
-                    prod: p.clone(),
-                    created_on: Duration::from_secs(0),
-                },
-            )
-        }),
-        executions: vector![],
-    };
-    let init_status = Status {
-        dynamic_data: init_status_dyn,
-        static_data: StatusStaticData {
-            tasks: init_config.tasks,
-        },
-    };
-
-    println!(
-        "\ninitial dyn status:\n{}",
-        serde_yaml::to_string(&init_status.dynamic_data).unwrap()
-    );
-
-    let status = init_status;
-
-    let status = status.process_task(&TaskId("t1".to_string())).unwrap();
-
-    println!(
-        "\nprocess task 1:\n{}",
-        serde_yaml::to_string(&status.dynamic_data).unwrap()
-    );
-}
-
-fn minutes(min: u64) -> Duration {
-    Duration::from_secs(min * 60)
-}
+// fn minutes(min: u64) -> Duration {
+//     Duration::from_secs(min * 60)
+// }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Status {
@@ -214,22 +336,22 @@ struct AvailableProduct {
 struct StatusDynamicData {
     pending_tasks: HashTrieSet<TaskId>,
     available_products: rpds::HashTrieMap<ProdId, AvailableProduct>,
-    executions: Vector<Execution>,
+    executions: Executions,
 }
 
 impl Status {
     fn get_task(&self, tid: &TaskId) -> Result<&Task, InternalError> {
         match self.static_data.tasks.get(tid) {
             Some(t) => Ok(t),
-            None => Err(InternalError(format!("task {:?} not found", tid))),
+            None => ierr!("task {:?} not found", tid),
         }
     }
 
-    fn remove_pending_task(mut self, tid: &TaskId) -> Result<Status, InternalError> {
+    fn remove_from_pending_task(mut self, tid: &TaskId) -> Result<Status, InternalError> {
         if self.dynamic_data.pending_tasks.remove_mut(tid) {
             Ok(self)
         } else {
-            Err(InternalError(format!("missing task {:?}", tid)))
+            ierr!("missing task {:?}", tid)
         }
     }
 
@@ -242,21 +364,13 @@ impl Status {
                             prod: &ProdId,
                             created_task: &Duration| {
             match map_prod.get(prod) {
-                None => Err(InternalError(format!(
-                    "error removing pending products with {:?}",
-                    prod
-                ))),
+                None => ierr!("error removing pending products with {:?}", prod),
                 Some(p) => {
                     if p.created_on > *created_task {
-                        Err(InternalError(format!(
-                            "error removing pending products (not created product) with {:?}",
-                            prod
-                        )))
+                        ierr!("removing pending products (not created) with {:?}", prod)
                     } else if p.created_on + p.prod.max_waitting < *created_task {
-                        Err(InternalError(format!(
-                            "error removing pending products (caducated) with {:?} created_task: {:?}", 
-                            prod, created_task
-                        )))
+                        ierr!("error removing pending products (caducated) with {:?} created_task: {:?}", 
+                                prod, created_task)
                     } else {
                         Ok(map_prod.remove(prod))
                     }
@@ -291,34 +405,110 @@ impl Status {
         Ok(self)
     }
 
+    fn register_actions_on_execs(mut self, task: &Task) -> Result<Status, InternalError> {
+        let prcss = &task.process;
+        let execs = self.dynamic_data.executions;
+        let execs = prcss.iter().fold(execs, |execs, p| {
+            p.actions
+                .iter()
+                .fold(execs, |execs, a| execs.push_action(task.start_after, a))
+        });
+        self.dynamic_data.executions = execs;
+        Ok(self)
+    }
+
+    fn add_log(mut self, text: &str) -> Self {
+        self.dynamic_data
+            .executions
+            .log
+            .push_back_mut(text.to_string());
+        self
+    }
+
     fn process_task(self, tid: &TaskId) -> Result<Self, InternalError> {
         let task = self.get_task(tid)?;
 
         let st = self.clone();
         let st = st
-            .remove_pending_task(tid)?
+            .remove_from_pending_task(tid)?
             .remove_pending_products(&task.get_input_prods(), &task.start_after)?
-            .add_available_products(&task)?;
-        //  register actions on executions
-
+            .add_available_products(&task)?
+            .register_actions_on_execs(&task)?
+            .add_log(&format!("{:?} exec task {}", task.start_after, tid.0));
         Ok(st)
+    }
+
+    fn can_execute_task(&self, tid: &TaskId) -> Result<bool, InternalError> {
+        let task = self.get_task(tid)?;
+        let ti_avail_prods = get_time_avail_all_prods(&self.dynamic_data, &task.get_input_prods());
+        match ti_avail_prods {
+            Some(tiap) => Ok(task.start_after >= tiap.0 && task.start_after <= tiap.1),
+            None => Ok(false),
+        }
+    }
+
+    fn get_ready2process_taskid(&self) -> Result<Vector<TaskId>, InternalError> {
+        let mut result = vector![];
+        for pt in self.dynamic_data.pending_tasks.iter() {
+            if self.can_execute_task(pt)? {
+                result.push_back_mut(pt.clone());
+            }
+        }
+        Ok(result)
     }
 }
 
-//  algorithm
-//  repeat for a while
-//      suffle pending tasks
-//      process_pending_tasks |> ponderate
-//      if better => save as better
+fn get_time_avail_all_prods(
+    dyndata: &StatusDynamicData,
+    inprodis: &Vector<ProdId>,
+) -> Option<(Duration, Duration)> {
+    let mut result: Option<(Duration, Duration)> = None;
+    for prdid in inprodis.iter() {
+        let start_maxwaitting = get_start_max_waitting(dyndata, prdid);
+        match (result, start_maxwaitting) {
+            (Some(r), Some((start, max_waitting))) => {
+                result = Some((
+                    std::cmp::max(start, r.0),
+                    std::cmp::min(start + max_waitting, r.1),
+                ));
+            }
+            (None, Some((start, maxwaitting))) => result = Some((start, start + maxwaitting)),
+            (_, None) => (),
+        }
+    }
+    result
+}
 
-//  agorithm  process_pending_tasks
-//  get procesable tasks
-//  if empty ptask
-//      return execution
-//  for task in ptask
-//      proces(task)
-//      process_pending_tasks
+fn get_start_max_waitting(
+    dyndata: &StatusDynamicData,
+    prdid: &ProdId,
+) -> Option<(Duration, Duration)> {
+    dyndata
+        .available_products
+        .get(prdid)
+        .and_then(|ap| Some((ap.created_on, ap.prod.max_waitting)))
+}
 
-//  ponderate execution
-//  if mandatory tasks pending => None
-//  ponderate by priority  hight = 3 * normal, normal = 3 * low
+fn rec_process_pending_tasks(st: &Status) -> Result<(Status, u32), InternalError> {
+    let first_is_better = |r0: (_, u32), r1: (_, u32)| {
+        if r0.1 > r1.1 {
+            r0
+        } else {
+            r1
+        }
+    };
+
+    let mut st = st.clone();
+
+    let mut result = (st.clone(), 0);
+    let taskid_ready2process = st.get_ready2process_taskid()?;
+    if taskid_ready2process.is_empty() {
+        Ok((st.clone(), 0))
+    } else {
+        for tid in taskid_ready2process.iter() {
+            st = st.process_task(tid)?;
+            result = first_is_better(result, rec_process_pending_tasks(&st)?);
+        }
+        Ok(result)
+    }
+}
