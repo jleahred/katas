@@ -102,3 +102,20 @@ Resources::
     - Secuencia de acciones a realizar con hora de inicio de ejecución
 
 
+
+
+== Deploy
+
+- Run `cargo make verify` in your terminal to format and lint the code.
+- Run `cargo make build_release`.
+- Upload `index.html` and `pkg` into your server's public folder.
+   - Don't forget to upload also configuration files for your hosting, see the [Netlify](https://www.netlify.com/) one below.
+
+```toml
+# netlify.toml
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
