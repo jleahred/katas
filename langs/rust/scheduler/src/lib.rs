@@ -18,7 +18,8 @@ use scheduler::{get_status_from_init_cfg, rec_process_pending_tasks};
 use seed::{prelude::*, *};
 
 fn init_config() -> &'static str {
-    "---
+    r#"
+---
 # after # is a comment, like this
 tasks: # list of tasks
   t1:  # here the task id
@@ -33,15 +34,16 @@ tasks: # list of tasks
           - id: prod_t1
             description: result product
             max_waitting: 15m
-        actions: # list of actions required on this process
+        required_time: 3m
+        sequence: # description of steps required on this process
             - description: action t1.1
-              required_time: 3m
+            - description: action t1.2
   t2: # starting the description of a new task with id t2
     description: task 2
-    start_after: 21m
+    start_after: 20m
     priority: High
     process:
-      - description: process 1
+      - description: process 2
         inputs:
           - prod_t1
         outputs:
@@ -51,14 +53,16 @@ tasks: # list of tasks
           - id: prod_r12
             description: result product t22
             max_waitting: 5h
-        actions:
+        required_time: 6m
+        sequence:
             - description: action t2.1
-              required_time: 6m
+            - description: action t2.2
+            - description: action t2.3
 products:  # here the initial products
   - id: prod_i
     description: initial product
     max_waitting: 15m
-"
+"#
 }
 
 fn process_config(cfg: &str) -> Result<String, String> {

@@ -54,8 +54,9 @@ pub(crate) struct Execution {
     #[serde(with = "humantime_serde")]
     duration: Duration,
     // task_desc: String,
-    // process_desc: String,
-    action_desc: String,
+    process_desc: String,
+    // action_desc: String,
+    sequence: Vec<Action>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -65,11 +66,18 @@ pub(crate) struct Executions {
 }
 
 impl Executions {
-    fn push_action(mut self, start_at: Duration, a: &Action) -> Self {
+    fn push(
+        mut self,
+        start_at: Duration,
+        duration: Duration,
+        s: &str,
+        sequence: &Vec<Action>,
+    ) -> Self {
         self.execs = self.execs.push_back(Execution {
             start_at,
-            duration: a.required_time,
-            action_desc: a.description.to_string(),
+            duration,
+            process_desc: s.to_string(),
+            sequence: sequence.clone(),
         });
         self
     }
@@ -128,15 +136,14 @@ struct Process {
     description: String,
     inputs: Vec<ProdId>,
     outputs: Vec<Product>,
-    actions: Vec<Action>,
+    sequence: Vec<Action>,
+    #[serde(with = "humantime_serde")]
     required_time: Duration,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct Action {
     description: String,
-    #[serde(with = "humantime_serde")]
-    required_time: Duration,
 }
 
 // fn minutes(min: u64) -> Duration {
@@ -234,13 +241,16 @@ impl Status {
         Ok(self)
     }
 
-    fn register_actions_on_execs(mut self, task: &Task) -> Result<Status, InternalError> {
+    fn register_sequence_on_execs(mut self, task: &Task) -> Result<Status, InternalError> {
         let prcss = &task.process;
         let execs = self.dynamic_data.executions;
         let execs = prcss.iter().fold(execs, |execs, p| {
-            p.actions
-                .iter()
-                .fold(execs, |execs, a| execs.push_action(task.start_after, a))
+            execs.push(
+                task.start_after,
+                p.required_time,
+                &p.description,
+                &p.sequence,
+            )
         });
         self.dynamic_data.executions = execs;
         Ok(self)
@@ -262,7 +272,7 @@ impl Status {
             .remove_from_pending_task(tid)?
             .remove_pending_products(&task.get_input_prods(), &task.start_after)?
             .add_available_products(&task)?
-            .register_actions_on_execs(&task)?
+            .register_sequence_on_execs(&task)?
             .add_log(&format!("{:?} exec task {}", task.start_after, tid.0));
         Ok(st)
     }
