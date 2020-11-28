@@ -99,25 +99,11 @@ impl Task {
         })
     }
     fn get_output_prods_time(&self) -> Result<Vector<(Product, Duration)>, InternalError> {
-        let get_full_time_process = |p: &Process| {
-            let max_time_action = p
-                .actions
-                .iter()
-                .max_by(|a, b| a.required_time.cmp(&b.required_time));
-            match max_time_action {
-                Some(action) => Ok(action.required_time),
-                None => ierr!("error on get_output_prods_time, no actions {:?}", self),
-            }
-        };
-        self.process.iter().fold(Ok(vector![]), |acc, p| {
-            p.outputs
-                .iter()
-                .fold(acc, move |acc, prd| match (acc, get_full_time_process(p)) {
-                    (Ok(acc), Ok(ftp)) => Ok(acc.push_back((prd.clone(), ftp))),
-                    (Ok(_), Err(err)) => Err(err),
-                    (Err(err), _) => Err(err),
-                })
-        })
+        Ok(self.process.iter().fold(vector![], |acc, p| {
+            p.outputs.iter().fold(acc, move |acc, prd| {
+                acc.push_back((prd.clone(), p.required_time))
+            })
+        }))
     }
 }
 
@@ -143,6 +129,7 @@ struct Process {
     inputs: Vec<ProdId>,
     outputs: Vec<Product>,
     actions: Vec<Action>,
+    required_time: Duration,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
