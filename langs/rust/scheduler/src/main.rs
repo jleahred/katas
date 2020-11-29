@@ -6,7 +6,7 @@ extern crate serde_yaml;
 
 mod scheduler;
 
-use scheduler::{get_status_from_init_cfg, process, InitStatus};
+use scheduler::{generate_schedule, get_status_from_init_cfg, InitStatus};
 
 fn main() {
     let init_config: InitStatus = serde_yaml::from_str(init_config_yaml()).unwrap();
@@ -20,7 +20,7 @@ fn main() {
 
     let status = init_status;
 
-    let (status, value) = process(&status).unwrap();
+    let (status, value) = generate_schedule(&status).unwrap();
     // println!(
     //     ">>>>>>>>>>>>>>>>>>>\nprocessed:\nvalue:{}\nexecs:\n{}",
     //     value,
@@ -43,7 +43,8 @@ tasks:
     start_after: 0m
     priority: Mandatory
     process:
-      - description: pr1
+      pr1:
+        description: pr1
         inputs:
           - prod_i
         outputs:
@@ -53,7 +54,8 @@ tasks:
         required_time: 3m
         sequence:
             - description: proc1
-      - description: pr2
+      pr2:
+        description: pr2
         inputs:
           - prod1
         outputs:
