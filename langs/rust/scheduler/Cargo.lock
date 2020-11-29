@@ -492,6 +492,7 @@ name = "scheduler"
 version = "0.1.0"
 dependencies = [
  "humantime-serde",
+ "rand",
  "rpds",
  "seed",
  "serde",

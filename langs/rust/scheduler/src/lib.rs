@@ -3,7 +3,7 @@
 // but some rules are too "annoying" or are not applicable for your case.)
 #![allow(clippy::wildcard_imports)]
 #![recursion_limit = "512"]
-#[macro_use]
+// #[macro_use]
 extern crate stdweb;
 #[macro_use]
 extern crate rpds;
@@ -13,14 +13,16 @@ extern crate serde_yaml;
 
 mod scheduler;
 
-use scheduler::{get_status_from_init_cfg, rec_process_pending_tasks};
+use scheduler::{get_status_from_init_cfg, process};
 
 use seed::{prelude::*, *};
+
+static VERSION: &str = "0.2";
 
 fn init_config() -> &'static str {
     r#"
 ---
-# after # is a comment, like this
+# after # is a comment, like this.
 tasks: # list of tasks
   t1:  # here the task id
     description: task 1
@@ -69,8 +71,7 @@ fn process_config(cfg: &str) -> Result<String, String> {
     let init_config = serde_yaml::from_str(cfg).or_else(|e| Err(format!("{}", e)))?;
     let init_status = get_status_from_init_cfg(&init_config);
 
-    let (status, value) =
-        rec_process_pending_tasks(&init_status).or_else(|e| Err(format!("{:?}", e)))?;
+    let (status, value) = process(&init_status).or_else(|e| Err(format!("{:?}", e)))?;
 
     Ok(format!(
         "VALUE {:?} \n++++++++++++++++++\nresult:\n{}\n",
@@ -89,6 +90,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
         config: init_config().to_string(),
         result: "here the result".to_string(),
         err: "".to_string(),
+        exec_counter: 0,
     }
 }
 
@@ -100,6 +102,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
 struct Model {
     config: String,
     result: String,
+    exec_counter: i32,
 
     err: String,
 }
@@ -130,7 +133,7 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             //     stdweb::Value::String(s) => s,
             //     _ => "error reading data from editor".to_string(),
             // };
-
+            model.exec_counter += 1;
             match process_config(&model.config) {
                 Ok(result) => {
                     model.result = result;
@@ -181,7 +184,11 @@ fn view(model: &Model) -> Node<Msg> {
     div![
         div![
             C!["container h-100"],
+            VERSION,
+            " ",
             button![C!["btn btn-primary"], "Run", ev(Ev::Click, |_| Msg::Run),],
+            " ",
+            &model.exec_counter,
         ],
         textarea![id!("fake_editor"), input_ev(Ev::Input, Msg::ModifEditor),],
         div![

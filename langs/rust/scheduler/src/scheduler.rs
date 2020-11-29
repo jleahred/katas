@@ -286,14 +286,33 @@ impl Status {
         }
     }
 
-    fn get_ready2process_taskid(&self) -> Result<Vector<TaskId>, InternalError> {
-        let mut result = vector![];
-        for pt in self.dynamic_data.pending_tasks.iter() {
-            if self.can_execute_task(pt)? {
-                result.push_back_mut(pt.clone());
+    fn get_one_random_ready2process_taskid(&self) -> Result<Option<TaskId>, InternalError> {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+
+        let mut tasks = vec![];
+
+        for ptid in self.dynamic_data.pending_tasks.iter() {
+            if self.can_execute_task(ptid)? {
+                tasks.push(ptid.clone());
             }
         }
-        Ok(result)
+        if tasks.is_empty() {
+            Ok(None)
+        } else {
+            let index = rng.gen_range(0, tasks.len());
+            match tasks.get(index) {
+                Some(tid) => Ok(Some(tid.clone())),
+                None => ierr!("Failled on getting random task"),
+            }
+        }
+
+        // for ptid in self.dynamic_data.pending_tasks.iter() {
+        //     if self.can_execute_task(ptid)? {
+        //         return Ok(Some(ptid.clone()));
+        //     }
+        // }
+        // Ok(None)
     }
 }
 
@@ -328,10 +347,8 @@ fn get_start_max_waitting(
         .and_then(|ap| Some((ap.created_on, ap.prod.max_waitting)))
 }
 
-pub(crate) fn rec_process_pending_tasks(
-    st: &Status,
-) -> Result<(Status, Option<i32>), InternalError> {
-    let get_better = |r0: (_, Option<i32>), r1: (_, Option<i32>)| match (r0, r1) {
+fn get_better(r0: (Status, Option<i32>), r1: (Status, Option<i32>)) -> (Status, Option<i32>) {
+    match (r0, r1) {
         ((st0, Some(v0)), (st1, Some(v1))) => {
             if v0 > v1 {
                 (st0, Some(v0))
@@ -342,21 +359,50 @@ pub(crate) fn rec_process_pending_tasks(
         ((_st0, None), (st1, Some(v1))) => (st1, Some(v1)),
         ((st0, Some(v0)), (_st1, None)) => (st0, Some(v0)),
         ((st0, None), (_st1, None)) => (st0, None),
-    };
+    }
+}
+
+pub(crate) fn process(st: &Status) -> Result<(Status, Option<i32>), InternalError> {
+    let mut result = (st.clone(), None);
+
+    for _ in 0..100 {
+        result = get_better(result, rec_process_pending_tasks(st)?);
+    }
+    Ok(result)
+}
+
+fn rec_process_pending_tasks(st: &Status) -> Result<(Status, Option<i32>), InternalError> {
+    // let get_better = |r0: (_, Option<i32>), r1: (_, Option<i32>)| match (r0, r1) {
+    //     ((st0, Some(v0)), (st1, Some(v1))) => {
+    //         if v0 > v1 {
+    //             (st0, Some(v0))
+    //         } else {
+    //             (st1, Some(v1))
+    //         }
+    //     }
+    //     ((_st0, None), (st1, Some(v1))) => (st1, Some(v1)),
+    //     ((st0, Some(v0)), (_st1, None)) => (st0, Some(v0)),
+    //     ((st0, None), (_st1, None)) => (st0, None),
+    // };
 
     let mut st = st.clone();
 
     let mut result = (st.clone(), None);
-    let taskid_ready2process = st.get_ready2process_taskid()?;
-    if taskid_ready2process.is_empty() {
-        Ok((st.clone(), ponderate_solution(&st)?))
-    } else {
-        for tid in taskid_ready2process.iter() {
-            st = st.process_task(tid)?;
-            result = get_better(result, rec_process_pending_tasks(&st)?);
-        }
-        Ok(result)
+    while let Some(tid) = st.get_one_random_ready2process_taskid()? {
+        st = st.process_task(&tid)?;
+        result = get_better(result, rec_process_pending_tasks(&st)?);
     }
+    Ok((st.clone(), ponderate_solution(&st)?))
+    // let taskid_ready2process = st.get_ready2process_taskid()?;
+    // if taskid_ready2process.is_empty() {
+    //     Ok((st.clone(), ponderate_solution(&st)?))
+    // } else {
+    //     for tid in taskid_ready2process.iter() {
+    //         st = st.process_task(tid)?;
+    //         result = get_better(result, rec_process_pending_tasks(&st)?);
+    //     }
+    //     Ok(result)
+    // }
 }
 
 fn ponderate_solution(st: &Status) -> Result<Option<i32>, InternalError> {
