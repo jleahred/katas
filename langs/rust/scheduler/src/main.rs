@@ -38,36 +38,52 @@ fn init_config_yaml() -> &'static str {
     r#"
 ---
 tasks:
-  t1:
-    description: task 1
-    start_after: 0m
-    priority: Mandatory
-    process:
-      pr1:
-        description: pr1
-        inputs:
-          - prod_i
-        outputs:
-          - id: prod1
-            description: prod1
-            max_waitting: 15m
-        required_time: 3m
-        sequence:
-            - description: proc1
-      pr2:
-        description: pr2
-        inputs:
-          - prod1
-        outputs:
-          - id: prod3
-            description: prod2
-            max_waitting: 15m
-        required_time: 3m
-        sequence:
-            - description: t2
+    t1:
+      description: task 1
+      start_after: 2m
+      priority: Mandatory
+      process:
+          p1:
+            description: p1
+            inputs:
+                - prod_i
+            outputs:
+                - id: prod1
+                  description: result product
+                  max_waitting: 1m
+            required_time: 3m
+            sequence:
+                - description: action t1.1
+                - description: action t1.2
+          p2:
+            description: p2
+            inputs:
+                - prod_i2
+            outputs:
+                - id: prod2
+                  description: result product
+                  max_waitting: 15m
+            required_time: 20m
+            sequence:
+                - description: act p2
+          p3:
+            description: p3
+            inputs:
+                - prod2
+                - prod1
+            outputs:
+                - id: p2
+                  description: result product
+                  max_waitting: 15m
+            required_time: 20m
+            sequence:
+                - description: act p3
 products:
-  - id: prod_i
-    description: initial product
-    max_waitting: 15m
+    - id: prod_i
+      description: initial product
+      max_waitting: 15m
+    - id: prod_i2
+      description: initial product
+      max_waitting: 15m
 "#
 }

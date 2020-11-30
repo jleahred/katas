@@ -318,8 +318,8 @@ fn get_time_avail_all_prods(
     let mut result: Option<(Duration, Duration)> = None;
     for prdid in inprodis.iter() {
         let start_maxwaitting = get_start_max_waitting(dyndata, prdid);
-        dbg!(&prdid);
-        dbg!(&start_maxwaitting);
+        // dbg!(&prdid);
+        // dbg!(&start_maxwaitting);
         match (result, start_maxwaitting) {
             (Some(r), Some((start, max_waitting))) => {
                 result = Some((
@@ -328,9 +328,23 @@ fn get_time_avail_all_prods(
                 ));
             }
             (None, Some((start, maxwaitting))) => result = Some((start, start + maxwaitting)),
-            (_, None) => (),
+            (_, None) => {
+                result = None;
+                break;
+            }
         }
     }
+    result = match result {
+        Some((s, e)) => {
+            if e < s {
+                None
+            } else {
+                Some((s, e))
+            }
+        }
+        None => None,
+    };
+    dbg!(&result);
     result
 }
 
@@ -373,7 +387,6 @@ fn rec_process_pending_processes(st: &Status) -> Result<(Status, Option<i32>), I
 
     let mut result = (st.clone(), None);
     while let Some((procintask, start_at)) = st.get_one_random_ready2process()? {
-        // dbg!(&start_at);
         st = st.run_process(&procintask, &start_at)?;
         result = get_better(result, rec_process_pending_processes(&st)?);
     }
