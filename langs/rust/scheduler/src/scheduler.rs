@@ -241,15 +241,6 @@ impl Status {
         p: &Process,
         start_at: &Duration,
     ) -> Result<Status, InternalError> {
-        // let execs = self.dynamic_data.executions;
-        // let execs = p.sequence.iter().fold(execs, |execs, action| {
-        //     execs.push(
-        //         start_at.clone(),
-        //         p.required_time,
-        //         &p.description,
-        //         &p.sequence,
-        //     )
-        // });
         self.dynamic_data.executions = self.dynamic_data.executions.push(
             start_at.clone(),
             p.required_time,
@@ -275,11 +266,11 @@ impl Status {
         let process = self.get_process(&pidtid)?;
 
         let st = self.clone();
-        let run_at = &(*run_at + process.required_time);
+        let ends_at = &(*run_at + process.required_time);
         let st = st
             .remove_from_pending_processes(pidtid)?
-            .remove_pending_products(&process.inputs)? //  pending fail!!!
-            .add_available_products(&process.outputs, &run_at)?
+            .remove_pending_products(&process.inputs)? //  todo: pending fail!!!
+            .add_available_products(&process.outputs, &ends_at)?
             .register_process_on_execs(&process, &run_at)?
             .add_log(&format!("{:?} exec prod intask {:?}", run_at, pidtid));
         Ok(st)
@@ -287,6 +278,7 @@ impl Status {
 
     fn can_execute_process(&self, process: &Process) -> Result<Option<Duration>, InternalError> {
         let ti_avail_prods = get_time_avail_all_prods(&self.dynamic_data, &process.inputs);
+        dbg!(&ti_avail_prods);
         match ti_avail_prods {
             Some(tiap) => Ok(Some(tiap.0)), //  TODO:!!!
             None => Ok(None),
@@ -304,7 +296,7 @@ impl Status {
         for ptintask in self.dynamic_data.pending_processes.iter() {
             let process = self.get_process(&ptintask)?;
             if let Some(start_at) = self.can_execute_process(process)? {
-                available.push_back_mut((ptintask.clone(), start_at + process.required_time));
+                available.push_back_mut((ptintask.clone(), start_at));
             }
         }
         if available.is_empty() {
@@ -326,6 +318,8 @@ fn get_time_avail_all_prods(
     let mut result: Option<(Duration, Duration)> = None;
     for prdid in inprodis.iter() {
         let start_maxwaitting = get_start_max_waitting(dyndata, prdid);
+        dbg!(&prdid);
+        dbg!(&start_maxwaitting);
         match (result, start_maxwaitting) {
             (Some(r), Some((start, max_waitting))) => {
                 result = Some((
@@ -379,6 +373,7 @@ fn rec_process_pending_processes(st: &Status) -> Result<(Status, Option<i32>), I
 
     let mut result = (st.clone(), None);
     while let Some((procintask, start_at)) = st.get_one_random_ready2process()? {
+        // dbg!(&start_at);
         st = st.run_process(&procintask, &start_at)?;
         result = get_better(result, rec_process_pending_processes(&st)?);
     }

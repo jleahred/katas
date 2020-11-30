@@ -17,7 +17,7 @@ use scheduler::{generate_schedule, get_status_from_init_cfg};
 
 use seed::{prelude::*, *};
 
-static VERSION: &str = "0.2";
+static VERSION: &str = "0.4";
 
 fn init_config() -> &'static str {
     r#"---
