@@ -4,86 +4,71 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 
+mod model;
 mod scheduler;
 
-use scheduler::{generate_schedule, get_status_from_init_cfg, InitStatus};
+use model::*;
+use rpds::{HashTrieSet, Vector};
+// use scheduler::{generate_schedule, get_status_from_init_cfg, InitStatus};
 
 fn main() {
-    let init_config: InitStatus = serde_yaml::from_str(init_config_yaml()).unwrap();
+    let init_config: model::InitConfig = serde_yaml::from_str(init_config_yaml()).unwrap();
 
     println!(
         "\ninitial config:\n{}",
         serde_yaml::to_string(&init_config).unwrap()
     );
 
-    let init_status = get_status_from_init_cfg(&init_config);
+    let result_status = scheduler::generate_schedule_from_init_config(&init_config).unwrap();
+    let result_yaml = serde_yaml::to_string(&result_status).unwrap();
 
-    let status = init_status;
+    println!("--------------------------------------");
+    println!("Final status");
+    println!("{}", result_yaml);
+    // let status = get_status_from_init_cfg(&init_config);
 
-    let (status, value) = generate_schedule(&status).unwrap();
+    // let (status, value) = generate_schedule(&status).unwrap();
+
+    // println!("\n\nVALUE {:?} \n", value);
     // println!(
-    //     ">>>>>>>>>>>>>>>>>>>\nprocessed:\nvalue:{}\nexecs:\n{}",
-    //     value,
-    //     serde_yaml::to_string(&status.dynamic_data.executions).unwrap()
+    //     "++++++++++++++++++\nlast_status:\nstatus:{}\n",
+    //     serde_yaml::to_string(&status.dynamic_data).unwrap()
     // );
-
-    println!("\n\nVALUE {:?} \n", value);
-    println!(
-        "++++++++++++++++++\nlast_status:\nstatus:{}\n",
-        serde_yaml::to_string(&status.dynamic_data).unwrap()
-    );
 }
 
 fn init_config_yaml() -> &'static str {
     r#"
 ---
-tasks:
-    t1:
-      description: task 1
-      start_after: 2m
+recipes_db:
+  recipe1:
+    description: recipe1
+    processes:
+          proc1:
+            description: proc1
+            inputs:
+              - product1
+              - product2
+            outputs:
+              - prod_id: prod3
+                available_at: 7m
+                valid_for: 15m
+              - prod_id: prod4
+                available_at: 7m
+                valid_for: 15m
+            sequence:
+              - do first
+              - do second
+            required_time: 10m
+# ----------  initial configuration   ---------
+recipes_todo:
+    - recipe_id: recipe1
       priority: Mandatory
-      process:
-          p1:
-            description: p1
-            inputs:
-                - prod_i
-            outputs:
-                - id: prod1
-                  description: result product
-                  max_waitting: 1m
-            required_time: 3m
-            sequence:
-                - description: action t1.1
-                - description: action t1.2
-          p2:
-            description: p2
-            inputs:
-                - prod_i2
-            outputs:
-                - id: prod2
-                  description: result product
-                  max_waitting: 15m
-            required_time: 20m
-            sequence:
-                - description: act p2
-          p3:
-            description: p3
-            inputs:
-                - prod2
-                - prod1
-            outputs:
-                - id: p2
-                  description: result product
-                  max_waitting: 15m
-            required_time: 20m
-            sequence:
-                - description: act p3
-products:
-    - id: prod_i
-      description: initial product
-      max_waitting: 15m
-    - id: prod_i2
-      description: initial product
-      max_waitting: 15m
+available_products:
+    - prod_id: product1
+      available_at: 7m
+      valid_for: 15m
+    - prod_id: product2
+      available_at: 7m
+      valid_for: 15m
 "#
 }
