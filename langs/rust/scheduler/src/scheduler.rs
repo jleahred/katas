@@ -19,10 +19,17 @@ pub(crate) struct InternalError(String);
 
 pub(crate) fn generate_schedule_from_init_config(
     init_cfg: &InitConfig,
-) -> Result<model::Status, InternalError> {
+) -> Result<model::FinalStatus, InternalError> {
     let (status, recipes_db) = process_init_config(&init_cfg)?;
-    rec_process_pending_processes(status, &recipes_db)
+    // rec_process_pending_processes(status, &recipes_db)
 
+    // todo, randomize list on each iteration
+    (0..100)
+        .into_iter()
+        .map(|_| rec_process_pending_processes(status.clone(), &recipes_db))
+        .try_fold(model::FinalStatus::Fail, |better_st, nw_st| {
+            nw_st.and_then(|nw_st| Ok(get_better(better_st, nw_st)))
+        })
     // Ok(status)
     // let mut result = (st.clone(), None);
 
@@ -32,47 +39,87 @@ pub(crate) fn generate_schedule_from_init_config(
     // Ok(result)
 }
 
+fn get_better(st1: model::FinalStatus, st2: model::Status) -> model::FinalStatus {
+    let nw_mark = get_mark_status(&st2);
+
+    match (&st1, nw_mark) {
+        (st1, None) => st1.clone(),
+        (model::FinalStatus::Fail, Some(m)) => {
+            model::FinalStatus::Detail(model::FinalStatusDetail {
+                status: st2,
+                mark: m,
+            })
+        }
+        (model::FinalStatus::Detail(det), Some(m)) => {
+            if det.mark.0 < m.0 {
+                model::FinalStatus::Detail(model::FinalStatusDetail {
+                    status: st2,
+                    mark: m,
+                })
+            } else {
+                st1
+            }
+        }
+    }
+}
+
+fn get_mark_status(st: &model::Status) -> Option<model::StatusMark> {
+    st.pending_processes
+        .into_iter()
+        .map(|pp| pp.priority)
+        .try_fold(0u32, |acc, m| match m {
+            Priority::Mandatory => Err(()),
+            Priority::High => Ok(acc + 100u32),
+            Priority::Medium => Ok(acc + 10u32),
+            Priority::Low => Ok(acc + 1u32),
+        })
+        .map_or(None, |m| Some(model::StatusMark(m)))
+}
+
 fn rec_process_pending_processes(
     status: model::Status,
     rec_db: &RecipesDb,
 ) -> Result<model::Status, InternalError> {
-    //  get_first_ready_process if exists
-    //      process
-    //      rec_process_pendings
-    let next = status
-        .pending_processes
-        .iter()
-        .map(|pp| get_proces_if_can_be_executed(&pp, &status, &rec_db))
-        .filter(|oe| match oe {
-            Ok(o) => o.is_some(),
-            Err(_) => true,
-        })
-        .next();
-
-    match next {
-        Some(ro) => match ro {
-            Err(err) => Err(err),
-            Ok(Some(p)) => {
-                let status = exec_process(status, &p)?;
-                rec_process_pending_processes(status, rec_db)
-            }
-            Ok(None) => Ok(status),
-        },
-        None => Ok(status),
+    if let Some((pp, proc)) = get_first_ready_process(&status, &rec_db)? {
+        let status = exec_process(status, &pp, &proc)?;
+        rec_process_pending_processes(status, &rec_db)
+    } else {
+        Ok(status)
     }
 }
 
-fn exec_process(status: model::Status, process: &Process) -> Result<model::Status, InternalError> {
-    Ok(status
-        .remove_products(&process.inputs)?
-        .add_available_products(&process.outputs))
+fn get_first_ready_process(
+    status: &model::Status,
+    rec_db: &RecipesDb,
+) -> Result<Option<(model::PendingProcess, Process)>, InternalError> {
+    status
+        .pending_processes
+        .iter()
+        .map(|pp| get_process_if_executable(&pp, &status, &rec_db))
+        .next()
+        .map_or_else(|| Ok(None), std::convert::identity)
 }
 
-fn get_proces_if_can_be_executed(
+fn get_process_if_executable(
     pp: &model::PendingProcess,
     status: &model::Status,
     rec_db: &RecipesDb,
-) -> Result<Option<Process>, InternalError> {
+) -> Result<Option<(model::PendingProcess, Process)>, InternalError> {
+    let (pp, process) = get_process_from_rec_db(pp, rec_db)?;
+
+    Ok(
+        if are_products_available_for_proc(&process, &status.available_products) {
+            Some((pp, process.clone()))
+        } else {
+            None
+        },
+    )
+}
+
+fn get_process_from_rec_db(
+    pp: &model::PendingProcess,
+    rec_db: &RecipesDb,
+) -> Result<(model::PendingProcess, Process), InternalError> {
     let process = rec_db
         .0
         .get(&pp.recipe_id)
@@ -86,15 +133,21 @@ fn get_proces_if_can_be_executed(
                 pp.recipe_id,
                 pp.process_id
             )
-        })?;
+        })?
+        .clone();
+    Ok((pp.clone(), process))
+}
 
-    Ok(
-        if are_products_available_for_proc(&process, &status.available_products) {
-            Some(process.clone())
-        } else {
-            None
-        },
-    )
+fn exec_process(
+    status: model::Status,
+    pp: &model::PendingProcess,
+    process: &Process,
+) -> Result<model::Status, InternalError> {
+    Ok(status
+        .remove_products(&process.inputs)?
+        .add_available_products(&process.outputs)
+        .remove_pending_process(&pp)
+        .add_exec_info(pp, process))
 }
 
 fn are_products_available_for_proc(process: &Process, ap: &Vector<AvailableProduct>) -> bool {
@@ -109,17 +162,6 @@ fn are_products_available_for_proc(process: &Process, ap: &Vector<AvailableProdu
 fn product_in_available(pid: &ProdId, ap: &Vector<AvailableProduct>) -> bool {
     ap.iter().filter(|&ap| &ap.prod_id == pid).next().is_some()
 }
-
-// fn rec_process_pending_processes(st: &Status) -> Result<(Status, Option<i32>), InternalError> {
-//     let mut st = st.clone();
-
-//     let mut result = (st.clone(), None);
-//     while let Some((procintask, start_at)) = st.get_one_random_ready2process()? {
-//         st = st.run_process(&procintask, &start_at)?;
-//         result = get_better(result, rec_process_pending_processes(&st)?);
-//     }
-//     Ok((st.clone(), ponderate_solution(&st)?))
-// }
 
 fn process_init_config(
     init_cfg: &InitConfig,
@@ -147,6 +189,7 @@ fn process_init_config(
         model::Status {
             available_products: init_cfg.available_products.clone(),
             pending_processes,
+            executions: vector![],
         },
         init_cfg.recipes_db.clone(),
     ))

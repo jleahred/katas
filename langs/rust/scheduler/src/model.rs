@@ -52,7 +52,7 @@ pub(crate) struct Process {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Processes(pub(crate) rpds::HashTrieMap<ProcessId, Process>);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum Priority {
     Mandatory,
     High,
@@ -71,13 +71,3 @@ struct Product {
 
 // #[derive(Debug, Serialize, Deserialize, Clone)]
 // pub(crate) struct ValidTill(#[serde(with = "humantime_serde")] Option<Duration>);
-
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Execution {
-    #[serde(with = "humantime_serde")]
-    start_at: Duration,
-    #[serde(with = "humantime_serde")]
-    duration: Duration,
-    process_desc: String,
-    sequence: Vector<String>,
-}

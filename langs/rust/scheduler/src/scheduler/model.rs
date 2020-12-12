@@ -1,14 +1,43 @@
 use rpds::{HashTrieSet, Vector};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Status {
     pub(crate) available_products: Vector<crate::model::AvailableProduct>,
     pub(crate) pending_processes: Vector<PendingProcess>,
-    // executions: Vector<Execution>,
+    pub(crate) executions: Vector<Execution>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub(crate) struct StatusMark(pub(crate) u32);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) enum FinalStatus {
+    Fail,
+    Detail(FinalStatusDetail),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct FinalStatusDetail {
+    pub(crate) status: Status,
+    pub(crate) mark: StatusMark,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct Execution {
+    // #[serde(with = "humantime_serde")]
+    // start_at: Duration,
+    #[serde(with = "humantime_serde")]
+    duration: Duration,
+
+    pub(crate) recipe_id: crate::model::RecipeId,
+    pub(crate) process_id: crate::model::ProcessId,
+    process_desc: String,
+    sequence: Vector<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub(crate) struct PendingProcess {
     pub(crate) recipe_id: crate::model::RecipeId,
     pub(crate) process_id: crate::model::ProcessId,
@@ -23,7 +52,7 @@ impl Status {
         self.available_products = prods
             .iter()
             .try_fold(self.available_products, |acc, p| remove_product(acc, p))?;
-        Ok(self) // todo
+        Ok(self)
     }
     pub(crate) fn add_available_products(
         mut self,
@@ -32,6 +61,30 @@ impl Status {
         self.available_products = aps
             .iter()
             .fold(self.available_products, |acc, ap| acc.push_back(ap.clone()));
+        self
+    }
+    pub(crate) fn remove_pending_process(mut self, pp: &PendingProcess) -> Self {
+        self.pending_processes = self
+            .pending_processes
+            .iter()
+            .take_while(|&spp| spp != pp)
+            .skip(1)
+            .map(|pp| pp.clone())
+            .collect();
+        self
+    }
+    pub(crate) fn add_exec_info(
+        mut self,
+        pp: &PendingProcess,
+        process: &crate::model::Process,
+    ) -> Self {
+        self.executions = self.executions.push_back(Execution {
+            duration: process.required_time,
+            recipe_id: pp.recipe_id.clone(),
+            process_id: pp.process_id.clone(),
+            process_desc: process.description.clone(),
+            sequence: process.sequence.clone(),
+        });
         self
     }
 }
