@@ -9,7 +9,7 @@ pub(crate) struct Status {
     pub(crate) executions: Vector<Execution>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct StatusMark(pub(crate) i32);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -49,6 +49,8 @@ impl Status {
         mut self,
         prods: &Vector<crate::model::ProdId>,
     ) -> Result<Self, super::InternalError> {
+        dbg!(&self);
+        dbg!(&prods);
         self.available_products = prods
             .iter()
             .try_fold(self.available_products, |acc, p| remove_product(acc, p))?;

@@ -28,16 +28,17 @@ pub(crate) fn generate_schedule_from_init_config(
     init_cfg: &InitConfig,
 ) -> Result<model::FinalStatus, InternalError> {
     let (status, recipes_db) = process_init_config(&init_cfg)?;
-    // rec_process_pending_processes(status, &recipes_db)
 
-    // todo, randomize list on each iteration
-    (0..1000)
-        .into_iter()
-        .map(|_| shuflle_pending_processes(status.clone()))
-        .map(|st| rec_process_pending_processes(st, &recipes_db))
-        .try_fold(model::FinalStatus::Fail, |better_st, nw_st| {
-            nw_st.and_then(|nw_st| Ok(get_better(better_st, nw_st)))
-        })
+    rec_process_pending_processes2(status, &recipes_db)
+
+    // (0..1000)
+    //     .into_iter()
+    //     .map(|_| shuflle_pending_processes(status.clone()))
+    //     .map(|st| rec_process_pending_processes(st, &recipes_db))
+    //     .try_fold(model::FinalStatus::Fail, |better_st, nw_st| {
+    //         nw_st.and_then(|nw_st| Ok(get_better(better_st, nw_st)))
+    //     })
+
     // Ok(status)
     // let mut result = (st.clone(), None);
 
@@ -47,33 +48,30 @@ pub(crate) fn generate_schedule_from_init_config(
     // Ok(result)
 }
 
-fn shuflle_pending_processes(mut status: model::Status) -> model::Status {
-    let mut pp: Vec<_> = status.pending_processes.into_iter().collect();
-    (&mut pp).shuffle(&mut thread_rng());
+// fn shuflle_pending_processes(mut status: model::Status) -> model::Status {
+//     let mut pp: Vec<_> = status.pending_processes.into_iter().collect();
+//     (&mut pp).shuffle(&mut thread_rng());
 
-    status.pending_processes = pp.into_iter().map(|p| p.clone()).collect::<Vector<_>>();
-    status
+//     status.pending_processes = pp.into_iter().map(|p| p.clone()).collect::<Vector<_>>();
+//     status
+// }
+
+fn get_final_status(status: model::Status) -> model::FinalStatus {
+    match get_mark_status(&status) {
+        None => model::FinalStatus::Fail,
+        Some(mark) => model::FinalStatus::Detail(model::FinalStatusDetail { status, mark }),
+    }
 }
 
-fn get_better(st1: model::FinalStatus, st2: model::Status) -> model::FinalStatus {
-    let nw_mark = get_mark_status(&st2);
-
-    match (&st1, nw_mark) {
-        (st1, None) => st1.clone(),
-        (model::FinalStatus::Fail, Some(m)) => {
-            model::FinalStatus::Detail(model::FinalStatusDetail {
-                status: st2,
-                mark: m,
-            })
-        }
-        (model::FinalStatus::Detail(det), Some(m)) => {
-            if det.mark.0 < m.0 {
-                model::FinalStatus::Detail(model::FinalStatusDetail {
-                    status: st2,
-                    mark: m,
-                })
+fn get_better_fs(st1: model::FinalStatus, st2: model::FinalStatus) -> model::FinalStatus {
+    match (&st1, &st2) {
+        (model::FinalStatus::Fail, st2) => st2.clone(),
+        (st1, model::FinalStatus::Fail) => st1.clone(),
+        (model::FinalStatus::Detail(d1), model::FinalStatus::Detail(d2)) => {
+            if d1.mark > d2.mark {
+                model::FinalStatus::Detail(d1.clone())
             } else {
-                st1
+                model::FinalStatus::Detail(d2.clone())
             }
         }
     }
@@ -92,28 +90,38 @@ fn get_mark_status(st: &model::Status) -> Option<model::StatusMark> {
         .map_or(None, |m| Some(model::StatusMark(m)))
 }
 
-fn rec_process_pending_processes(
+fn rec_process_pending_processes2(
     status: model::Status,
     rec_db: &RecipesDb,
-) -> Result<model::Status, InternalError> {
-    if let Some((pp, proc, start_at)) = get_first_ready_process(&status, &rec_db)? {
-        let status = exec_process(start_at, status, &pp, &proc)?;
-        rec_process_pending_processes(status, &rec_db)
+) -> Result<model::FinalStatus, InternalError> {
+    let pp = get_pending_executable_processes(&status, rec_db)?;
+
+    if pp.is_empty() {
+        Ok(get_final_status(status))
     } else {
-        Ok(status)
+        pp.iter()
+            .try_fold(model::FinalStatus::Fail, |acc, (pp, process, start_at)| {
+                exec_process(*start_at, status.clone(), pp, process).and_then(|st| {
+                    rec_process_pending_processes2(st, rec_db)
+                        .and_then(|fs| Ok(get_better_fs(acc, fs)))
+                })
+            })
     }
 }
 
-fn get_first_ready_process(
+fn get_pending_executable_processes(
     status: &model::Status,
     rec_db: &RecipesDb,
-) -> Result<Option<(model::PendingProcess, Process, Duration)>, InternalError> {
+) -> Result<Vector<(model::PendingProcess, Process, Duration)>, InternalError> {
     status
         .pending_processes
         .iter()
         .map(|pp| get_process_if_executable(&pp, &status, &rec_db))
-        .next()
-        .map_or_else(|| Ok(None), std::convert::identity)
+        .try_fold(vector![], |acc, pp| match pp {
+            Ok(Some(pp_info)) => Ok(acc.push_back(pp_info)),
+            Ok(None) => Ok(acc),
+            Err(e) => Err(e),
+        })
 }
 
 fn get_process_if_executable(
@@ -172,7 +180,7 @@ fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -
         .map(|p| product_available_at(p, ap))
         .fold(None, |acc, d| match (acc, d) {
             (None, d) => d,
-            (d, None) => d,
+            (_, None) => None,
             (Some(acc), Some(d)) => Some(std::cmp::min(acc, d)),
         })
 }
@@ -231,3 +239,57 @@ fn add_procrecipes(
             })
         }))
 }
+
+// fn get_first_ready_process(
+//     status: &model::Status,
+//     rec_db: &RecipesDb,
+// ) -> Result<Option<(model::PendingProcess, Process, Duration)>, InternalError> {
+//     status
+//         .pending_processes
+//         .iter()
+//         .map(|pp| get_process_if_executable(&pp, &status, &rec_db))
+//         .next()
+//         .map_or_else(|| Ok(None), std::convert::identity)
+// }
+
+// fn get_better(st1: model::FinalStatus, st2: model::Status) -> model::FinalStatus {
+//     // let st2 = match get_mark_status(&st2) {
+//     //     None => model::FinalStatus::Fail,
+//     //     Some(mark) => model::FinalStatus::Detail(model::FinalStatusDetail { status: st2, mark }),
+//     // };
+
+//     get_better_fs(st1, get_final_status(st2))
+//     // let nw_mark = get_mark_status(&st2);
+
+//     // match (&st1, nw_mark) {
+//     //     (st1, None) => st1.clone(),
+//     //     (model::FinalStatus::Fail, Some(m)) => {
+//     //         model::FinalStatus::Detail(model::FinalStatusDetail {
+//     //             status: st2,
+//     //             mark: m,
+//     //         })
+//     //     }
+//     //     (model::FinalStatus::Detail(det), Some(m)) => {
+//     //         if det.mark.0 < m.0 {
+//     //             model::FinalStatus::Detail(model::FinalStatusDetail {
+//     //                 status: st2,
+//     //                 mark: m,
+//     //             })
+//     //         } else {
+//     //             st1
+//     //         }
+//     //     }
+//     // }
+// }
+
+// fn rec_process_pending_processes(
+//     status: model::Status,
+//     rec_db: &RecipesDb,
+// ) -> Result<model::Status, InternalError> {
+//     if let Some((pp, proc, start_at)) = get_first_ready_process(&status, &rec_db)? {
+//         let status = exec_process(start_at, status, &pp, &proc)?;
+//         rec_process_pending_processes(status, &rec_db)
+//     } else {
+//         Ok(status)
+//     }
+// }
