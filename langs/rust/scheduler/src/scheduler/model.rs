@@ -5,6 +5,7 @@ use std::time::Duration;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Status {
     pub(crate) available_products: Vector<crate::model::AvailableProduct>,
+    pub(crate) recipes_todo: Vector<crate::model::RecipeTodo>,
     pub(crate) pending_processes: Vector<PendingProcess>,
     pub(crate) executions: Vector<Execution>,
 }
@@ -14,17 +15,25 @@ pub(crate) struct StatusMark(pub(crate) i32);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) enum FinalStatus {
-    Fail,
+    Fail, //Fail(Status),
     Detail(FinalStatusDetail),
 }
 
+// #[derive(Debug, Serialize, Deserialize, Clone)]
+// pub(crate) struct FinalStatusExtended {
+//     pub(crate) final_status: FinalStatus_,
+//     pub(crate) status: Status,
+// }
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct FinalStatusDetail {
-    pub(crate) status: Status,
+    //pub(crate) status: Status,
     pub(crate) mark: StatusMark,
+    pub(crate) completed_recipes: Vector<crate::model::RecipeId>,
+    pub(crate) executions: Vector<Execution>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Execution {
     #[serde(with = "humantime_serde")]
     start_at: Duration,

@@ -58,7 +58,7 @@ pub(crate) struct Process {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Processes(pub(crate) rpds::HashTrieMap<ProcessId, Process>);
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub(crate) enum Priority {
     Mandatory,
     High,

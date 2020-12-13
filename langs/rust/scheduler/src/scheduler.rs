@@ -5,7 +5,7 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 // use rand::{thread_rng, Rng};
-use rpds::{HashTrieSet, Vector};
+use rpds::{HashTrieMap, HashTrieSet, Vector};
 use std::time::Duration;
 
 macro_rules! ierr {
@@ -57,16 +57,41 @@ pub(crate) fn generate_schedule_from_init_config(
 // }
 
 fn get_final_status(status: model::Status) -> model::FinalStatus {
-    match get_mark_status(&status) {
-        None => model::FinalStatus::Fail,
-        Some(mark) => model::FinalStatus::Detail(model::FinalStatusDetail { status, mark }),
+    let (pend_recipes, completed_recipes) = get_pending_completed_recipes(&status);
+    let status = remove_execs_recipes(status, &pend_recipes);
+
+    match get_mark_status(&pend_recipes, &status.recipes_todo) {
+        None => model::FinalStatus::Fail, //(status),
+        Some(mark) => model::FinalStatus::Detail(model::FinalStatusDetail {
+            // status: status.clone(),
+            mark,
+            completed_recipes,
+            executions: status.executions.clone(),
+        }),
     }
+}
+
+fn remove_execs_recipes(
+    mut status: model::Status,
+    pend_recipes: &HashTrieMap<RecipeId, Priority>,
+) -> model::Status {
+    dbg!(&pend_recipes);
+    dbg!(&status.executions);
+    let execs = status
+        .executions
+        .iter()
+        .filter(|&ex| !pend_recipes.get(&ex.recipe_id).is_some())
+        .map(|e| e.clone())
+        .collect::<Vector<model::Execution>>();
+    status.executions = execs;
+    dbg!(&status.executions);
+    status
 }
 
 fn get_better_fs(st1: model::FinalStatus, st2: model::FinalStatus) -> model::FinalStatus {
     match (&st1, &st2) {
-        (model::FinalStatus::Fail, st2) => st2.clone(),
-        (st1, model::FinalStatus::Fail) => st1.clone(),
+        (model::FinalStatus::Fail /*(_)*/, st2) => st2.clone(),
+        (st1, model::FinalStatus::Fail /*(_)*/) => st1.clone(),
         (model::FinalStatus::Detail(d1), model::FinalStatus::Detail(d2)) => {
             if d1.mark > d2.mark {
                 model::FinalStatus::Detail(d1.clone())
@@ -77,17 +102,53 @@ fn get_better_fs(st1: model::FinalStatus, st2: model::FinalStatus) -> model::Fin
     }
 }
 
-fn get_mark_status(st: &model::Status) -> Option<model::StatusMark> {
-    st.pending_processes
-        .into_iter()
-        .map(|pp| pp.priority)
-        .try_fold(0i32, |acc, m| match m {
-            Priority::Mandatory => Err(()),
-            Priority::High => Ok(acc - 100i32),
-            Priority::Medium => Ok(acc - 10i32),
-            Priority::Low => Ok(acc - 1i32),
-        })
-        .map_or(None, |m| Some(model::StatusMark(m)))
+fn get_mark_status(
+    pend_recipes: &HashTrieMap<RecipeId, Priority>,
+    recipes_todo: &Vector<crate::model::RecipeTodo>,
+) -> Option<model::StatusMark> {
+    // st.pending_processes
+    //     .into_iter()
+    //     .map(|pp| pp.priority)
+    //     .try_fold(0i32, |acc, m| match m {
+    //         Priority::Mandatory => Err(()),
+    //         Priority::High => Ok(acc - 100i32),
+    //         Priority::Medium => Ok(acc - 10i32),
+    //         Priority::Low => Ok(acc - 1i32),
+    //     })
+    //     .map_or(None, |m| Some(model::StatusMark(m)))
+    // get_pending_recipes(st)
+    if pend_recipes.size() == recipes_todo.len() {
+        None
+    } else {
+        pend_recipes
+            .iter()
+            .map(|(_rid, priority)| priority)
+            .try_fold(0i32, |acc, m| match m {
+                Priority::Mandatory => Err(()),
+                Priority::High => Ok(acc - 100i32),
+                Priority::Medium => Ok(acc - 10i32),
+                Priority::Low => Ok(acc - 1i32),
+            })
+            .map_or(None, |m| Some(model::StatusMark(m)))
+    }
+}
+
+fn get_pending_completed_recipes(
+    status: &model::Status,
+) -> (HashTrieMap<RecipeId, Priority>, Vector<RecipeId>) {
+    let pend_rec = status
+        .pending_processes
+        .iter()
+        .fold(HashTrieMap::new(), |acc, pp| {
+            acc.insert(pp.recipe_id.clone(), pp.priority)
+        });
+    let compl_rec = status
+        .recipes_todo
+        .iter()
+        .filter(|&rt| pend_rec.get(&rt.recipe_id).is_none())
+        .map(|r| r.recipe_id.clone())
+        .collect::<Vector<_>>();
+    (pend_rec, compl_rec)
 }
 
 fn rec_process_pending_processes2(
@@ -99,13 +160,15 @@ fn rec_process_pending_processes2(
     if pp.is_empty() {
         Ok(get_final_status(status))
     } else {
-        pp.iter()
-            .try_fold(model::FinalStatus::Fail, |acc, (pp, process, start_at)| {
+        pp.iter().try_fold(
+            model::FinalStatus::Fail, //(status.clone()),
+            |acc, (pp, process, start_at)| {
                 exec_process(*start_at, status.clone(), pp, process).and_then(|st| {
                     rec_process_pending_processes2(st, rec_db)
                         .and_then(|fs| Ok(get_better_fs(acc, fs)))
                 })
-            })
+            },
+        )
     }
 }
 
@@ -212,6 +275,7 @@ fn process_init_config(
             available_products: init_cfg.available_products.clone(),
             pending_processes,
             executions: vector![],
+            recipes_todo: init_cfg.recipes_todo.clone(),
         },
         init_cfg.recipes_db.clone(),
     ))
