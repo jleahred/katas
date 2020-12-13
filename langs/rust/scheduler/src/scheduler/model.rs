@@ -10,7 +10,7 @@ pub(crate) struct Status {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-pub(crate) struct StatusMark(pub(crate) u32);
+pub(crate) struct StatusMark(pub(crate) i32);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) enum FinalStatus {
@@ -26,8 +26,8 @@ pub(crate) struct FinalStatusDetail {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Execution {
-    // #[serde(with = "humantime_serde")]
-    // start_at: Duration,
+    #[serde(with = "humantime_serde")]
+    start_at: Duration,
     #[serde(with = "humantime_serde")]
     duration: Duration,
 
@@ -56,10 +56,15 @@ impl Status {
     }
     pub(crate) fn add_available_products(
         mut self,
-        aps: &Vector<crate::model::AvailableProduct>,
+        available_at: Duration,
+        prods: &Vector<crate::model::Product>,
     ) -> Self {
-        self.available_products = aps
+        self.available_products = prods
             .iter()
+            .map(|product| crate::model::AvailableProduct {
+                product: product.clone(),
+                available_at,
+            })
             .fold(self.available_products, |acc, ap| acc.push_back(ap.clone()));
         self
     }
@@ -67,18 +72,24 @@ impl Status {
         self.pending_processes = self
             .pending_processes
             .iter()
-            .take_while(|&spp| spp != pp)
-            .skip(1)
-            .map(|pp| pp.clone())
-            .collect();
+            .fold((vector![], false), |(acc, found), spp| {
+                match (found, spp == pp) {
+                    (true, _) => (acc.push_back(spp.clone()), true),
+                    (false, true) => (acc, true),
+                    (false, false) => (acc.push_back(spp.clone()), false),
+                }
+            })
+            .0;
         self
     }
     pub(crate) fn add_exec_info(
         mut self,
+        start_at: Duration,
         pp: &PendingProcess,
         process: &crate::model::Process,
     ) -> Self {
         self.executions = self.executions.push_back(Execution {
+            start_at,
             duration: process.required_time,
             recipe_id: pp.recipe_id.clone(),
             process_id: pp.process_id.clone(),
@@ -96,7 +107,7 @@ fn remove_product(
 
     let (new_available_products, _) = aps.iter().fold((vector![], false), |(acc, found), ap| {
         if !found {
-            let found = ap.prod_id != *prod_id;
+            let found = ap.product.prod_id != *prod_id;
             if found {
                 (acc, true)
             } else {

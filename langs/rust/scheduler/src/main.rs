@@ -1,8 +1,5 @@
 #[macro_use]
 extern crate rpds;
-extern crate serde;
-extern crate serde_json;
-extern crate serde_yaml;
 
 mod model;
 mod scheduler;
@@ -50,25 +47,45 @@ recipes_db:
               - product2
             outputs:
               - prod_id: prod3
-                available_at: 7m
                 valid_for: 15m
               - prod_id: prod4
-                available_at: 7m
                 valid_for: 15m
             sequence:
               - do first
               - do second
             required_time: 10m
+  recipe2:
+    description: recipe1
+    processes:
+          proc1111:
+            description: proc1
+            inputs:
+              - product1
+              - product2
+            outputs:
+              - prod_id: prod3
+                valid_for: 15m
+              - prod_id: prod4
+                valid_for: 15m
+            sequence:
+              - do first
+              - do second
+            required_time: 10m
+
 # ----------  initial configuration   ---------
 recipes_todo:
     - recipe_id: recipe1
-      priority: Mandatory
+      priority: High
+    - recipe_id: recipe2
+      priority: Low
 available_products:
-    - prod_id: product1
+    - product: 
+        prod_id: product1
+        valid_for: 15m
       available_at: 7m
-      valid_for: 15m
-    - prod_id: product2
+    - product: 
+        prod_id: product2
+        valid_for: 15m
       available_at: 7m
-      valid_for: 15m
 "#
 }

@@ -18,11 +18,17 @@ pub(crate) struct Recipe {
     pub(crate) processes: Processes,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct AvailableProduct {
-    pub(crate) prod_id: ProdId,
+    pub(crate) product: Product,
     #[serde(with = "humantime_serde")]
-    available_at: Duration,
+    pub(crate) available_at: Duration,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct Product {
+    pub(crate) prod_id: ProdId,
+    // pub(crate) description: String,
     #[serde(with = "humantime_serde")]
     valid_for: Duration,
 }
@@ -43,7 +49,7 @@ pub(crate) struct ProcessId(String);
 pub(crate) struct Process {
     pub(crate) description: String,
     pub(crate) inputs: Vector<ProdId>,
-    pub(crate) outputs: Vector<AvailableProduct>,
+    pub(crate) outputs: Vector<Product>,
     pub(crate) sequence: Vector<String>,
     #[serde(with = "humantime_serde")]
     pub(crate) required_time: Duration,
@@ -62,12 +68,6 @@ pub(crate) enum Priority {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct ProdId(String);
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-struct Product {
-    prodid: ProdId,
-    description: String,
-}
 
 // #[derive(Debug, Serialize, Deserialize, Clone)]
 // pub(crate) struct ValidTill(#[serde(with = "humantime_serde")] Option<Duration>);
