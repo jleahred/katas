@@ -239,25 +239,44 @@ fn exec_process(
 }
 
 fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -> Option<Duration> {
-    process
+    let o_start_end = process
         .inputs
         .iter()
-        .map(|p| product_available_at(p, ap))
+        .map(|p| product_available(p, ap))
         .fold((false, None), |(found_missing, acc), d| {
             match (found_missing, acc, d) {
-                (false, None, Some(d)) => (false, Some(d)),
+                (false, None, Some(ap)) => (
+                    false,
+                    Some((ap.available_at, ap.available_at + ap.product.valid_for)),
+                ),
                 (false, _, None) => (true, None),
-                (false, Some(acc), Some(d)) => (false, Some(std::cmp::max(acc, d))),
+                (false, Some(acc), Some(ap)) => (
+                    false,
+                    Some((
+                        std::cmp::max(acc.0, ap.available_at),
+                        std::cmp::min(acc.1, ap.available_at + ap.product.valid_for),
+                    )),
+                ),
                 (true, _, _) => (true, None),
             }
         })
-        .1
+        .1;
+    match o_start_end {
+        None => None,
+        Some((start, end)) => {
+            if start < end {
+                Some(start)
+            } else {
+                None
+            }
+        }
+    }
 }
 
-fn product_available_at(pid: &ProdId, ap: &Vector<AvailableProduct>) -> Option<Duration> {
+fn product_available(pid: &ProdId, ap: &Vector<AvailableProduct>) -> Option<AvailableProduct> {
     ap.iter()
         .filter(|&ap| &ap.product.prod_id == pid)
-        .map(|ap| ap.available_at)
+        .map(|ap| ap.clone())
         .next()
 }
 

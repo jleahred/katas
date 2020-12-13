@@ -30,7 +30,7 @@ pub(crate) struct Product {
     pub(crate) prod_id: ProdId,
     // pub(crate) description: String,
     #[serde(with = "humantime_serde")]
-    valid_for: Duration,
+    pub(crate) valid_for: Duration,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
