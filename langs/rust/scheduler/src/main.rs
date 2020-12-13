@@ -44,7 +44,7 @@ recipes_db:
           proc1:
             description: proc1
             inputs:
-              - product1
+              - product11
               - product2
             outputs:
               - prod_id: prod3

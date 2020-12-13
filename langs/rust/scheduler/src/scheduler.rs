@@ -79,8 +79,6 @@ fn remove_execs_recipes(
     mut status: model::Status,
     pend_recipes: &HashTrieMap<RecipeId, Priority>,
 ) -> model::Status {
-    dbg!(&pend_recipes);
-    dbg!(&status.executions);
     let execs = status
         .executions
         .iter()
@@ -88,7 +86,6 @@ fn remove_execs_recipes(
         .map(|e| e.clone())
         .collect::<Vector<model::Execution>>();
     status.executions = execs;
-    dbg!(&status.executions);
     status
 }
 
@@ -246,11 +243,15 @@ fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -
         .inputs
         .iter()
         .map(|p| product_available_at(p, ap))
-        .fold(None, |acc, d| match (acc, d) {
-            (None, d) => d,
-            (_, None) => None,
-            (Some(acc), Some(d)) => Some(std::cmp::min(acc, d)),
+        .fold((false, None), |(found_missing, acc), d| {
+            match (found_missing, acc, d) {
+                (false, None, Some(d)) => (false, Some(d)),
+                (false, _, None) => (true, None),
+                (false, Some(acc), Some(d)) => (false, Some(std::cmp::max(acc, d))),
+                (true, _, _) => (true, None),
+            }
         })
+        .1
 }
 
 fn product_available_at(pid: &ProdId, ap: &Vector<AvailableProduct>) -> Option<Duration> {

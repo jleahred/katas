@@ -58,8 +58,6 @@ impl Status {
         mut self,
         prods: &Vector<crate::model::ProdId>,
     ) -> Result<Self, super::InternalError> {
-        dbg!(&self);
-        dbg!(&prods);
         self.available_products = prods
             .iter()
             .try_fold(self.available_products, |acc, p| remove_product(acc, p))?;
