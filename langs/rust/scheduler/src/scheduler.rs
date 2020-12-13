@@ -26,10 +26,14 @@ pub(crate) struct InternalError(String);
 
 pub(crate) fn generate_schedule_from_init_config(
     init_cfg: &InitConfig,
-) -> Result<model::FinalStatus, InternalError> {
+) -> Result<model::FinalStatusExtended, InternalError> {
     let (status, recipes_db) = process_init_config(&init_cfg)?;
 
-    rec_process_pending_processes2(status, &recipes_db)
+    let (status, final_status) = rec_process_pending_processes2(status, &recipes_db)?;
+    Ok(model::FinalStatusExtended {
+        status,
+        final_status,
+    })
 
     // (0..1000)
     //     .into_iter()
@@ -154,21 +158,22 @@ fn get_pending_completed_recipes(
 fn rec_process_pending_processes2(
     status: model::Status,
     rec_db: &RecipesDb,
-) -> Result<model::FinalStatus, InternalError> {
+) -> Result<(model::Status, model::FinalStatus), InternalError> {
     let pp = get_pending_executable_processes(&status, rec_db)?;
 
     if pp.is_empty() {
-        Ok(get_final_status(status))
+        Ok((status.clone(), get_final_status(status)))
     } else {
-        pp.iter().try_fold(
+        let final_status = pp.iter().try_fold(
             model::FinalStatus::Fail, //(status.clone()),
             |acc, (pp, process, start_at)| {
                 exec_process(*start_at, status.clone(), pp, process).and_then(|st| {
                     rec_process_pending_processes2(st, rec_db)
-                        .and_then(|fs| Ok(get_better_fs(acc, fs)))
+                        .and_then(|(_, fs)| Ok(get_better_fs(acc, fs)))
                 })
             },
-        )
+        )?;
+        Ok((status, final_status))
     }
 }
 

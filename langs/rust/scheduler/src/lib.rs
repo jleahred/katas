@@ -89,7 +89,7 @@ fn process_config(cfg: &str) -> Result<String, String> {
 
     Ok(format!(
         "result:\n{}\n",
-        serde_yaml::to_string(&final_status).or_else(|e| Err(format!("{}", e)))?
+        serde_yaml::to_string(&final_status.final_status).or_else(|e| Err(format!("{}", e)))?
     ))
 }
 

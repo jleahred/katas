@@ -19,11 +19,11 @@ pub(crate) enum FinalStatus {
     Detail(FinalStatusDetail),
 }
 
-// #[derive(Debug, Serialize, Deserialize, Clone)]
-// pub(crate) struct FinalStatusExtended {
-//     pub(crate) final_status: FinalStatus_,
-//     pub(crate) status: Status,
-// }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct FinalStatusExtended {
+    pub(crate) final_status: FinalStatus,
+    pub(crate) status: Status,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct FinalStatusDetail {
