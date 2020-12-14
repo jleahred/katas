@@ -14,95 +14,112 @@ El modelo no sólo definirá el estado inicial, sino que debe poderse realizar u
 == Elementos
 
 [horizontal]
-Task::
-    - Se planificará la ejecución completa de la tarea. +
-    De no ser posible, o no encontrarse ningún `plan` que lo cumpla, se informará del error
-    - Prioridades: `(mandatory, high, low)`
-    - Están compuestas de un conjunto de procesos
-    - Las tareas son independientes entre sí
-    - Indicarán hora a partir de la que se puede iniciar, y hora máxima para que se completen
+Receta::
+    - Conjunto de procesos para conseguir un producto objetivo
+    - Se deben ejecutar todos o ninguno
+
+Procesos::
+    - Elementos de una receta que indican qué acciones se deben hacer y sus dependencias
+    - Se indicará el tiempo estimado de ejecución
+    - Generará productos
+    - Las dependencias para ejecutar un proceso serán los productos necesisarios, recursos y cocineros
 
 Products::
-    - Habrá `productos` disponibles desde el orignen, y `productos` generados por los procesos
-    - Cada producto indicará el tiempo máximo de espera
+    - Un proceso se podrá realizar cuando tenga disponibles los productos (entre otras cosas)
+    - Además un proceso producirá también productos, lo que generará dependencia entre los productos
+    - Tienen una "caducidad". El producto debe ser utilizado antes de su "vencimiento"
 
-Process::
-    - Tomará unos productos origen, y realizado una acción generará el resultado
-    - Se pueden definir varias acciones, y el sistema debe elegir según disponibilidad y la que optimice según la función de evaluación
-    - Elementos indivisibles a ejecutar
-    - El `proceso` no podrá iniciarse hasta que estén disponibles todos los `inputs` (que pueden existir desde el origen, o pueden ser generados por otra tarea)
-    - Siempre que las dependencias y los recursos lo permitan, se pueden ejecutar en paralelo
+Base de datos de recetas::
+    - Tendremos una base de datos con cientos, miles (o más...) o recetas preconfiguradas
 
-Actions::
-    - En las acciones se pueden programar alarmas pasado x tiempo, o que se repitan cada intervalo de tiempo definido
-    - Se requiere una confirmación de cada acción para darla por terminada
-    - Algunas acciones pueden ser `cancelables` ¿?
+Configuración "del día"::
+    - Se indicarán las recetas a realizar, señalando su prioridad `Mandatory`, `High`, `Medium`, `Low`
+    - Para cada receta se indicará también la hora en la que queremos que esté disponible
 
-Resources::
-    - Para ejecutar una acción, se capturará uno o varios recursos +
-      Puede ser un fogón, un horno... _(¿cocinero?)_
-    - Se indicará la disponibilidad temporal del recurso +
-      Esto puede servir para modelar situaciones en la que el recurso no está disponbile en todo el horario, o para forzar la ejecució de las tareas relacionadas con un recurso en determinados momentos
-    - Las acciones son específicas por cada tarea. Los recursos no, son comunes para todas las acciones (y por tanto, tareas)
+== Ejemplo de modelo
 
-== Modelo
+=== Base de datos de recetas
 
-Task::
-    - id
-    - description
-    - start_after  (time)
-    - ends_before  (time)
-    - priority   (mandatory, high, medium, low)
-    - Process[]
+```yaml
+# -------------- database documents for recipes  ------------------
+recipes_db:
+  recipe1:
+    description: recipe1
+    processes:
+          proc1:
+            description: proc1
+            inputs:
+              - product1
+              - product2
+            outputs:
+              - prod_id: prod3
+                valid_for: 15m
+              - prod_id: prod4
+                valid_for: 15m
+            sequence:
+              - do first1
+              - do second1
+            required_time: 10m
+  recipe2:
+    description: recipe1
+    processes:
+          proc2:
+            description: proc2
+            inputs:
+              - product1
+              - product2
+            # pending  resources and chefs
+            outputs:
+              - prod_id: prod5
+                valid_for: 15m
+              - prod_id: prod6
+                valid_for: 10m
+            sequence:
+              - do first2
+              - do second2
+            required_time: 5m
+```
 
-Product::
-    - id
-    - description
-    - quantity
-    - max_waitting_time
+=== Configuraciónd el día
 
-Process::
-    - id
-    - description
-    - inputs[]
-    - -> outputs[]
-    - actions[]
+```yaml
+# ----------  initial configuration   ---------
+recipes_todo:
+    - recipe_id: recipe1
+      priority: Low
+      # pending ends_before
+    - recipe_id: recipe2
+      priority: High
+available_products:
+    - product: 
+        prod_id: product1
+        valid_for: 15m
+      available_at: 7m
+    - product: 
+        prod_id: product2
+        valid_for: 15m
+      available_at: 7m
+```
 
-Action::
-    - id
-    - description
-    - resources[]
-    - min_time  (estimated min time)
-    - max_time  (estimated max time)
-    - alarms
-    - cancellable?
+=== Salida del planificador
 
-Resources::
-    - id
-    - description
-    - availability[]    (list of periods where the resource is available)
-
-== Función de valoración de planificación
-
-    - Una planificación es válida si es capaz de ejecutar todas las tareas obligatorias en los tiempos indicados
-
-    - Mejor valoración si ejecuta más tareas y de mayor prioridad (la prioridad tiene más peso que el número de tareas)
-
-    - Se podría valorar la "dispersión" temporal de recursos como algo positivo (reducir la utilización simultánea de recursos del mismo tipo)
-
-== INPUT
-
-    - Definición del modelo (tareas, acciones y recursos) +
-      Este modelo puede estar parcialmente ejecutado
-    - Hora sobre la que realizar la planificación
-      En replanificaciones, se indicará la hora actual
-
-== OUTPUT
-
-    - Secuencia de acciones a realizar con hora de inicio de ejecución
-
-
-
+```yaml
+result:
+---
+Detail:
+  mark: -1
+  completed_recipes:
+    - recipe2
+  executions:
+    - start_at: 7m
+      duration: 5m
+      recipe_id: recipe2
+      process_id: proc2
+      process_desc: proc2
+      sequence:
+        - do first2
+        - do second2
+```
 
 == Deploy
 

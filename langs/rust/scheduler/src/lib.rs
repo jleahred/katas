@@ -23,6 +23,24 @@ static VERSION: &str = "0.7";
 fn init_config() -> &'static str {
     r#"
 ---
+# ----------  initial configuration   ---------
+recipes_todo:
+    - recipe_id: recipe1
+      priority: Low
+      # pending ends_before
+    - recipe_id: recipe2
+      priority: High
+available_products:
+    - product: 
+        prod_id: product1
+        valid_for: 15m
+      available_at: 7m
+    - product: 
+        prod_id: product2
+        valid_for: 15m
+      available_at: 7m
+
+
 # -------------- database documents for recipes  ------------------
 recipes_db:
   recipe1:
@@ -60,23 +78,6 @@ recipes_db:
               - do first2
               - do second2
             required_time: 5m
-
-# ----------  initial configuration   ---------
-recipes_todo:
-    - recipe_id: recipe1
-      priority: Low
-      # pending ends_before
-    - recipe_id: recipe2
-      priority: High
-available_products:
-    - product: 
-        prod_id: product1
-        valid_for: 15m
-      available_at: 7m
-    - product: 
-        prod_id: product2
-        valid_for: 15m
-      available_at: 7m
 "#
 }
 
