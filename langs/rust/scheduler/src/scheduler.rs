@@ -3,7 +3,6 @@ use crate::model::*;
 // use rand::thread_rng;
 
 use rpds::{HashTrieMap, Vector};
-use std::time::Duration;
 
 macro_rules! ierr {
     ($($arg:tt)*) => {{
@@ -138,7 +137,7 @@ fn get_pending_completed_recipes(
         .pending_processes
         .iter()
         .fold(HashTrieMap::new(), |acc, pp| {
-            acc.insert(pp.recipe_id.clone(), pp.priority)
+            acc.insert(pp.0.recipe_id.clone(), pp.1.priority)
         });
     let compl_rec = status
         .recipes_todo
@@ -153,15 +152,15 @@ fn rec_process_pending_processes2(
     status: model::Status,
     rec_db: &RecipesDb,
 ) -> Result<(model::Status, model::FinalStatus), InternalError> {
-    let pp = get_pending_executable_processes(&status, rec_db)?;
+    let pp = get_pending_executable_processes(&status)?;
 
     if pp.is_empty() {
         Ok((status.clone(), get_final_status(status)))
     } else {
         let final_status = pp.iter().try_fold(
             model::FinalStatus::Fail, //(status.clone()),
-            |acc, (pp, process, start_at)| {
-                exec_process(*start_at, status.clone(), pp, process).and_then(|st| {
+            |acc, (pp, start_at)| {
+                exec_process(*start_at, status.clone(), pp).and_then(|st| {
                     rec_process_pending_processes2(st, rec_db)
                         .and_then(|(_, fs)| Ok(get_better_fs(acc, fs)))
                 })
@@ -173,12 +172,11 @@ fn rec_process_pending_processes2(
 
 fn get_pending_executable_processes(
     status: &model::Status,
-    rec_db: &RecipesDb,
-) -> Result<Vector<(model::PendingProcess, Process, Duration)>, InternalError> {
+) -> Result<Vector<(model::PendingProcess, StartAt)>, InternalError> {
     status
         .pending_processes
         .iter()
-        .map(|pp| get_process_if_executable(&pp, &status, &rec_db))
+        .map(|pp| get_process_if_executable(pp, &status))
         .try_fold(vector![], |acc, pp| match pp {
             Ok(Some(pp_info)) => Ok(acc.push_back(pp_info)),
             Ok(None) => Ok(acc),
@@ -189,53 +187,35 @@ fn get_pending_executable_processes(
 fn get_process_if_executable(
     pp: &model::PendingProcess,
     status: &model::Status,
-    rec_db: &RecipesDb,
-) -> Result<Option<(model::PendingProcess, Process, Duration)>, InternalError> {
-    let (pp, process) = get_process_from_rec_db(pp, rec_db)?;
-
-    if let Some(start_at) = get_starting_time_process(&process, &status.available_products) {
-        Ok(Some((pp, process.clone(), start_at)))
+) -> Result<Option<(model::PendingProcess, StartAt)>, InternalError> {
+    if let Some(available_at) = get_starting_time_process(&pp.1.process, &status.available_products)
+    {
+        if available_at.0 + pp.1.process.required_time.0 < pp.1.ends_before.0 {
+            Ok(Some((pp.clone(), StartAt(available_at.0))))
+        } else {
+            Ok(None)
+        }
     } else {
         Ok(None)
     }
 }
 
-fn get_process_from_rec_db(
-    pp: &model::PendingProcess,
-    rec_db: &RecipesDb,
-) -> Result<(model::PendingProcess, Process), InternalError> {
-    let process = rec_db
-        .0
-        .get(&pp.recipe_id)
-        .ok_or_else(|| ierr_!("getting recipe from db {:?}", pp.recipe_id))?
-        .processes
-        .0
-        .get(&pp.process_id)
-        .ok_or_else(|| {
-            ierr_!(
-                "getting process {:?} from recipe {:?}",
-                pp.recipe_id,
-                pp.process_id
-            )
-        })?
-        .clone();
-    Ok((pp.clone(), process))
-}
-
 fn exec_process(
-    start_at: Duration,
+    start_at: crate::model::StartAt,
     status: model::Status,
     pp: &model::PendingProcess,
-    process: &Process,
 ) -> Result<model::Status, InternalError> {
     Ok(status
-        .remove_products(&process.inputs)?
-        .add_available_products(start_at + process.required_time, &process.outputs)
+        .remove_products(&pp.1.process.inputs)?
+        .add_available_products(
+            crate::model::AvailableAt(start_at.0 + pp.1.process.required_time.0),
+            &pp.1.process.outputs,
+        )
         .remove_pending_process(&pp)
-        .add_exec_info(start_at, pp, process))
+        .add_exec_info(start_at, pp))
 }
 
-fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -> Option<Duration> {
+fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -> Option<StartAt> {
     let o_start_end = process
         .inputs
         .iter()
@@ -244,14 +224,20 @@ fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -
             match (found_missing, acc, d) {
                 (false, None, Some(ap)) => (
                     false,
-                    Some((ap.available_at, ap.available_at + ap.product.valid_for)),
+                    Some((
+                        StartAt(ap.available_at.0),
+                        crate::model::ValidTill(ap.available_at.0 + ap.product.valid_for.0),
+                    )),
                 ),
                 (false, _, None) => (true, None),
                 (false, Some(acc), Some(ap)) => (
                     false,
                     Some((
-                        std::cmp::max(acc.0, ap.available_at),
-                        std::cmp::min(acc.1, ap.available_at + ap.product.valid_for),
+                        std::cmp::max(acc.0, StartAt(ap.available_at.0)),
+                        std::cmp::min(
+                            acc.1,
+                            crate::model::ValidTill(ap.available_at.0 + ap.product.valid_for.0),
+                        ),
                     )),
                 ),
                 (true, _, _) => (true, None),
@@ -261,7 +247,7 @@ fn get_starting_time_process(process: &Process, ap: &Vector<AvailableProduct>) -
     match o_start_end {
         None => None,
         Some((start, end)) => {
-            if start < end {
+            if start.0 < end.0 {
                 Some(start)
             } else {
                 None
@@ -284,12 +270,7 @@ fn process_init_config(
         .recipes_todo
         .into_iter()
         .try_fold(vector![], |acc, r2d| {
-            add_procrecipes(
-                acc,
-                r2d.recipe_id.clone(),
-                r2d.priority,
-                &init_cfg.recipes_db,
-            )
+            add_procrecipes(acc, r2d, &init_cfg.recipes_db)
         })?;
 
     Ok((
@@ -305,77 +286,28 @@ fn process_init_config(
 
 fn add_procrecipes(
     proc_recipes: Vector<model::PendingProcess>,
-    recipe_id: RecipeId,
-    priority: Priority,
+    recipe_todo: &RecipeTodo,
     recipes_db: &RecipesDb,
 ) -> Result<Vector<model::PendingProcess>, InternalError> {
     let recipe = recipes_db
         .0
-        .get(&recipe_id)
-        .ok_or_else(|| ierr_!("getting recipe from db {:?}", recipe_id))?;
+        .get(&recipe_todo.recipe_id)
+        .ok_or_else(|| ierr_!("getting recipe from db {:?}", recipe_todo.recipe_id))?;
     Ok(recipe
         .processes
         .0
         .iter()
-        .fold(proc_recipes, |acc, (process_id, _)| {
-            acc.push_back(model::PendingProcess {
-                recipe_id: recipe_id.clone(),
-                process_id: process_id.clone(),
-                priority,
-            })
+        .fold(proc_recipes, |acc, (process_id, process)| {
+            acc.push_back(model::PendingProcess(
+                model::PendingProcessKey {
+                    recipe_id: recipe_todo.recipe_id.clone(),
+                    process_id: process_id.clone(),
+                },
+                model::PendingProcessValue {
+                    priority: recipe_todo.priority,
+                    process: process.clone(),
+                    ends_before: recipe_todo.ends_before,
+                },
+            ))
         }))
 }
-
-// fn get_first_ready_process(
-//     status: &model::Status,
-//     rec_db: &RecipesDb,
-// ) -> Result<Option<(model::PendingProcess, Process, Duration)>, InternalError> {
-//     status
-//         .pending_processes
-//         .iter()
-//         .map(|pp| get_process_if_executable(&pp, &status, &rec_db))
-//         .next()
-//         .map_or_else(|| Ok(None), std::convert::identity)
-// }
-
-// fn get_better(st1: model::FinalStatus, st2: model::Status) -> model::FinalStatus {
-//     // let st2 = match get_mark_status(&st2) {
-//     //     None => model::FinalStatus::Fail,
-//     //     Some(mark) => model::FinalStatus::Detail(model::FinalStatusDetail { status: st2, mark }),
-//     // };
-
-//     get_better_fs(st1, get_final_status(st2))
-//     // let nw_mark = get_mark_status(&st2);
-
-//     // match (&st1, nw_mark) {
-//     //     (st1, None) => st1.clone(),
-//     //     (model::FinalStatus::Fail, Some(m)) => {
-//     //         model::FinalStatus::Detail(model::FinalStatusDetail {
-//     //             status: st2,
-//     //             mark: m,
-//     //         })
-//     //     }
-//     //     (model::FinalStatus::Detail(det), Some(m)) => {
-//     //         if det.mark.0 < m.0 {
-//     //             model::FinalStatus::Detail(model::FinalStatusDetail {
-//     //                 status: st2,
-//     //                 mark: m,
-//     //             })
-//     //         } else {
-//     //             st1
-//     //         }
-//     //     }
-//     // }
-// }
-
-// fn rec_process_pending_processes(
-//     status: model::Status,
-//     rec_db: &RecipesDb,
-// ) -> Result<model::Status, InternalError> {
-//     if let Some((pp, proc, start_at)) = get_first_ready_process(&status, &rec_db)? {
-//         let status = exec_process(start_at, status, &pp, &proc)?;
-//         rec_process_pending_processes(status, &rec_db)
-//     } else {
-//         Ok(status)
-//     }
-// }

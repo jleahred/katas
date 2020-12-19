@@ -21,22 +21,20 @@ pub(crate) struct Recipe {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct AvailableProduct {
     pub(crate) product: Product,
-    #[serde(with = "humantime_serde")]
-    pub(crate) available_at: Duration,
+    pub(crate) available_at: AvailableAt,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Product {
     pub(crate) prod_id: ProdId,
-    // pub(crate) description: String,
-    #[serde(with = "humantime_serde")]
-    pub(crate) valid_for: Duration,
+    pub(crate) valid_for: ValidFor,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct RecipeTodo {
     pub(crate) recipe_id: RecipeId,
     pub(crate) priority: Priority,
+    pub(crate) ends_before: EndsBefore,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
@@ -51,8 +49,7 @@ pub(crate) struct Process {
     pub(crate) inputs: Vector<ProdId>,
     pub(crate) outputs: Vector<Product>,
     pub(crate) sequence: Vector<String>,
-    #[serde(with = "humantime_serde")]
-    pub(crate) required_time: Duration,
+    pub(crate) required_time: RequiredTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -69,5 +66,20 @@ pub(crate) enum Priority {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct ProdId(String);
 
-// #[derive(Debug, Serialize, Deserialize, Clone)]
-// pub(crate) struct ValidTill(#[serde(with = "humantime_serde")] Option<Duration>);
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct AvailableAt(#[serde(with = "humantime_serde")] pub(crate) Duration);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct StartAt(#[serde(with = "humantime_serde")] pub(crate) Duration);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct ValidTill(#[serde(with = "humantime_serde")] pub(crate) Duration);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub(crate) struct ValidFor(#[serde(with = "humantime_serde")] pub(crate) Duration);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub(crate) struct RequiredTime(#[serde(with = "humantime_serde")] pub(crate) Duration);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub(crate) struct EndsBefore(#[serde(with = "humantime_serde")] pub(crate) Duration);

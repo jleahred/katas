@@ -23,6 +23,25 @@ fn main() {
 fn init_config_yaml() -> &'static str {
     r#"
 ---
+# ----------  initial configuration   ---------
+recipes_todo:
+    - recipe_id: recipe1
+      priority: Low
+      ends_before: 300m
+    - recipe_id: recipe2
+      priority: High
+      ends_before: 300m
+available_products:
+    - product: 
+        prod_id: product1
+        valid_for: 15m
+      available_at: 7m
+    - product: 
+        prod_id: product2
+        valid_for: 15m
+      available_at: 7m
+
+
 # -------------- database documents for recipes  ------------------
 recipes_db:
   recipe1:
@@ -31,7 +50,7 @@ recipes_db:
           proc1:
             description: proc1
             inputs:
-              - product11
+              - product1
               - product2
             outputs:
               - prod_id: prod3
@@ -42,34 +61,23 @@ recipes_db:
               - do first1
               - do second1
             required_time: 10m
+  recipe2:
+    description: recipe1
+    processes:
           proc2:
             description: proc2
             inputs:
+              - product1
               - product2
-              - product3
+            # pending  resources and chefs
             outputs:
               - prod_id: prod5
                 valid_for: 15m
               - prod_id: prod6
-                valid_for: 15m
+                valid_for: 10m
             sequence:
-              - do first11
-              - do second11
-            required_time: 10m
-
-# ----------  initial configuration   ---------
-recipes_todo:
-    - recipe_id: recipe1
-      priority: Low
-      # pending ends_before
-available_products:
-    - product: 
-        prod_id: product1
-        valid_for: 15m
-      available_at: 7m
-    - product: 
-        prod_id: product2
-        valid_for: 15m
-      available_at: 7m
+              - do first2
+              - do second2
+            required_time: 5m
 "#
 }

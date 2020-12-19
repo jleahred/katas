@@ -1,6 +1,7 @@
 use rpds::Vector;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+
+use crate::model::{AvailableAt, EndsBefore};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Status {
@@ -35,10 +36,8 @@ pub(crate) struct FinalStatusDetail {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct Execution {
-    #[serde(with = "humantime_serde")]
-    start_at: Duration,
-    #[serde(with = "humantime_serde")]
-    duration: Duration,
+    start_at: crate::model::StartAt,
+    duration: crate::model::RequiredTime,
 
     pub(crate) recipe_id: crate::model::RecipeId,
     pub(crate) process_id: crate::model::ProcessId,
@@ -47,11 +46,20 @@ pub(crate) struct Execution {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub(crate) struct PendingProcess {
+pub(crate) struct PendingProcessKey {
     pub(crate) recipe_id: crate::model::RecipeId,
     pub(crate) process_id: crate::model::ProcessId,
-    pub(crate) priority: crate::model::Priority,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct PendingProcessValue {
+    pub(crate) process: crate::model::Process,
+    pub(crate) priority: crate::model::Priority,
+    pub(crate) ends_before: EndsBefore,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct PendingProcess(pub(crate) PendingProcessKey, pub(crate) PendingProcessValue);
 
 impl Status {
     pub(crate) fn remove_products(
@@ -65,7 +73,7 @@ impl Status {
     }
     pub(crate) fn add_available_products(
         mut self,
-        available_at: Duration,
+        available_at: AvailableAt,
         prods: &Vector<crate::model::Product>,
     ) -> Self {
         self.available_products = prods
@@ -82,7 +90,7 @@ impl Status {
             .pending_processes
             .iter()
             .fold((vector![], false), |(acc, found), spp| {
-                match (found, spp == pp) {
+                match (found, spp.0 == pp.0) {
                     (true, _) => (acc.push_back(spp.clone()), true),
                     (false, true) => (acc, true),
                     (false, false) => (acc.push_back(spp.clone()), false),
@@ -93,17 +101,16 @@ impl Status {
     }
     pub(crate) fn add_exec_info(
         mut self,
-        start_at: Duration,
+        start_at: crate::model::StartAt,
         pp: &PendingProcess,
-        process: &crate::model::Process,
     ) -> Self {
         self.executions = self.executions.push_back(Execution {
             start_at,
-            duration: process.required_time,
-            recipe_id: pp.recipe_id.clone(),
-            process_id: pp.process_id.clone(),
-            process_desc: process.description.clone(),
-            sequence: process.sequence.clone(),
+            duration: pp.1.process.required_time,
+            recipe_id: pp.0.recipe_id.clone(),
+            process_id: pp.0.process_id.clone(),
+            process_desc: pp.1.process.description.clone(),
+            sequence: pp.1.process.sequence.clone(),
         });
         self
     }

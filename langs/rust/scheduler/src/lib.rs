@@ -18,7 +18,7 @@ use scheduler::generate_schedule_from_init_config;
 
 use seed::{prelude::*, *};
 
-static VERSION: &str = "0.7";
+static VERSION: &str = "0.8";
 
 fn init_config() -> &'static str {
     r#"
@@ -27,9 +27,10 @@ fn init_config() -> &'static str {
 recipes_todo:
     - recipe_id: recipe1
       priority: Low
-      # pending ends_before
+      ends_before: 300m
     - recipe_id: recipe2
       priority: High
+      ends_before: 300m
 available_products:
     - product: 
         prod_id: product1
