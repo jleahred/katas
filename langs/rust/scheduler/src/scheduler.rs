@@ -1,11 +1,8 @@
 use crate::model::*;
 // use rand::seq::SliceRandom;
 // use rand::thread_rng;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 
-// use rand::{thread_rng, Rng};
-use rpds::{HashTrieMap, HashTrieSet, Vector};
+use rpds::{HashTrieMap, Vector};
 use std::time::Duration;
 
 macro_rules! ierr {

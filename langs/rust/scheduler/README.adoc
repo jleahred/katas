@@ -26,7 +26,7 @@ Procesos::
 
 Products::
     - Un proceso se podrá realizar cuando tenga disponibles los productos (entre otras cosas)
-    - Además un proceso producirá también productos, lo que generará dependencia entre los productos
+    - Además un proceso producirá también productos, lo que generará dependencia entre los procesos
     - Tienen una "caducidad". El producto debe ser utilizado antes de su "vencimiento"
 
 Base de datos de recetas::

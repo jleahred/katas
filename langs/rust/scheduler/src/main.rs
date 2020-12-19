@@ -4,10 +4,6 @@ extern crate rpds;
 mod model;
 mod scheduler;
 
-use model::*;
-use rpds::{HashTrieSet, Vector};
-// use scheduler::{generate_schedule, get_status_from_init_cfg, InitStatus};
-
 fn main() {
     let init_config: model::InitConfig = serde_yaml::from_str(init_config_yaml()).unwrap();
 
@@ -22,15 +18,6 @@ fn main() {
     println!("--------------------------------------");
     println!("Final status");
     println!("{}", result_yaml);
-    // let status = get_status_from_init_cfg(&init_config);
-
-    // let (status, value) = generate_schedule(&status).unwrap();
-
-    // println!("\n\nVALUE {:?} \n", value);
-    // println!(
-    //     "++++++++++++++++++\nlast_status:\nstatus:{}\n",
-    //     serde_yaml::to_string(&status.dynamic_data).unwrap()
-    // );
 }
 
 fn init_config_yaml() -> &'static str {
