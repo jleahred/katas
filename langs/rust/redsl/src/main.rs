@@ -6,13 +6,15 @@ fn main() {
     println!("Hello, world!");
 
     let rules = rules! {
-           "main" =>    ror!(
-                            and!(
-                                ref_rule("main"),
-                                // lit("a"),
+           "main" =>    rule!(
+                            or!(
+                                and!(
+                                    ref_rule("main"),
+                                    // lit("a"),
+                                    lit("a")
+                                ),
                                 lit("a")
-                            ),
-                            lit("a")
+                            )
                         )
     };
 
@@ -27,6 +29,6 @@ fn main() {
     // print!("{:?}", p);
     // let p = parse("aaaaaaaaaaaaaaaa", &rules);
     // print!("{:?}", p);
-    let p = parse("aa", &rules);
+    let p = parse("aaaaaa", &rules);
     print!("{:?}", p);
 }

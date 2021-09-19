@@ -17,6 +17,21 @@ macro_rules! rules {
     }};
 }
 
+/// add additional info to an expression and returns a rule
+#[macro_export]
+macro_rules! rule {
+    ($e:expr) => {{
+        use $crate::expr::non_term::MultiExpr;
+        use $crate::expr::non_term::NonTerm;
+        use $crate::expr::Expr;
+
+        RuleInfo {
+            expr: $e,
+            addit_inf: (),
+        }
+    }};
+}
+
 /// Define a rule name
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RuleName(pub String);
