@@ -38,19 +38,23 @@ pub(crate) fn get_left_recursion_max_count<'a, CustI>(
     status: Status<'a>,
     rule_name: &RuleName,
     rule_info: &'a crate::rules::RuleInfo<CustI>,
+    rule_index: crate::rules::RuleIndex,
     rec_count: usize,
 ) -> std::result::Result<(Status<'a>, usize), Error<'a>> {
     println!("parsing REC2 ref_rule on ________> {}", status.pos.n);
 
-    let rule_index = *rules.get_index_by_rulename(rule_name).unwrap();
     let status_orig = status.clone();
     let status = status.lock_rule(rule_index);
-    // todo: if missing rule, critic error, not follow
     let r = crate::expr::parse(rules, status, &rule_info.expr);
     match r {
-        Ok(status) => {
-            get_left_recursion_max_count(rules, status, rule_name, rule_info, rec_count + 1)
-        }
+        Ok(status) => get_left_recursion_max_count(
+            rules,
+            status,
+            rule_name,
+            rule_info,
+            rule_index,
+            rec_count + 1,
+        ),
         Err(_) => Ok((status_orig, rec_count)),
     }
 }
@@ -62,6 +66,7 @@ pub(crate) fn parse_ref_rule<'a, CustI>(
 ) -> Result<'a> {
     println!("parsing ref_rule on {}", status.pos.n);
 
+    // todo: if missing rule, critic error, not follow
     let rule_info = rules
         .get_ri(rule_name)
         .map(|exp| exp.clone())
@@ -70,14 +75,6 @@ pub(crate) fn parse_ref_rule<'a, CustI>(
                 .clone()
                 .to_error(&format!("missing rule {}", rule_name.0))
         })?;
-    // let rule_info = match orule_info {
-    //     Some(ri) => crate::expr::parse(rules, status, &ri.expr),
-    //     None => Err(status.to_error(&format!("missing rule {}", rule_name.0))),
-    // }
-
-    //
-    //  left recursion hack -----------------
-    let rule_index = *rules.get_index_by_rulename(rule_name).unwrap();
 
     //  if in cache, return it
     // let (status, cached_status) = status.get_status_parsed_cache(rule_index);
@@ -86,26 +83,23 @@ pub(crate) fn parse_ref_rule<'a, CustI>(
     //     return Ok(st);
     // }
 
+    //
+    //  left recursion hack --------------------------------------------------------------------
+    let rule_index = *rules.get_index_by_rulename(rule_name).unwrap();
     if status.is_rule_locked(rule_index) {
         return Err(status.to_error(&format!("failed solving left recursion")));
     }
-
     let (status, left_recursion) = status.push_parsing_rule(rule_index);
     if left_recursion {
         let (status, rec_found) =
-            get_left_recursion_max_count(rules, status, rule_name, rule_info, 0)?;
+            get_left_recursion_max_count(rules, status, rule_name, rule_info, rule_index, 0)?;
         dbg!(rec_found);
         return Ok(status);
     }
-    //  left recursion hack -------
+    //  left recursion hack --------------------------------------------------------------------
     //
 
     crate::expr::parse(rules, status, &rule_info.expr)
-    // todo: if missing rule, critic error, not follow
-    // match rule_info {
-    //     Some(ri) => crate::expr::parse(rules, status, &ri.expr),
-    //     None => Err(status.to_error(&format!("missing rule {}", rule_name.0))),
-    // }
 }
 
 //-----------------------------------------------------------------------
