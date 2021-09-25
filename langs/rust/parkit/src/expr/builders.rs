@@ -8,9 +8,9 @@ use terminal::*;
 ///
 /// Single literal exact
 /// ```
-///     extern crate redsl;
-///     use redsl::expr::builders::*;
-///     use redsl::*;
+///     extern crate parkit;
+///     use parkit::expr::builders::*;
+///     use parkit::*;
 ///
 ///     let rules = rules! {"main" => ri(lit("hello")) };
 ///     
@@ -19,9 +19,9 @@ use terminal::*;
 ///
 /// Single literal diferent
 /// ```
-///     extern crate redsl;
-///     use redsl::expr::builders::*;
-///     use redsl::*;
+///     extern crate parkit;
+///     use parkit::expr::builders::*;
+///     use parkit::*;
 ///
 ///     let rules = rules! {"main" => ri(lit("_hello")) };
 ///     
@@ -36,9 +36,9 @@ pub fn lit(literal: &str) -> Expr {
 ///
 /// End of file on empty input
 /// ```
-///     extern crate redsl;
-///     use redsl::expr::builders::*;
-///     use redsl::*;
+///     extern crate parkit;
+///     use parkit::expr::builders::*;
+///     use parkit::*;
 ///
 ///     let rules = rules! {"main" => ri(eof()) };
 ///
@@ -47,12 +47,12 @@ pub fn lit(literal: &str) -> Expr {
 ///
 /// End of file on non empty input
 /// ```
-///     use redsl::expr::builders::eof;
-///     use redsl::rules;
+///     use parkit::expr::builders::eof;
+///     use parkit::rules;
 ///     
 ///     let rules = rules! {"main" => ri(eof()) };
 ///     
-///     redsl::parse("aaa", &rules).err().unwrap();
+///     parkit::parse("aaa", &rules).err().unwrap();
 /// ```
 pub fn eof() -> Expr {
     Expr::Terminal(Terminal::Eof)
@@ -61,12 +61,12 @@ pub fn eof() -> Expr {
 /// Returns a dot (any char) expression
 ///
 /// ```
-///     use redsl::expr::builders::dot;
-///     use redsl::rules;
+///     use parkit::expr::builders::dot;
+///     use parkit::rules;
 ///     
 ///     let rules = rules! {"main" => ri(dot()) };
 ///     
-///     redsl::parse("a", &rules).ok().unwrap();
+///     parkit::parse("a", &rules).ok().unwrap();
 /// ```
 pub fn dot() -> Expr {
     Expr::Terminal(Terminal::Dot)

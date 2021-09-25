@@ -1,6 +1,6 @@
-extern crate redsl;
-use redsl::expr::builders::*;
-use redsl::*;
+extern crate parkit;
+use parkit::expr::builders::*;
+use parkit::*;
 
 fn main() {
     println!("Hello, world!");
