@@ -35,7 +35,7 @@ fn parse_eof<'a>(status: Status<'a>) -> Result<'a> {
 
 fn parse_literal<'a>(mut status: Status<'a>, literal: &str) -> Result<'a> {
     for ch in literal.chars() {
-        status = parse_char(status, ch).map_err(|st| st.to_error(&format!("\"{}\"", literal)))?;
+        status = parse_char(status, ch).map_err(|st| st.to_error(&format!("'{}'", literal)))?;
     }
     Ok(status)
 }

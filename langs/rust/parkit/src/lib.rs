@@ -36,19 +36,38 @@ pub fn parse<'a, CustI>(text: &'a str, rules: &SetOfRules<CustI>) -> Result<'a> 
     let status = Status::init(text);
     expr::non_term::parse_ref_rule(rules, status, &RuleName("main".to_string()))
         .map_err(|e| Error {
-            pos: e.status.pos,
+            pos: e.status.pos.clone(),
             expected: e.expected,
+            line: e
+                .status
+                .text2parse
+                .lines()
+                .into_iter()
+                .skip(e.status.pos.row)
+                .take(1)
+                .collect(),
         })?
         .check_finalization()
 }
 
 // --------------------------------------------------------------------------------
+//  todo:
 impl<'a> Status<'a> {
     fn check_finalization(&self) -> Result<'a> {
         if self.pos.n == self.text2parse.len() {
             Ok(())
         } else {
-            Err(Error::from_status(&self, "not consumed full input"))
+            Err(Error {
+                pos: self.pos.clone(),
+                expected: im::vector!["not consumed full input...".to_owned()],
+                line: self
+                    .text2parse
+                    .lines()
+                    .into_iter()
+                    .skip(self.pos.row)
+                    .take(1)
+                    .collect(),
+            })
         }
     }
 }

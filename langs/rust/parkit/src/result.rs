@@ -10,6 +10,43 @@ pub struct Error {
     pub pos: Possition,
     /// error description
     pub expected: im::Vector<String>,
+    /// full line on error
+    pub line: String,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let expected_string: String = self
+            .expected
+            .iter()
+            .map(|s| format!("    {}\n", s))
+            .collect();
+        let line = self.line.clone();
+
+        write!(
+            f,
+            r#"
+Error parsing line:
+
+    {}> {}
+       {}^{}
+Expected:
+
+{}
+
+"#,
+            self.pos.row + 1,
+            line,
+            std::iter::repeat("~")
+                .take(std::cmp::max(self.pos.col as i32 - 1, 0) as usize)
+                .collect::<String>(),
+            std::iter::repeat("~")
+                .take(std::cmp::max(line.chars().count() - self.pos.col, 0) as usize)
+                .collect::<String>(),
+            expected_string
+        )
+        // write!(f, "Expected:\n")
+    }
 }
 
 /// Position information (used in case of Error)
@@ -23,15 +60,6 @@ pub struct Possition {
     pub col: usize,
     /// line started on... for current possition
     pub start_line: usize,
-}
-
-impl Error {
-    pub(crate) fn from_status(status: &super::status::Status, expected: &str) -> Self {
-        Error {
-            pos: status.pos.clone(),
-            expected: im::vector![expected.to_owned()],
-        }
-    }
 }
 
 impl Possition {
