@@ -43,7 +43,7 @@ pub(crate) struct RuleIndex(pub usize);
 /// `CustI` is a type defined by library client
 pub struct SetOfRules<CustI> {
     rules_by_name: im::HashMap<RuleName, RuleInfo<CustI>>,
-    rule_name_by_index: im::Vector<RuleName>,
+    // rule_name_by_index: im::Vector<RuleName>,
     rule_index_by_name: im::HashMap<RuleName, RuleIndex>,
 }
 
@@ -58,7 +58,7 @@ impl<CustI> SetOfRules<CustI> {
             .collect();
         SetOfRules {
             rules_by_name: hm,
-            rule_name_by_index,
+            // rule_name_by_index,
             rule_index_by_name,
         }
     }
@@ -67,9 +67,9 @@ impl<CustI> SetOfRules<CustI> {
         self.rules_by_name.get(rule_name)
     }
 
-    pub(crate) fn get_rulename_by_index(&self, idx: usize) -> Option<&RuleName> {
-        self.rule_name_by_index.get(idx)
-    }
+    // pub(crate) fn get_rulename_by_index(&self, idx: usize) -> Option<&RuleName> {
+    //     self.rule_name_by_index.get(idx)
+    // }
 
     pub(crate) fn get_index_by_rulename(&self, rule_name: &RuleName) -> Option<&RuleIndex> {
         self.rule_index_by_name.get(rule_name)

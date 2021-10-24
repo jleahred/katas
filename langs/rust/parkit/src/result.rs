@@ -9,7 +9,7 @@ pub struct Error {
     /// Possition achive parsing
     pub pos: Possition,
     /// error description
-    pub descr: String,
+    pub expected: im::Vector<String>,
 }
 
 /// Position information (used in case of Error)
@@ -26,10 +26,10 @@ pub struct Possition {
 }
 
 impl Error {
-    pub(crate) fn from_status(status: &super::status::Status, descr: &str) -> Self {
+    pub(crate) fn from_status(status: &super::status::Status, expected: &str) -> Self {
         Error {
             pos: status.pos.clone(),
-            descr: descr.to_owned(),
+            expected: im::vector![expected.to_owned()],
         }
     }
 }

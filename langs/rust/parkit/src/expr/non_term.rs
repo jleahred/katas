@@ -2,7 +2,7 @@
 
 use super::Expr;
 use crate::rules::{RuleName, SetOfRules};
-use crate::status::{Error, Result, Status};
+use crate::status::{Result, Status};
 
 /// Opaque type to manage multiple expressions
 #[derive(Debug, PartialEq, Clone)]
@@ -33,48 +33,15 @@ pub(crate) fn parse<'a, CustI>(
 
 //-----------------------------------------------------------------------
 
-pub(crate) fn get_left_recursion_max_count<'a, CustI>(
-    rules: &'a SetOfRules<CustI>,
-    status: Status<'a>,
-    rule_name: &RuleName,
-    rule_info: &'a crate::rules::RuleInfo<CustI>,
-    rule_index: crate::rules::RuleIndex,
-    rec_count: usize,
-) -> std::result::Result<(Status<'a>, usize), Error<'a>> {
-    println!("parsing REC2 ref_rule on ________> {}", status.pos.n);
-
-    let status_orig = status.clone();
-    let status = status.lock_rule(rule_index);
-    let r = crate::expr::parse(rules, status, &rule_info.expr);
-    match r {
-        Ok(status) => get_left_recursion_max_count(
-            rules,
-            status,
-            rule_name,
-            rule_info,
-            rule_index,
-            rec_count + 1,
-        ),
-        Err(_) => Ok((status_orig, rec_count)),
-    }
-}
-
 pub(crate) fn parse_ref_rule<'a, CustI>(
     rules: &'a SetOfRules<CustI>,
     status: Status<'a>,
     rule_name: &RuleName,
 ) -> Result<'a> {
-    println!("parsing ref_rule on {}", status.pos.n);
-
-    // todo: if missing rule, critic error, not follow
     let rule_info = rules
         .get_ri(rule_name)
         .map(|exp| exp.clone())
-        .ok_or_else(|| {
-            status
-                .clone()
-                .to_error(&format!("missing rule {}", rule_name.0))
-        })?;
+        .ok_or_else(|| panic!("missing rule {}", rule_name.0))?;
 
     //  if in cache, return it
     // let (status, cached_status) = status.get_status_parsed_cache(rule_index);
@@ -86,15 +53,11 @@ pub(crate) fn parse_ref_rule<'a, CustI>(
     //
     //  left recursion hack --------------------------------------------------------------------
     let rule_index = *rules.get_index_by_rulename(rule_name).unwrap();
-    if status.is_rule_locked(rule_index) {
-        return Err(status.to_error(&format!("failed solving left recursion")));
-    }
-    let (status, left_recursion) = status.push_parsing_rule(rule_index);
-    if left_recursion {
-        let (status, rec_found) =
-            get_left_recursion_max_count(rules, status, rule_name, rule_info, rule_index, 0)?;
-        dbg!(rec_found);
-        return Ok(status);
+    let (status, stop_left_recursion) = status.lr_push_parsing_rule(rule_index);
+    if stop_left_recursion.0 {
+        //panic!("left recursion detected parsing {}", rule_name.0)
+        return Err(status.to_error("left recursion"));
+        //return Ok(status);
     }
     //  left recursion hack --------------------------------------------------------------------
     //
@@ -121,12 +84,13 @@ fn parse_or<'a, CustI>(
     status: Status<'a>,
     multi_expr: &'a MultiExpr,
 ) -> Result<'a> {
-    let mut first_error = None;
+    let mut error = None;
     for expr in &multi_expr.0 {
-        match super::parse(rules, status.clone(), &expr) {
-            Ok(s) => return Ok(s),
-            Err(e) => first_error = Some(e),
+        match (super::parse(rules, status.clone(), &expr), &mut error) {
+            (Ok(s), _) => return Ok(s),
+            (Err(e), None) => error = Some(e),
+            (Err(e), Some(prev_error)) => error = Some(crate::status::merge(prev_error, &e)),
         }
     }
-    Err(first_error.unwrap())
+    Err(error.unwrap())
 }

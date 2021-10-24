@@ -26,6 +26,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "parkit"
+version = "0.1.0"
+dependencies = [
+ "im",
+]
+
+[[package]]
 name = "rand_core"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -38,13 +45,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9fcdd2e881d02f1d9390ae47ad8e5696a9e4be7b547a1da2afbc61973217004"
 dependencies = [
  "rand_core",
-]
-
-[[package]]
-name = "redsl"
-version = "0.1.0"
-dependencies = [
- "im",
 ]
 
 [[package]]

@@ -37,7 +37,7 @@ pub fn parse<'a, CustI>(text: &'a str, rules: &SetOfRules<CustI>) -> Result<'a> 
     expr::non_term::parse_ref_rule(rules, status, &RuleName("main".to_string()))
         .map_err(|e| Error {
             pos: e.status.pos,
-            descr: e.description,
+            expected: e.expected,
         })?
         .check_finalization()
 }

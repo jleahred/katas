@@ -7,16 +7,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'redsl'",
+            "name": "Debug unit tests in library 'parkit'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=redsl"
+                    "--package=parkit"
                 ],
                 "filter": {
-                    "name": "redsl",
+                    "name": "parkit",
                     "kind": "lib"
                 }
             },
@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'redsl'",
+            "name": "Debug executable 'parkit'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=redsl",
-                    "--package=redsl"
+                    "--bin=parkit",
+                    "--package=parkit"
                 ],
                 "filter": {
-                    "name": "redsl",
+                    "name": "parkit",
                     "kind": "bin"
                 }
             },
@@ -44,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'redsl'",
+            "name": "Debug unit tests in executable 'parkit'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=redsl",
-                    "--package=redsl"
+                    "--bin=parkit",
+                    "--package=parkit"
                 ],
                 "filter": {
-                    "name": "redsl",
+                    "name": "parkit",
                     "kind": "bin"
                 }
             },
