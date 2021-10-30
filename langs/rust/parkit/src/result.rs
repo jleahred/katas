@@ -28,8 +28,8 @@ impl std::fmt::Display for Error {
             r#"
 Error parsing line:
 
-    {}> {}
-       {}^{}
+    |{} > {}
+         {}^{}
 Expected:
 
 {}

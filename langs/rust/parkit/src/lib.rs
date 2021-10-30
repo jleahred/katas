@@ -30,23 +30,27 @@ use result::*;
 use rules::*;
 use status::Status;
 
+fn from_status_error_2_result_error(e: status::Error) -> Error {
+    Error {
+        pos: e.status.pos.clone(),
+        expected: e.expected,
+        line: e
+            .status
+            .text2parse
+            .lines()
+            .into_iter()
+            .skip(e.status.pos.row)
+            .take(1)
+            .collect(),
+    }
+}
+
 // --------------------------------------------------------------------------------
 /// Parse a string with for a given set of rules
 pub fn parse<'a, CustI>(text: &'a str, rules: &SetOfRules<CustI>) -> Result<'a> {
     let status = Status::init(text);
     expr::non_term::parse_ref_rule(rules, status, &RuleName("main".to_string()))
-        .map_err(|e| Error {
-            pos: e.status.pos.clone(),
-            expected: e.expected,
-            line: e
-                .status
-                .text2parse
-                .lines()
-                .into_iter()
-                .skip(e.status.pos.row)
-                .take(1)
-                .collect(),
-        })?
+        .map_err(from_status_error_2_result_error)?
         .check_finalization()
 }
 
@@ -57,17 +61,20 @@ impl<'a> Status<'a> {
         if self.pos.n == self.text2parse.len() {
             Ok(())
         } else {
-            Err(Error {
-                pos: self.pos.clone(),
-                expected: im::vector!["not consumed full input...".to_owned()],
-                line: self
-                    .text2parse
-                    .lines()
-                    .into_iter()
-                    .skip(self.pos.row)
-                    .take(1)
-                    .collect(),
-            })
+            match &self.deeper_error {
+                None => Err(Error {
+                    pos: self.pos.clone(),
+                    expected: im::vector!["not consumed full input...".to_owned()],
+                    line: self
+                        .text2parse
+                        .lines()
+                        .into_iter()
+                        .skip(self.pos.row)
+                        .take(1)
+                        .collect(),
+                }),
+                Some(e) => Err(from_status_error_2_result_error(*e.clone())),
+            }
         }
     }
 }

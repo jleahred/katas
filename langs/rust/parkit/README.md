@@ -10,7 +10,6 @@ I't an experimental parser toolkit
 
   * Error display
   * Error context info per expresion or per rule
-  * Error if not full parsing
   * cache
   * Error control
   * External tree creation

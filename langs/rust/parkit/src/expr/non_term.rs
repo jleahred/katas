@@ -87,9 +87,9 @@ fn parse_or<'a, CustI>(
     let mut error = None;
     for expr in &multi_expr.0 {
         match (super::parse(rules, status.clone(), &expr), &mut error) {
-            (Ok(s), _) => return Ok(s),
+            (Ok(s), _) => return Ok(s.merge_deeper_error(&error)),
             (Err(e), None) => error = Some(e),
-            (Err(e), Some(prev_error)) => error = Some(crate::status::merge(prev_error, &e)),
+            (Err(e), Some(prev_error)) => error = Some(crate::status::merge_errors(prev_error, &e)),
         }
     }
     Err(error.unwrap())

@@ -52,7 +52,7 @@ fn main() {
             )
     };
 
-    let r = parse("aaaaaáa.....", &rules);
+    let r = parse("aaaaaa.a", &rules);
     match r {
         Ok(()) => print!("OK"),
         Err(e) => print!("{}", e),

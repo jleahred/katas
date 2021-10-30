@@ -8,6 +8,7 @@ pub(crate) struct Status<'a> {
     pub(crate) text2parse: &'a str,
     pub(crate) it_parsing: Chars<'a>,
     pub(crate) pos: Possition,
+    pub(crate) deeper_error: Option<Box<Error<'a>>>,
 
     // left recursion hack -----------------
     /// set of rules been parsed at this point
@@ -43,6 +44,7 @@ impl<'a> Status<'a> {
             text2parse,
             it_parsing: text2parse.chars(),
             pos: Possition::init(),
+            deeper_error: None,
             left_recursion: StatusLeftRecursion {
                 pos_and_rules_on_parsing_and_depth: im::hashmap! {},
             },
@@ -83,6 +85,16 @@ impl<'a> Status<'a> {
             expected: im::vector![expected.to_owned()],
         }
     }
+
+    pub(crate) fn merge_deeper_error(mut self, err: &Option<Error<'a>>) -> Self {
+        let error = match (&self.deeper_error, err) {
+            (None, e) => e.clone(),
+            (Some(e1), Some(e2)) => Some(merge_errors(e1, e2)),
+            (Some(e1), None) => Some(e1.as_ref().clone()),
+        };
+        self.deeper_error = error.and_then(|e| Some(Box::new(e)));
+        self
+    }
 }
 
 fn pos_and_parsing_rule_from_status(
@@ -95,7 +107,7 @@ fn pos_and_parsing_rule_from_status(
     }
 }
 
-pub(crate) fn merge<'a>(err1: &Error<'a>, err2: &Error<'a>) -> Error<'a> {
+pub(crate) fn merge_errors<'a>(err1: &Error<'a>, err2: &Error<'a>) -> Error<'a> {
     match err1.status.pos.n.cmp(&err2.status.pos.n) {
         std::cmp::Ordering::Equal => Error {
             status: err2.status.clone(),
