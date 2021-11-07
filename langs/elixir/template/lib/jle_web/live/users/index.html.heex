@@ -1,0 +1,29 @@
+<JleWeb.ShowTable.show_table 
+        data={@table_data} 
+        remove_fields={@remove_fields} 
+/>
+
+
+
+<div class="table-container">
+<table class="table">
+    <%= for field_name <- @fields do %>
+<th>
+        <%= field_name %>
+</th>
+    <% end %>    
+<%= for user <- @users do%>
+<tr>
+    <%= for field <- user_fields(user) do %>
+    <td>
+        <%= inspect(field, pretty: true) %>
+    </td>
+    <% end %>    
+</tr>
+<% end %>
+</table>
+</div>
+
+<pre>
+<%= inspect(@users |> Enum.at(0) |> Map.from_struct |> Enum.map(fn {k,_v} -> k end) , pretty: true) %>
+</pre>

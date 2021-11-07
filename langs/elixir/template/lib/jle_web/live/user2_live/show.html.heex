@@ -1,0 +1,27 @@
+<h1>Show User2</h1>
+
+<%= if @live_action in [:edit] do %>
+  <%= live_modal JleWeb.User2Live.FormComponent,
+    id: @user2.id,
+    title: @page_title,
+    action: @live_action,
+    user2: @user2,
+    return_to: Routes.user2_show_path(@socket, :show, @user2) %>
+<% end %>
+
+<ul>
+
+  <li>
+    <strong>Name:</strong>
+    <%= @user2.name %>
+  </li>
+
+  <li>
+    <strong>Age:</strong>
+    <%= @user2.age %>
+  </li>
+
+</ul>
+
+<span><%= live_patch "Edit", to: Routes.user2_show_path(@socket, :edit, @user2), class: "button" %></span> |
+<span><%= live_redirect "Back", to: Routes.user2_index_path(@socket, :index) %></span>
