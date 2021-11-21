@@ -1,14 +1,5 @@
 //  ----------------------
 
-pub fn resolve_auction(order_book: &OrderBookAcc, price: Price) -> Option<(Price, Qty)> {
-    order_book
-        .get_more_qty_exec_levels()
-        .get_min_diff_levels()
-        .get_max_qty_levels()
-        .get_proxim2_levels(price)
-        .get_first_level()
-}
-
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Side {
     Bid,
@@ -50,7 +41,7 @@ struct Level(Price, QtyBidAsk);
 
 use std::collections::BTreeMap;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct OrderBookAcc {
     limit: BTreeMap<Price, QtyBidAsk>,
     market: QtyBidAsk,
@@ -63,6 +54,15 @@ impl OrderBookAcc {
             market: QtyBidAsk::new(QtyBid(0), QtyAsk(0)),
         }
     }
+
+    pub fn resolve(&self, price: &Price) -> Option<(Price, Qty)> {
+        self.get_more_qty_exec_levels()
+            .get_min_diff_levels()
+            .get_max_qty_levels()
+            .get_proxim2_levels(*price)
+            .get_first_level()
+    }
+
     fn get_prev_bid_ask(&self, price: Price) -> QtyBidAsk {
         let prev_bid = match self.limit.iter().find(|(&p, _)| p >= price) {
             Some((_price, qba)) => qba.qbid,

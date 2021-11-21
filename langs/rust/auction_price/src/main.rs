@@ -10,7 +10,7 @@ fn main() {
     //     .get_proxim2_levels(Price(60));
 
     // println!("{:#?}", auction_levels);
-    let result = resolve_auction(&get_example_order_book(), Price(60));
+    let result = get_example_order_book().resolve(&Price(60));
     println!("{:#?}", result);
 }
 
