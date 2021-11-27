@@ -3,15 +3,13 @@ extern crate auction;
 use auction::*;
 
 fn main() {
-    // let auction_levels = get_example_order_book()
-    //     .get_more_qty_exec_levels()
-    //     .get_min_diff_levels()
-    //     .get_max_qty_levels()
-    //     .get_proxim2_levels(Price(60));
+    let auction_levels = get_example_order_book()
+        .get_more_qty_exec_levels()
+        .get_min_diff_levels()
+        .get_max_qty_levels()
+        .get_proxim2_levels(Price(60));
 
-    // println!("{:#?}", auction_levels);
-    let result = get_example_order_book().resolve(&Price(60));
-    println!("{:#?}", result);
+    println!("{:#?}", auction_levels);
 }
 
 //  ----------------------

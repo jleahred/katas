@@ -55,14 +55,6 @@ impl OrderBookAcc {
         }
     }
 
-    pub fn resolve(&self, price: &Price) -> Option<(Price, Qty)> {
-        self.get_more_qty_exec_levels()
-            .get_min_diff_levels()
-            .get_max_qty_levels()
-            .get_proxim2_levels(*price)
-            .get_first_level()
-    }
-
     fn get_prev_bid_ask(&self, price: Price) -> QtyBidAsk {
         let prev_bid = match self.limit.iter().find(|(&p, _)| p >= price) {
             Some((_price, qba)) => qba.qbid,
@@ -118,6 +110,7 @@ impl OrderBookAcc {
             .limit
             .iter()
             .map(|(_price, qba)| std::cmp::min(qba.qbid.0, qba.qask.0))
+            .filter(|qba| *qba != 0u64)
             .max_by(|d1, d2| d1.cmp(d2));
         if let Some(max_qty_cross) = some_max_qty_cross {
             AuctionLevelsInProcess(

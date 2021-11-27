@@ -135,35 +135,37 @@ impl Component for Model {
     fn view(&self) -> Html {
         html! {
             <>
-
             <div class="container is-max-desktop">
-
             <h3 class="title">
             {"Auction price calculator"}
             </h3>
 
-            {self.view_order_type()}
+            <div class="columns">
+                <div class="column">
+                    {self.view_order_type()}
 
-            {self.view_side()}
+                    {self.view_side()}
 
-            {self.view_price()}
+                    {self.view_price()}
 
-            <div class="field">
-            <label class="label">{"Quantity"}</label>
-            <input class="input" min="1" step="0.01" placeholder="quantity"
-                value = {self.edit_state.editing_quantity.clone()}
-                oninput=self.link.callback(|e: InputData| Msg::UpdateEditQuantity(e.value))
-            />
+                    <div class="field">
+                        <label class="label">{"Quantity"}</label>
+                        <input class="input" min="1" step="0.01" placeholder="quantity"
+                            value = {self.edit_state.editing_quantity.clone()}
+                            oninput=self.link.callback(|e: InputData| Msg::UpdateEditQuantity(e.value))
+                        />
+                    </div>
+
+                    {self.view_add_order_button()}
+
+                </div>
+
+                <div class="column">
+                { self.view_auction_price() }
+                {self.view_orders()}
+                </div>
             </div>
-
-            {self.view_add_order_button()}
-
-            { self.view_auction_price() }
-
-            {self.view_orders()}
-
             </div>
-
             </>
         }
     }
@@ -171,7 +173,13 @@ impl Component for Model {
 
 impl Model {
     fn view_auction_price(&self) -> Html {
-        let auction_price = self.auction_engine.resolve(&auction::Price(0));
+        let auction_price = self
+            .auction_engine
+            .get_more_qty_exec_levels()
+            .get_min_diff_levels()
+            .get_max_qty_levels()
+            .get_proxim2_levels(auction::Price(0))
+            .get_first_level();
         let price = match auction_price {
             None => "no price".to_owned(),
             Some((price, qty)) => format!("{}@{}", price.0, qty.0),
@@ -189,11 +197,12 @@ impl Model {
             Some(price) => format!("{}", price),
             None => "".to_owned(),
         };
-        let txt_side = |side: auction::Side| match side {
-            auction::Side::Bid => "buy",
-            auction::Side::Ask => "sell",
+        let side_txt_color = |side: &auction::Side| match side {
+            auction::Side::Bid => ("buy", "has-background-success"),
+            auction::Side::Ask => ("sell", "has-background-danger"),
         };
         let oview = |order: &Order| {
+            let (side_txt, side_color) = side_txt_color(&order.side);
             html! {
                 <>
                 <tr>
@@ -203,8 +212,8 @@ impl Model {
                     <td>
                     {order.quantity}
                     </td>
-                    <td>
-                    {txt_side(order.side) }
+                    <td class=classes!({side_color}) >
+                    {side_txt}
                 </td>
                 </tr>
                 </>
