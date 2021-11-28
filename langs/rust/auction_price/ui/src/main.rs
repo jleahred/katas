@@ -140,31 +140,20 @@ impl Component for Model {
             {"Auction price calculator"}
             </h3>
 
+            <div class="block">
+            <a href="https://github.com/jleahred/katas/tree/master/langs/rust/auction_price">{"repository source"}</a>
+            </div>
+
             <div class="columns">
                 <div class="column">
-                    {self.view_order_type()}
-
-                    {self.view_side()}
-
-                    {self.view_price()}
-
-                    <div class="field">
-                        <label class="label">{"Quantity"}</label>
-                        <input class="input" min="1" step="0.01" placeholder="quantity"
-                            value = {self.edit_state.editing_quantity.clone()}
-                            oninput=self.link.callback(|e: InputData| Msg::UpdateEditQuantity(e.value))
-                        />
-                    </div>
-
-                    {self.view_add_order_button()}
-
+                {self.view_enter_order()}
                 </div>
 
                 <div class="column">
                 { self.view_auction_price() }
                 {self.view_orders()}
                 </div>
-            </div>
+                </div>
             </div>
             </>
         }
@@ -172,6 +161,27 @@ impl Component for Model {
 }
 
 impl Model {
+    fn view_enter_order(&self) -> Html {
+        html! {
+            <>
+            {self.view_order_type()}
+
+            {self.view_side()}
+
+            {self.view_price()}
+
+            <div class="field">
+                <label class="label">{"Quantity"}</label>
+                <input class="input" min="1" step="0.01" placeholder="quantity"
+                    value = {self.edit_state.editing_quantity.clone()}
+                    oninput=self.link.callback(|e: InputData| Msg::UpdateEditQuantity(e.value))
+                />
+            </div>
+
+            {self.view_add_order_button()}
+            </>
+        }
+    }
     fn view_auction_price(&self) -> Html {
         let auction_price = self
             .auction_engine
@@ -261,14 +271,15 @@ impl Model {
     }
 
     fn view_add_order_button(&self) -> Html {
-        let color = match self.is_valid_input() {
-            true => "is-primary",
-            false => "",
+        let (color, enabled) = match self.is_valid_input() {
+            true => ("is-primary", true),
+            false => ("", false),
         };
         html! {
             <>
             <div class="field">
                 <button class=classes!("button", color, "is-fullwidth")
+                    disabled={!enabled}
                      onclick=self.link.callback(|_| Msg::AddOrder)
                 >{ "Add order" }
                 </button>
