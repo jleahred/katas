@@ -13,6 +13,34 @@ impl Auction {
     }
 }
 
+#[derive(Debug)]
+pub enum Order {
+    Limit(Limit),
+    Market(Market),
+}
+
+impl Order {
+    pub fn new_limit(side: Side, price: Price, qty: Qty) -> Self {
+        Order::Limit(Limit { side, price, qty })
+    }
+    pub fn new_market(side: Side, qty: Qty) -> Self {
+        Order::Market(Market { side, qty })
+    }
+}
+
+#[derive(Debug)]
+pub struct Limit {
+    pub side: Side,
+    pub price: Price,
+    pub qty: Qty,
+}
+
+#[derive(Debug)]
+pub struct Market {
+    pub side: Side,
+    pub qty: Qty,
+}
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Side {
     Buy,
@@ -119,7 +147,13 @@ impl OrderBookAcc {
         }
     }
 
-    pub fn add_limit_order(mut self, side: Side, price: Price, qty: Qty) -> Self {
+    pub fn add_order(self, order: &Order) -> Self {
+        match order {
+            Order::Limit(order) => self.add_limit_order(order.side, order.price, order.qty),
+            Order::Market(order) => self.add_market_order(order.side, order.qty),
+        }
+    }
+    fn add_limit_order(mut self, side: Side, price: Price, qty: Qty) -> Self {
         let qty_buy_sell = self.get_prev_buy_sell(price);
         self.limit.entry(price).or_insert(qty_buy_sell);
         if side == Side::Buy {
@@ -130,7 +164,7 @@ impl OrderBookAcc {
         self
     }
 
-    pub fn add_market_order(mut self, side: Side, qty: Qty) -> Self {
+    fn add_market_order(mut self, side: Side, qty: Qty) -> Self {
         if side == Side::Buy {
             let qbuy = QtyBuy(qty.0);
             self.market.inc_buy(qbuy);
