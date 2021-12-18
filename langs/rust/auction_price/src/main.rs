@@ -19,9 +19,9 @@ fn main() {
 
     println!("running property tests...");
     run!(pt_multi_limit);
-    run!(pt_trivial_with_market_multiorders_suffle);
     run!(pt_trivial);
     run!(pt_trivial_with_market);
+    run!(pt_trivial_with_market_multiorders_suffle);
 }
 
 fn run<F>(f: F, name: &str)
@@ -151,10 +151,10 @@ fn pt_multi_limit() {
             acc.push(test::random_order_buy_under_price(auction_price));
             acc
         });
-        // let orders = (0..1_000).into_iter().fold(orders, |mut acc, _| {
-        //     acc.push(test::random_order_sell_over_price(auction_price));
-        //     acc
-        // });
+        let orders = (0..1_000).into_iter().fold(orders, |mut acc, _| {
+            acc.push(test::random_order_sell_over_price(auction_price));
+            acc
+        });
         //  shuffle orders
         let orders = (|mut orders: Vec<Order>| {
             orders.shuffle(&mut thread_rng());
