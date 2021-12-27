@@ -1,0 +1,17 @@
+<%# <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/> %>
+
+<h1 class="title">Resend confirmation instructions</h1>
+
+<.form let={f} for={:user} action={Routes.user_confirmation_path(@conn, :create)}>
+  <%= label f, :email %>
+  <%= email_input f, :email, required: true, class: "input", type: "text" %>
+
+  <div>
+    <%= submit "Resend confirmation instructions", class: "button is-primary" %>
+  </div>
+</.form>
+
+<p>
+  <%= link "Register", to: Routes.user_registration_path(@conn, :new) %> |
+  <%= link "Log in", to: Routes.user_session_path(@conn, :new) %>
+</p>

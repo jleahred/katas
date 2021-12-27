@@ -1,0 +1,18 @@
+<%= if @current_user do %>
+  <div class="navbar-brand">
+  <a class="navbar-item"><%= @current_user.email %></a>
+  </div>
+  <div class="navbar-brand">
+  <div class="navbar-item"><%= link "Settings", to: Routes.user_settings_path(@conn, :edit) %></div>
+  </div>
+  <div class="navbar-brand">
+  <div class="navbar-item"><%= link "Log out", to: Routes.user_session_path(@conn, :delete), method: :delete %></div>
+  </div>
+<% else %>
+  <div class="navbar-brand">
+  <div class="navbar-item"><%= link "Register", to: Routes.user_registration_path(@conn, :new) %></div>
+  </div>
+  <div class="navbar-brand">
+  <div class="navbar-item"><%= link "Log in", to: Routes.user_session_path(@conn, :new) %></div>
+  </div>
+<% end %>

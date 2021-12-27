@@ -1,0 +1,64 @@
+<nav class="breadcrumb" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="/">Wui</a></li>
+    <li><a href={Routes.live_path(@socket, WuiWeb.AdminLive)}>admin</a></li>
+    <li class="is-active" aria-current="page"><a href="#"> show users </a></li>
+  </ul>
+</nav>
+
+
+<pre>
+<%= inspect(@debug, pretty: true) %>
+</pre>
+
+<div class="block"/>
+<.filter_form params={@params} roles={@roles} />
+
+<div class="block">
+<div class="columns is-centered">
+<div class="py-4">
+    <table class="table is-size-5">
+      <tbody>
+        <tr>
+          <th>id </th>
+          <th>email </th>
+          <th>enabled </th>
+          <th>confirmed_at </th>
+          <th>roles</th>
+          <th></th>
+          <th></th>
+        </tr>
+        <%= for r <- @records do %>
+        <tr>
+          <td><%= r.id %></td>
+          <td><%= r.email %></td>
+          <td class={if r.enabled == false, do: "has-text-danger", else: "has-text-success"}><%=r.enabled%>
+          <span class="button is-small"
+                phx-click="switch-enabled-user"
+                phx-value-enabled-current={inspect(r.enabled)}
+                phx-value-id={inspect(r.id)}
+                >
+                <%= if r.enabled, do: "deactivate", else: "activate"%>
+          </span>
+          </td>
+          <td><%= r.confirmed_at %></td>
+          <td>
+          <%= for role_name <- r.role_names do %>
+            <%= "#{role_name} · " %>
+          <% end %>
+          </td>
+          <td>
+              <a  class="button is-small is-outlined is-primary" 
+                  href={"#{Routes.live_path(@socket, WuiWeb.AdminUsersEditLive)}?id=#{r.id}&from=#{@from}"}
+                  >edit</a>
+              <a  class="button is-small is-outlined is-primary" 
+                  href={"#{Routes.live_path(@socket, WuiWeb.AdminUsersEditLive)}?id=#{r.id}&from=#{@from}&tab=tab_roles"}
+                  >e roles</a>
+          </td>
+        </tr>
+        <% end %>
+      </tbody>
+    </table>
+</div>
+</div>
+</div>

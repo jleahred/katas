@@ -1,0 +1,37 @@
+<nav class="breadcrumb" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="/">Wui</a></li>
+    <li class="is-active" aria-current="page"><a href="#">admin</a></li>
+  </ul>
+</nav>
+
+
+<pre>
+<%#= inspect(@debug, pretty: true) %>
+<%#= inspect("@conn", pretty: true) %>
+</pre>
+
+
+
+
+
+<div class="container"><div class="columns is-centered"><div class="column is-half">
+
+<h1 class="title">
+Admin
+</h1>
+
+
+<div class="block">
+    <a href={Routes.live_path(@socket, WuiWeb.AdminShowUsersLive)} class="button is-large is-fullwidth is-danger">show users</a>
+</div>
+
+<div class="block">
+    <a href={Routes.live_path(@socket, WuiWeb.AdminUsersEditLive)} class="button is-large is-fullwidth is-danger">edit users</a>
+</div>
+
+<div class="block">
+    <a href={Routes.live_path(@socket, WuiWeb.AdminRolesLive)} class="button is-large is-fullwidth is-danger">roles</a>
+</div>
+
+</div></div></div>

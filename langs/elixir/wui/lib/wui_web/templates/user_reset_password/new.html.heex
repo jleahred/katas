@@ -1,0 +1,18 @@
+<%# <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/> %>
+
+<h1 class="title">Forgot your password?</h1>
+
+<.form let={f} for={:user} action={Routes.user_reset_password_path(@conn, :create)}>
+
+  <%= label f, :email %>
+  <%= email_input f, :email, required: true, class: "input", type: "text" %>
+
+  <div>
+    <%= submit "Send instructions to reset password", class: "button is-primary" %>
+  </div>
+</.form>
+
+<p>
+  <%= link "Register", to: Routes.user_registration_path(@conn, :new) %> |
+  <%= link "Log in", to: Routes.user_session_path(@conn, :new) %>
+</p>

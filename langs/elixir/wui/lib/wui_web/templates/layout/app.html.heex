@@ -1,0 +1,12 @@
+<div class="container is-max-desktop">
+<main class="container">
+  <%= if get_flash(@conn, :info) do%>
+    <p class="notification is-info" role="alert"><%= get_flash(@conn, :info) %></p>
+  <% end %>
+  <%= if get_flash(@conn, :info) do%>
+  <p class="notification is-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+  <% end %>
+
+  <%= @inner_content %>
+</main>
+</div>
