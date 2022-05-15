@@ -1,0 +1,326 @@
+# Elixir Axon tutorial
+
+```elixir
+Mix.install([
+  {:nx, "~> 0.2.0"},
+  {:exla, "~> 0.2.0"},
+  {:axon, "~> 0.1.0-dev", github: "elixir-nx/axon", branch: "main"}
+])
+```
+
+## Aim
+
+We will create and train a neural network to detect oddity on one byte numbers
+
+## Create a neural network
+
+Let's start creating a neural network for our aim
+
+```elixir
+require Axon
+
+model =
+  Axon.input({nil, 8})
+  |> Axon.dense(20, activation: :relu)
+  |> Axon.dense(20, activation: :relu)
+  # |> Axon.dropout(rate: 0.5)
+  |> Axon.dense(2, activation: :softmax)
+```
+
+Easy-peasy
+
+As you can see, its a network with 8 neurons as input
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+  Axon.input({nil, 8})
+```
+
+Later, we put two small layers of neurons (just 20 neurons per layer, it looks an easy problem and probably is not necessary more)
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+  |> Axon.dense(20, activation: :relu)
+  |> Axon.dense(20, activation: :relu)
+```
+
+And to finish, just two neurons as output
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+  |> Axon.dense(2, activation: :softmax)
+```
+
+And... that's all we already have our **Neuron network**
+
+With a little initialization, we already can ask to our network
+
+Let's do it!
+
+```elixir
+state_init = model |> Axon.init(compiler: EXLA)
+```
+
+Now we have a **neural network** initialized and we can ask to it
+
+Let's start asking for number 0
+
+```elixir
+Axon.predict(
+  model,
+  state_init,
+  %{
+    "input_0" => Nx.tensor([[0.0, 0.0, 0, 0, 0, 0, 0.0, 0.0]])
+  },
+  compiler: EXLA
+)
+```
+
+The values of the tensor should say as the probability of be odd or even
+
+> **[0.5, 0.5]**
+
+As you can see, the system has no clue about the answer
+
+And with number 1, similar result
+
+It's quite logical, at the moment we only have a neural network with a specific topology but we didn't add to the network any information about odd and even numbers
+
+How to?
+
+**Trainning**
+
+## Prepare data to train
+
+First we need data to train
+
+It consist on input values, with the right response
+
+Let's start with something simple
+
+```elixir
+train_data = [
+  {Nx.tensor([[0.0, 0, 0, 0, 0, 0, 0, 1.0]]), Nx.tensor([0.0, 1.0])},
+  {Nx.tensor([[0.0, 0, 0, 0, 0, 0, 0.0, 0.0]]), Nx.tensor([1.0, 0.0])}
+]
+```
+
+And update the neural network with these training data
+
+```elixir
+trained0 =
+  model
+  |> Axon.Loop.trainer(:categorical_cross_entropy, Axon.Optimizers.adamw(0.005))
+  |> Axon.Loop.run(train_data, epochs: 100, compiler: EXLA)
+```
+
+Now we have a neural network **trainned** with a little information (but we repeated it a lot).
+
+Lets ask to our NN again
+
+```elixir
+Axon.predict(
+  model,
+  trained0,
+  %{
+    "input_0" => Nx.tensor([[0.0, 0.0, 0, 0, 0, 0, 0.0, 0.0]])
+  },
+  compiler: EXLA
+)
+```
+
+```elixir
+Axon.predict(
+  model,
+  trained0,
+  %{
+    "input_0" => Nx.tensor([[0.0, 0.0, 0, 0, 0, 0, 0.0, 1.0]])
+  },
+  compiler: EXLA
+)
+```
+
+That looks quite different!!!
+
+But, what if we ask a not trainned number?
+
+```elixir
+Axon.predict(
+  model,
+  trained0,
+  %{
+    "input_0" => Nx.tensor([[0, 0, 0, 1, 0, 0, 0, 0]])
+  },
+  compiler: EXLA
+)
+```
+
+Not very good answer
+
+We have to train with several numbers, let's do it!
+
+To do that, we want a big (infinity will be enough ;-) list of random numbers with the right response.
+
+```elixir
+random = Enum.random(0..255)
+even = if rem(random, 2) == 0, do: true, else: false
+{random, even}
+```
+
+Let's put this in an infinite list
+
+```elixir
+raw_trainning_data =
+  Stream.unfold(0, fn _ ->
+    random = Enum.random(0..255)
+    even = if rem(random, 2) == 0, do: true, else: false
+    {{random, even}, 0}
+  end)
+```
+
+Show some data to verify
+
+```elixir
+raw_trainning_data |> Enum.take(10)
+```
+
+Looks great, but... remember how we introduced our data in the network
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+train_data = [
+  {Nx.tensor([[0.0, 0, 0, 0, 0, 0, 0, 1.0]]), Nx.tensor([0.0, 1.0])},
+  {Nx.tensor([[0.0, 0, 0, 0, 0, 0, 0.0, 0.0]]), Nx.tensor([1.0, 0.0])}
+]
+```
+
+Then we have to map to this format
+
+First, a function to convert a number, to a tensor with the neurons to be activated
+
+```elixir
+number2input_tensor = fn num ->
+  :io_lib.format("~8.2.0B", [num])
+  |> Enum.map(fn d -> if d == ?0, do: 0.0, else: 1.0 end)
+  |> Nx.tensor()
+  |> Nx.reshape({1, 8})
+end
+
+number2input_tensor.(123)
+```
+
+And now, a function to convert true or false to the tensor result
+
+```elixir
+even2output_tensor = fn is_even ->
+  if(is_even, do: Nx.tensor([1.0, 0.0]), else: Nx.tensor([0.0, 1.0]))
+end
+
+even2output_tensor.(false)
+```
+
+Remember we started...
+
+```elixir
+raw_trainning_data |> Enum.take(10)
+```
+
+```elixir
+trainning_data =
+  raw_trainning_data
+  |> Stream.map(fn {n, is_even} ->
+    {number2input_tensor.(n), even2output_tensor.(is_even)}
+  end)
+
+trainning_data |> Enum.take(10)
+```
+
+## Trainning day!
+
+Now we have a infinite list of data to train!
+
+Just train it again with some datas
+
+```elixir
+trained1 =
+  model
+  |> Axon.Loop.trainer(:categorical_cross_entropy, Axon.Optimizers.adamw(0.005))
+  |> Axon.Loop.run(trainning_data |> Stream.take(1000), epochs: 1, compiler: EXLA)
+```
+
+## Time to test
+
+Let test were it failled before
+
+```elixir
+Axon.predict(
+  model,
+  trained0,
+  %{
+    "input_0" => Nx.tensor([[0, 0, 0, 1, 0, 0, 0, 0]])
+  },
+  compiler: EXLA
+)
+```
+
+
+
+```elixir
+Axon.predict(
+  model,
+  trained1,
+  %{
+    "input_0" => Nx.tensor([[0, 0, 0, 1, 0, 0, 0, 0]])
+  },
+  compiler: EXLA
+)
+```
+
+Much better, but too silly because on our trainning we gave this specific information, and probably more than one time
+
+Would be more interesting if we ask for a *new* number, a number that we didn't gave on trainning
+
+```elixir
+raw_trainning_data_excluding = fn exclude ->
+  raw_trainning_data
+  |> Stream.filter(&(&1 != exclude))
+end
+
+raw_trainning_data_excluding.(23) |> Enum.take(10)
+```
+
+```elixir
+trained2 =
+  model
+  |> Axon.Loop.trainer(:categorical_cross_entropy, Axon.Optimizers.adamw(0.005))
+  |> Axon.Loop.run(
+    raw_trainning_data_excluding.(23)
+    |> Stream.map(fn {n, is_even} ->
+      {number2input_tensor.(n), even2output_tensor.(is_even)}
+    end)
+    |> Stream.take(1000),
+    epochs: 1,
+    compiler: EXLA
+  )
+```
+
+## Finally...
+
+And let guest to our NN the oddity of the excluded number
+
+```elixir
+Axon.predict(
+  model,
+  trained2,
+  %{
+    "input_0" => number2input_tensor.(23)
+  },
+  compiler: EXLA
+)
+```
+
+Our NN is very, very, very, very sure that a number it doesn't know is odd, **and it's right**
