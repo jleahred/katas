@@ -1,0 +1,120 @@
+# Prisioners
+
+## The problem
+
+The director of a prison offers 100 death row prisoners, who are numbered from 1 to 100, a last chance.
+
+A room contains a cupboard with 100 drawers. The director randomly puts one prisoner's number in each closed drawer.
+
+The prisoners enter the room, one after another. Each prisoner may open and look into 50 drawers in any order.
+
+The drawers are closed again afterwards. If, during this search, every prisoner finds his number in one of the drawers, all prisoners are pardoned.
+
+If just one prisoner does not find his number, all prisoners die.
+
+Before the first prisoner enters the room, the prisoners may discuss strategy — but may not communicate once the first prisoner enters to look in the drawers.
+
+What is the prisoners' best strategy?
+
+## The solution
+
+**Strategy**
+
+Surprisingly, there is a strategy that provides a survival probability of more than 30%. The key to success is that the prisoners do not have to decide beforehand which drawers to open. Each prisoner can use the information gained from the contents of every drawer he already opened to decide which one to open next. Another important observation is that this way the success of one prisoner is not independent of the success of the other prisoners, because they all depend on the way the numbers are distributed.
+
+To describe the strategy, not only the prisoners, but also the drawers, are numbered from 1 to 100; for example, row by row starting with the top left drawer. The strategy is now as follows:
+
+1. Each prisoner first opens the drawer labeled with his own number.
+2. If this drawer contains his number, he is done and was successful.
+3. Otherwise, the drawer contains the number of another prisoner, and he next opens the drawer labeled with this number.
+4. The prisoner repeats steps 2 and 3 until he finds his own number or has opened fifty drawers.
+
+By starting with his own number, the prisoner guarantees he is on a sequence of drawers containing his number. The only question is whether this sequence is longer than fifty drawers.
+
+## The simulation
+
+Constants
+
+```elixir
+nprisioners = 100
+nboxes = nprisioners
+
+nsimulations = 1_000
+```
+
+Generate random distribution on boxes
+
+```elixir
+gen_boxes = fn -> 1..nboxes |> Enum.shuffle() end
+
+gen_boxes.()
+```
+
+**Run one prisioner algorithm**
+
+It will receive the prissioner id, and the boxes.
+
+For start with, it will open the box with his id.
+
+Next, it will open the box with the tag found on previous oppened box.
+
+He will continue till found his own number a maximum prissioners/2 iterations
+
+The return of the function, will *true* if found *prissioner_id*, and *false* in another case
+
+```elixir
+run_one_prisioner = fn prissioner_id, boxes ->
+  last_box =
+    1..div(nboxes, 2)
+    |> Enum.reduce_while(prissioner_id, fn _, next_box2check ->
+      tag_current_box = boxes |> Enum.at(next_box2check - 1)
+      # IO.puts(tag_current_box)
+      if tag_current_box == prissioner_id do
+        {:halt, tag_current_box}
+      else
+        {:cont, tag_current_box}
+      end
+    end)
+
+  last_box == prissioner_id
+end
+
+run_one_prisioner.(1, gen_boxes.())
+```
+
+**Run one simulation**
+
+It's time to run a hole simulation
+
+For that, we have to run all prisioners, and check if all of them return true
+
+```elixir
+run_one_simulation = fn ->
+  boxes = gen_boxes.()
+
+  1..nprisioners
+  # Stream instead of Enum
+  |> Stream.map(fn prissioner_id ->
+    run_one_prisioner.(prissioner_id, boxes)
+  end)
+  |> Enum.all?()
+end
+
+run_one_simulation.()
+```
+
+**Repeat simulations**
+
+Almost done
+
+We have to repeate the simulation and get the stats. Easy.
+
+```elixir
+nsim_ok =
+  1..nsimulations
+  |> Enum.map(fn _ -> run_one_simulation.() end)
+  |> Enum.map(fn r -> if r, do: 1, else: 0 end)
+  |> Enum.sum()
+
+result = nsim_ok / nsimulations * 100
+```
