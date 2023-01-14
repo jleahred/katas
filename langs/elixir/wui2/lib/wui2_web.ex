@@ -87,6 +87,7 @@ defmodule Wui2Web do
       # Core UI components and translation
       import Wui2Web.CoreComponents
       import Wui2Web.Gettext
+      import Wui2Web.WUIComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
