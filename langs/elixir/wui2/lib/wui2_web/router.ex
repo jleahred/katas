@@ -21,6 +21,11 @@ defmodule Wui2Web.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live "/admin", AdminHome
+    live "/admin/users/edit", AdminUsersEdit
+    live "/admin/users/show", AdminShowUsers
+    live "/admin/roles", AdminRoles
   end
 
   # Other scopes may use custom stacks.
