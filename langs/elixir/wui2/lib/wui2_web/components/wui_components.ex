@@ -34,7 +34,7 @@ defmodule Wui2Web.WUIComponents do
   def big_button(assigns) do
     admin_class = """
     " w-full
-    text-center rounded-full
+    text-center rounded-full hover:no-underline
     border border-red-600
     hover:bg-red-600 hover:text-white
     bg-transparent text-red-600
@@ -43,7 +43,7 @@ defmodule Wui2Web.WUIComponents do
     """
 
     normal_class = """
-    " w-full text-center rounded-full
+    " w-full text-center rounded-full hover:no-underline
     border border-indigo-600
     hover:bg-indigo-600 hover:text-white
     bg-transparent text-indigo-600

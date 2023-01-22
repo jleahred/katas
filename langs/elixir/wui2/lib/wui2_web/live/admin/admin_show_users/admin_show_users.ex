@@ -99,7 +99,7 @@ defmodule(Wui2Web.AdminShowUsers) do
   def handle_params(params, _uri, socket) do
     params = normalize_params(params)
 
-    from = ~p"/admin/show/users?#{params |> Map.from_struct() |> URI.encode_query()}"
+    from = ~p"/admin/users/?#{params |> Map.from_struct() |> URI.encode_query()}"
 
     {
       :noreply,
@@ -123,7 +123,7 @@ defmodule(Wui2Web.AdminShowUsers) do
     {
       :noreply,
       socket
-      |> push_patch(to: ~p"/admin/show/users" <> url_params)
+      |> push_patch(to: ~p"/admin/users/show" <> url_params)
       # |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminShowUsersLive) <> url_params)
       #
     }

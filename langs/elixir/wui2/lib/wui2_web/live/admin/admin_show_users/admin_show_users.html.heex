@@ -1,71 +1,57 @@
-<nav class="breadcrumb" aria-label="breadcrumbs">
-  <ul>
-    <li><a href="/">Wui</a></li>
-    <li><a href={~p"/admin/live"}>admin</a></li>
-    <li class="is-active" aria-current="page"><a href="#"> show users </a></li>
-  </ul>
-</nav>
-
-<pre>
+<!-- pre>
 <%= inspect(@debug, pretty: true) %>
-</pre>
+</pre -->
+<div class="container mx-auto max-w-2xl">
+  <.filter_form params={@params} roles={@roles} />
+</div>
 
-<div class="block" />
-<.filter_form params={@params} roles={@roles} />
-
-<div class="block">
-  <div class="columns is-centered">
-    <div class="py-4">
-      <table class="table is-size-5">
-        <tbody>
-          <tr>
-            <th>id</th>
-            <th>email</th>
-            <th>enabled</th>
-            <th>confirmed_at</th>
-            <th>roles</th>
-            <th></th>
-            <th></th>
-          </tr>
-          <%= for r <- @records do %>
-            <tr>
-              <td><%= r.id %></td>
-              <td><%= r.email %></td>
-              <td class={if r.enabled == false, do: "has-text-danger", else: "has-text-success"}>
-                <%= r.enabled %>
-                <span
-                  class="button is-small"
-                  phx-click="switch-enabled-user"
-                  phx-value-enabled-current={inspect(r.enabled)}
-                  phx-value-id={inspect(r.id)}
-                >
-                  <%= if r.enabled, do: "deactivate", else: "activate" %>
-                </span>
-              </td>
-              <td><%= r.confirmed_at %></td>
-              <td>
-                <%= for role_name <- r.role_names do %>
-                  <%= "#{role_name} · " %>
-                <% end %>
-              </td>
-              <td>
-                <a
-                  class="button is-small is-outlined is-primary"
-                  href={~p"/admin/users/edit/" <> "?id=#{r.id}&from=#{@from}"}
-                >
-                  edit
-                </a>
-                <a
-                  class="button is-small is-outlined is-primary"
-                  href={ ~p"/admin/users/edit" <> "?id=#{r.id}&from=#{@from}&tab=tab_roles"}
-                >
-                  e roles
-                </a>
-              </td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  </div>
+<div class="py-10 container mx-auto max-w-3xl">
+  <table class="uk-table uk-table-striped">
+    <tbody>
+      <tr>
+        <th>id</th>
+        <th>email</th>
+        <th>enabled</th>
+        <th>confirmed_at</th>
+        <th>roles</th>
+        <th></th>
+      </tr>
+      <%= for r <- @records do %>
+        <tr>
+          <td class="uk-table-shrink"><%= r.id %></td>
+          <td class="uk-table-shrink"><%= r.email %></td>
+          <td class="uk-table-shrink">
+            <a
+              phx-click="switch-enabled-user"
+              phx-value-enabled-current={inspect(r.enabled)}
+              phx-value-id={inspect(r.id)}
+              type="checkbox"
+              class="toggle toggle-success"
+              checked={if r.enabled, do: "true", else: "false"}
+            />
+          </td>
+          <td class="uk-text-nowrap uk-table-shrink"><%= r.confirmed_at %></td>
+          <td class="uk-text-truncate">
+            <%= for role_name <- r.role_names do %>
+              <%= "#{role_name} · " %>
+            <% end %>
+          </td>
+          <td class="uk-table-shrink uk-text-nowrap">
+            <a
+              class="button is-small is-outlined is-primary"
+              href={~p"/admin/users/edit/" <> "?id=#{r.id}&from=#{@from}"}
+            >
+              edit
+            </a>
+            <a
+              class="button is-small is-outlined is-primary"
+              href={ ~p"/admin/users/edit" <> "?id=#{r.id}&from=#{@from}&tab=tab_roles"}
+            >
+              roles
+            </a>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
 </div>
