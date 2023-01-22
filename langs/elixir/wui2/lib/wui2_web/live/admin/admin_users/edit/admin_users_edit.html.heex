@@ -1,40 +1,25 @@
-<nav class="breadcrumb" aria-label="breadcrumbs">
-  <ul>
-    <li><a href="/">Wui</a></li>
-    <li><a href={Routes.live_path(@socket, Wui2Web.AdminLive)}>admin</a></li>
-    <%= if @from != nil and @from != "" do %>
-      <li><a href={@from}><%= "< back" %></a></li>
-    <% end %>
-    <li class="is-active" aria-current="page"><a href="#">edit users</a></li>
-  </ul>
-</nav>
-
 <pre>
 <%= inspect(@debug, pretty: true) %>
 </pre>
 
 <div>
-  <div class="columns is-centered ">
-    <div class="column is-half">
-      <form id="fuser" phx-change="user_updated">
-        <div class="field is-grouped">
-          <label class="px-5 label is-large">User </label>
-          <div class="select">
-            <select name="user_id" id="id_user_id" class="button is-large is-fullwidth">
-              <option value="None" class="has-text-left" selected>None</option>
-              <%= for user <- @users do %>
-                <option value={user.id} class="has-text-left" selected={user.id == @selected_user}>
-                  <%= "#{user.email}" %>
-                </option>
-              <% end %>
-            </select>
-          </div>
-        </div>
-      </form>
+  <form id="fuser" phx-change="user_updated">
+    <div class="field is-grouped">
+      <label class="px-5 label is-large">User </label>
+      <div class="select">
+        <select name="user_id" id="id_user_id" class="button is-large is-fullwidth">
+          <option value="None" class="has-text-left" selected>None</option>
+          <%= for user <- @users do %>
+            <option value={user.id} class="has-text-left" selected={user.id == @selected_user}>
+              <%= "#{user.email}" %>
+            </option>
+          <% end %>
+        </select>
+      </div>
     </div>
-  </div>
-  <div class="block" />
+  </form>
 
+  <div class="block" />
   <%= if @user_info do %>
     <div class="columns is-centered ">
       <div class="column is-half">

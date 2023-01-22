@@ -1,5 +1,13 @@
 <div class="pt-10">
   <div class="rounded-xl bg-transparent _ring mx-auto max-w-2xl py-6">
+    <.big_button admin={true} href={~p"/admin/users/show"}>
+      <Heroicons.user solid class="h-10 w-10 inline stroke-current" /> Show users
+    </.big_button>
+
+    <.big_button admin={true} href="/admin/users/edit">
+      <Heroicons.user solid class="h-10 w-10 inline stroke-current" /> Edit user
+    </.big_button>
+
     <.big_button admin={true} href="/admin/roles">
       <Heroicons.puzzle_piece solid class="h-10 w-10 inline stroke-current" /> Roles
     </.big_button>

@@ -1,4 +1,4 @@
-defmodule Wui2Web.AdminUsersEditLive do
+defmodule Wui2Web.AdminUsersEdit do
   use Wui2Web, :live_view
   import Ecto.Query
   # require Logger
@@ -127,7 +127,8 @@ defmodule Wui2Web.AdminUsersEditLive do
     {
       :noreply,
       socket
-      |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminUsersEditLive) <> url_params)
+      |> push_patch(to: ~p"/admin/users/edit" <> url_params)
+      # |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminUsersEditLive) <> url_params)
       # |> push_redirect(to: Routes.live_path(socket, Wui2Web.AdminUsersEditLive) <> url_param)
       # |> assign(debug: socket.assings)
       #
@@ -167,7 +168,8 @@ defmodule Wui2Web.AdminUsersEditLive do
     {
       :noreply,
       socket
-      |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminUsersEdit) <> url_params)
+      |> push_patch(to: ~p"/admin/users/edit/" <> url_params)
+      # |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminUsersEdit) <> url_params)
 
       # |> assign(tab_show: tab)
       # |> assign(debug: par)

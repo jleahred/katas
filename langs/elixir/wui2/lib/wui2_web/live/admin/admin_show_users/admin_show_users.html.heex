@@ -1,7 +1,7 @@
 <nav class="breadcrumb" aria-label="breadcrumbs">
   <ul>
     <li><a href="/">Wui</a></li>
-    <li><a href={Routes.live_path(@socket, Wui2Web.AdminLive)}>admin</a></li>
+    <li><a href={~p"/admin/live"}>admin</a></li>
     <li class="is-active" aria-current="page"><a href="#"> show users </a></li>
   </ul>
 </nav>
@@ -51,13 +51,13 @@
               <td>
                 <a
                   class="button is-small is-outlined is-primary"
-                  href={"#{Routes.live_path(@socket, Wui2Web.AdminUsersEditLive)}?id=#{r.id}&from=#{@from}"}
+                  href={~p"/admin/users/edit/" <> "?id=#{r.id}&from=#{@from}"}
                 >
                   edit
                 </a>
                 <a
                   class="button is-small is-outlined is-primary"
-                  href={"#{Routes.live_path(@socket, Wui2Web.AdminUsersEditLive)}?id=#{r.id}&from=#{@from}&tab=tab_roles"}
+                  href={ ~p"/admin/users/edit" <> "?id=#{r.id}&from=#{@from}&tab=tab_roles"}
                 >
                   e roles
                 </a>
