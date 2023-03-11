@@ -9,6 +9,6 @@
   <.users_table records={@records} />
 </div>
 
-<.modal id="confirm" show={false} }>
+<.modal id="confirm" show={@params.editting_email != nil} }>
   <.users_table records={@records} />
 </.modal>
