@@ -37,18 +37,9 @@ defmodule Wui2Web.AdminUsersRenderUsers do
                 <%= "#{role_name} · " %>
               <% end %>
             </td>
-            <td class="uk-table-shrink uk-text-nowrap">
-              <a
-                class="button is-small is-outlined is-primary"
-                href={~p"/admin/users/edit/" <> "?id=#{r.id}&from=?from"}
-              >
-                edit
-              </a>
-              <a
-                class="button is-small is-outlined is-primary"
-                href={ ~p"/admin/users/edit" <> "?id=#{r.id}&from=#from&tab=tab_roles"}
-              >
-                roles
+            <td class="uk-text-nowrap">
+              <a href={~p"/admin/users/edit/" <> "#{r.id}"}>
+                <Heroicons.pencil_square class="w-6" />
               </a>
             </td>
           </tr>

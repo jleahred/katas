@@ -71,32 +71,34 @@
 <%#= inspect(@debug, pretty: true) %>
 </pre>
 
-<.header>
-  Roles
-  <:subtitle>subtítulo</:subtitle>
-</.header>
+<div class="grid place-items-center">
+  <.header>
+    Roles
+    <:subtitle>subtítulo</:subtitle>
+  </.header>
 
-<div class="py-4">
-  For code clarity, the name is used on code to filter grants.
-  Therefore, is not a good idea to change the name. <p />
-  As roles are part of code, at the moment is not allowed to create, delete or modify them from web-UI
-  <p /> Roles will be created first time you access this page, if it didn't exist before
   <div class="py-4">
-    <table class="table">
-      <tbody>
-        <%= for role <- @roles do %>
-          <tr>
-            <td><%= role.id %></td>
-            <td><%= role.name %></td>
-            <td><%= role.description %></td>
-            <td>
-              <spam class="btn btn-xs btn-primary normal-case" disabled>del</spam>
+    For code clarity, the name is used on code to filter grants.
+    Therefore, is not a good idea to change the name. <p />
+    As roles are part of code, at the moment is not allowed to create, delete or modify them from web-UI
+    <p /> Roles will be created first time you access this page, if it didn't exist before
+    <div class="py-4">
+      <table class="table">
+        <tbody>
+          <%= for role <- @roles do %>
+            <tr>
+              <td><%= role.id %></td>
+              <td><%= role.name %></td>
+              <td><%= role.description %></td>
+              <td>
+                <spam class="btn btn-xs btn-primary normal-case" disabled>del</spam>
 
-              <spam class="btn btn-xs normal-case" disabled>mod</spam>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+                <spam class="btn btn-xs normal-case" disabled>mod</spam>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>

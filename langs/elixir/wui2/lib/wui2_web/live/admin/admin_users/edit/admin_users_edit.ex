@@ -1,28 +1,18 @@
 defmodule Wui2Web.AdminUsersEdit do
   use Wui2Web, :live_view
   import Ecto.Query
-  # require Logger
-  # alias Wui2Web.Router.Helpers, as: Routes
+  require Logger
 
   def mount(_params, _session, socket) do
     # if connected?(socket) do
-    users_email =
-      Wui2.Repo.all(Wui2.Accounts.User)
-      |> Enum.map(fn user -> %{id: user.id, email: user.email} end)
+    # users_email =
+    #   Wui2.Repo.all(Wui2.Accounts.User)
+    #   |> Enum.map(fn user -> %{id: user.id, email: user.email} end)
 
     {
       :ok,
       socket
-      |> assign(users: users_email)
-      |> assign(selected_user: nil)
-      |> assign(user_info: nil)
-      |> assign(tab_show: :tab_user_info)
-      # |> assign(debug: get_user_info(1).roles)
-      #
-      # |> assign(selected_user: 1)
-      # |> assign(user_info: get_user_info(1))
-      # |> assign(tab_show: :tab_roles)
-      # |> assign(debug: Wui2.Roles.all() -- get_user_roles(1))
+      |> assign(tab_show: :tab_roles)
       #
     }
   end
@@ -51,88 +41,35 @@ defmodule Wui2Web.AdminUsersEdit do
       end
 
     tab =
-      case params |> Map.get("tab", "tab_user_info") do
+      case params |> Map.get("tab", "tab_roles") do
         "tab_user_info" -> :tab_user_info
         "tab_roles" -> :tab_roles
-        _ -> :tab_user_info
+        _ -> :tab_roles
       end
 
     {
       :noreply,
       socket
-      |> assign(debug: get_params_from_socket(socket))
-      # |> assign(debug: socket.assigns)
-      |> assign(selected_user: selected_user)
+      |> assign(debug: params)
       |> assign(tab_show: tab)
-      |> assign(user_info: get_user_info(selected_user))
+      |> assign(user_info: params["uid"] |> get_user_info())
       |> assign(from: params |> Map.get("from"))
       #
     }
   end
 
-  defp get_user_roles(user_id) do
-    user_roles_query = from(Wui2.UsersRoles, where: [user_id: ^user_id])
-
-    Wui2.Repo.all(user_roles_query)
-    |> Enum.map(fn ur -> ur.role_id end)
-    |> Enum.map(fn role_id ->
-      Wui2.Roles.get_role(role_id)
-    end)
-  end
-
-  defp get_user_info(user_id) do
-    user_info =
-      if user_id != nil and user_id != "None" do
-        Wui2.Accounts.User
-        |> Wui2.Repo.get(user_id)
-      else
-        nil
-      end
-
-    if user_info != nil do
-      user_info
-      |> Map.put(:roles, get_user_roles(user_id))
-      |> Map.put(:possible_roles, Wui2.Roles.all() -- get_user_roles(user_id))
-    else
-      nil
-    end
-  end
-
-  defp get_params_from_socket(socket, params \\ []) do
+  defp socket_merge_params(socket, params \\ []) do
     tab_show = socket.assigns.tab_show
-    user_id = socket.assigns.selected_user
-    from = socket.assigns |> Map.get(:from)
 
     "?" <>
       (params
-       |> Enum.reduce(%{id: user_id, tab: tab_show, from: from}, fn {id, val}, acc ->
-         acc |> Map.put(id, val)
-       end)
+       |> Enum.reduce(
+         %{tab: tab_show},
+         fn {id, val}, acc ->
+           acc |> Map.put(id, val)
+         end
+       )
        |> URI.encode_query())
-  end
-
-  def handle_event("user_updated", par, socket) do
-    user_id = par |> Map.get("user_id")
-
-    user_id =
-      if user_id == "None" do
-        nil
-      else
-        user_id |> String.to_integer()
-      end
-
-    # url_param = if user_id, do: "?" <> URI.encode_query(%{id: user_id}), else: ""
-    url_params = get_params_from_socket(socket, id: user_id)
-
-    {
-      :noreply,
-      socket
-      |> push_patch(to: ~p"/admin/users/edit" <> url_params)
-      # |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminUsersEditLive) <> url_params)
-      # |> push_redirect(to: Routes.live_path(socket, Wui2Web.AdminUsersEditLive) <> url_param)
-      # |> assign(debug: socket.assings)
-      #
-    }
   end
 
   def handle_event("switch-enabled-user", par, socket) do
@@ -156,23 +93,17 @@ defmodule Wui2Web.AdminUsersEdit do
       :noreply,
       socket
       |> assign(user_info: get_user_info(id))
-      |> assign(selected_user: id)
     }
   end
 
-  def handle_event("tab-show", par, socket) do
-    tab = if par |> Map.get("tab") == "roles", do: :tab_roles, else: :tab_user_info
-
-    url_params = get_params_from_socket(socket, tab: tab)
+  def handle_event("tab-clicked", par, socket) do
+    tab = if par |> Map.get("tab") == "user_info", do: :tab_user_info, else: :tab_roles
+    url_params = socket |> socket_merge_params(tab: tab)
 
     {
       :noreply,
       socket
-      |> push_patch(to: ~p"/admin/users/edit/" <> url_params)
-      # |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminUsersEdit) <> url_params)
-
-      # |> assign(tab_show: tab)
-      # |> assign(debug: par)
+      |> push_patch(to: ~p"/admin/users/edit/#{socket.assigns.user_info.id}" <> url_params)
     }
   end
 
@@ -191,7 +122,6 @@ defmodule Wui2Web.AdminUsersEdit do
 
     socket =
       socket
-      # |> assign(debug: {result, inspect(detail.errors, pretty: true)})
       |> assign(user_info: get_user_info(user_id))
 
     socket =
@@ -233,15 +163,14 @@ defmodule Wui2Web.AdminUsersEdit do
                 do: "px-6 has-text-danger",
                 else: "px-6  has-text-success"
             }>
-              <%= @user_info.enabled %>
-              <span
-                class="button is-small"
+              <a
                 phx-click="switch-enabled-user"
                 phx-value-enabled-current={inspect(@user_info.enabled)}
                 phx-value-id={inspect(@user_info.id)}
-              >
-                <%= if @user_info.enabled, do: "deactivate", else: "activate" %>
-              </span>
+                type="checkbox"
+                class="toggle toggle-success"
+                checked={if @user_info.enabled, do: "true", else: "false"}
+              />
             </td>
           </div>
         </tr>
@@ -268,5 +197,33 @@ defmodule Wui2Web.AdminUsersEdit do
       </tbody>
     </table>
     """
+  end
+
+  defp get_user_roles(user_id) do
+    user_roles_query = from(Wui2.UsersRoles, where: [user_id: ^user_id])
+
+    Wui2.Repo.all(user_roles_query)
+    |> Enum.map(fn ur -> ur.role_id end)
+    |> Enum.map(fn role_id ->
+      Wui2.Roles.get_role(role_id)
+    end)
+  end
+
+  defp get_user_info(user_id) do
+    user_info =
+      if user_id != nil and user_id != "None" do
+        Wui2.Accounts.User
+        |> Wui2.Repo.get(user_id)
+      else
+        nil
+      end
+
+    if user_info != nil do
+      user_info
+      |> Map.put(:roles, get_user_roles(user_id))
+      |> Map.put(:possible_roles, Wui2.Roles.all() -- get_user_roles(user_id))
+    else
+      nil
+    end
   end
 end
