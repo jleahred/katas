@@ -1,8 +1,6 @@
-defmodule Wui2Web.AdminShowUsersRenders do
+defmodule Wui2Web.AdminUsersRenderFilter do
   use Wui2Web, :live_view
-  # import Wui2Web.AdminShowUsersParams
-  # alias Wui2Web.AdminShowUsersParams.Params, as: Params
-  # require Logger
+
   # alias Wui2Web.Router.Helpers, as: Routes
 
   def filter_form(assigns) do
@@ -11,7 +9,7 @@ defmodule Wui2Web.AdminShowUsersRenders do
       <label class="label">
         <span class="label-text">Filter</span>
       </label>
-      <form id="fuser" phx-change="params_updated">
+      <form id="fuser" phx-change="filter_form_updated">
         <div class="grid grid-cols-2 gap-2">
           <input
             class="input input-bordered w-full"

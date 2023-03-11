@@ -1,0 +1,14 @@
+<!-- pre>
+<%= inspect(@debug, pretty: true) %>
+</pre -->
+<div class="container mx-auto max-w-2xl">
+  <.filter_form params={@params} roles={@roles} />
+</div>
+
+<div class="py-10 container mx-auto max-w-3xl">
+  <.users_table records={@records} />
+</div>
+
+<.modal id="confirm" show={false} }>
+  <.users_table records={@records} />
+</.modal>

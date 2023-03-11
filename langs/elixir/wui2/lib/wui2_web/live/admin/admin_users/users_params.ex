@@ -1,4 +1,4 @@
-defmodule Wui2Web.AdminShowUsersParams do
+defmodule Wui2Web.AdminUsersParams do
   defmodule Params do
     defstruct [
       # string
@@ -8,8 +8,8 @@ defmodule Wui2Web.AdminShowUsersParams do
     ]
   end
 
-  def param2int(srole) do
-    case Integer.parse(srole) do
+  def param2int(s) do
+    case Integer.parse(s) do
       {v, ""} -> v
       {_, _} -> nil
       :error -> nil
@@ -21,9 +21,14 @@ defmodule Wui2Web.AdminShowUsersParams do
       params
       |> Enum.map(fn {k, v} ->
         case k do
-          "email" -> {:email, v}
-          "role_id" -> {:role_id, param2int(v)}
-          _ -> nil
+          "email" ->
+            {:email, v}
+
+          "role_id" ->
+            {:role_id, param2int(v)}
+
+          _ ->
+            nil
         end
       end)
       |> Enum.filter(&(&1 != nil))

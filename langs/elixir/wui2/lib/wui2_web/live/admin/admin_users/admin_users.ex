@@ -1,8 +1,11 @@
-defmodule(Wui2Web.AdminShowUsers) do
+defmodule Wui2Web.AdminUsers do
   use Wui2Web, :live_view
-  import Wui2Web.AdminShowUsersParams
-  import Wui2Web.AdminShowUsersRenders
-  alias Wui2Web.AdminShowUsersParams.Params, as: Params
+
+  import Wui2Web.AdminUsersParams
+  import Wui2Web.AdminUsersRenderFilter
+  import Wui2Web.AdminUsersRenderUsers
+
+  alias Wui2Web.AdminUsersParams.Params, as: Params
   import Ecto.Query
 
   require Logger
@@ -113,7 +116,7 @@ defmodule(Wui2Web.AdminShowUsers) do
     }
   end
 
-  def handle_event("params_updated", par, socket) do
+  def handle_event("filter_form_updated", par, socket) do
     par =
       get_current_params_from_socket(socket)
       |> merge_params(normalize_params(par))
@@ -123,9 +126,7 @@ defmodule(Wui2Web.AdminShowUsers) do
     {
       :noreply,
       socket
-      |> push_patch(to: ~p"/admin/users/show" <> url_params)
-      # |> push_patch(to: Routes.live_path(socket, Wui2Web.AdminShowUsersLive) <> url_params)
-      #
+      |> push_patch(to: ~p"/admin/users" <> url_params)
     }
   end
 
@@ -149,7 +150,12 @@ defmodule(Wui2Web.AdminShowUsers) do
     {
       :noreply,
       socket
-      |> assign(records: socket |> get_current_params_from_socket() |> get_records_form_params())
+      |> assign(
+        records:
+          socket
+          |> get_current_params_from_socket()
+          |> get_records_form_params()
+      )
     }
   end
 

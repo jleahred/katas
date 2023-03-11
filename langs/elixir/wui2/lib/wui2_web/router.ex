@@ -24,7 +24,7 @@ defmodule Wui2Web.Router do
 
     live "/admin", AdminHome
     live "/admin/users/edit", AdminUsersEdit
-    live "/admin/users/show", AdminShowUsers
+    live "/admin/users", AdminUsers
     live "/admin/roles", AdminRoles
   end
 
