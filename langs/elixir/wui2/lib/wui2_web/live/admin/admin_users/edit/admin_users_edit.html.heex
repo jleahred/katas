@@ -1,3 +1,12 @@
+<.live_component module={HeroComponent} id="hero" content="asdfasdasdfasdf" } /> -----
+<.live_component
+  @socket
+  module={Wui2Web.LCAdminUsersEdit}
+  id="hero2"
+  user_info={1}
+  tab_show={nil}
+  }
+/> -----
 <%= if(@user_info) do %>
   <div class="grid place-items-center">
     <.header>
@@ -40,20 +49,7 @@
                 >
                   <div class="badge badge-success gap-2">
                     <%= role.name %>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      class="inline-block w-4 h-4 stroke-current"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      >
-                      </path>
-                    </svg>
+                    <Heroicons.x_mark class="w-5 h-4" />
                   </div>
                 </span>
               </li>
@@ -72,20 +68,7 @@
                   phx-value-role_id={role.id}
                 >
                   <div class="badge badge-error gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      class="inline-block w-4 h-4 stroke-current"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      >
-                      </path>
-                    </svg>
+                    <Heroicons.plus_small class="w-5 h-6" />
                     <%= role.name %>
                   </div>
                 </span>

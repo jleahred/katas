@@ -53,7 +53,6 @@ defmodule Wui2Web.AdminUsersEdit do
       |> assign(debug: params)
       |> assign(tab_show: tab)
       |> assign(user_info: params["uid"] |> get_user_info())
-      |> assign(from: params |> Map.get("from"))
       #
     }
   end

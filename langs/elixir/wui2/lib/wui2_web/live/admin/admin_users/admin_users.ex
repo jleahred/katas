@@ -51,7 +51,6 @@ defmodule Wui2Web.AdminUsers do
       |> assign(debug: nil)
       |> assign(records: get_records_from_params(params))
       |> assign(params: params)
-      |> assign(from: from)
       #
     }
   end
