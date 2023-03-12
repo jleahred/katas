@@ -9,6 +9,17 @@
   <.users_table records={@records} />
 </div>
 
-<.modal id="confirm" show={@params.editting_email != nil} }>
-  <.users_table records={@records} />
-</.modal>
+<%= if @editting_user_id do %>
+  <.modal id="confirm" show={@editting_user_id != nil} on_cancel={JS.push("close_user_edit")}>
+    <div class="overflow-auto  h-100">
+      <.live_component
+        @socket
+        module={Wui2Web.AdminUsersEditComponent}
+        id="edit_user_comp"
+        user_id={@editting_user_id}
+        tab_show={nil}
+        }
+      />
+    </div>
+  </.modal>
+<% end %>

@@ -5,7 +5,7 @@ defmodule Wui2Web.AdminUsersParams do
       :email,
       # int or nil
       :role_id,
-      :editting_email
+      :editting_user_id
     ]
   end
 
@@ -28,8 +28,8 @@ defmodule Wui2Web.AdminUsersParams do
           "role_id" ->
             {:role_id, param2int(v)}
 
-          "editting_email" ->
-            {:editting_email, v}
+          "editting_user_id" ->
+            {:editting_user_id, v}
 
           _ ->
             nil

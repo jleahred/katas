@@ -34,6 +34,4 @@ defmodule Wui2Web.AdminUsersRenderFilter do
     </div>
     """
   end
-
-  def render(assigns), do: ~H""
 end

@@ -25,6 +25,7 @@ defmodule Wui2Web.AdminUsers do
       :ok,
       socket
       |> assign(roles: Wui2.Roles.all())
+      |> assign(editting_user_id: nil)
       # |> assign(selected_role: 0)
       # |> assign(params: %Params{})
       # |> assign(debug: %Params{})
@@ -42,8 +43,6 @@ defmodule Wui2Web.AdminUsers do
   def handle_params(params, _uri, socket) do
     params = normalize_params(params)
 
-    from = ~p"/admin/users/?#{params |> Map.from_struct() |> URI.encode_query()}"
-
     {
       :noreply,
       socket
@@ -52,6 +51,20 @@ defmodule Wui2Web.AdminUsers do
       |> assign(records: get_records_from_params(params))
       |> assign(params: params)
       #
+    }
+  end
+
+  def handle_event("close_user_edit", _par, socket) do
+    {
+      :noreply,
+      socket
+      |> assign(editting_user_id: nil)
+      |> assign(
+        records:
+          socket
+          |> get_current_params_from_socket()
+          |> get_records_from_params()
+      )
     }
   end
 
@@ -95,6 +108,16 @@ defmodule Wui2Web.AdminUsers do
           |> get_current_params_from_socket()
           |> get_records_from_params()
       )
+    }
+  end
+
+  def handle_event("edit_user", par, socket) do
+    Logger.info(inspect(par))
+
+    {
+      :noreply,
+      socket
+      |> assign(editting_user_id: par["uid"])
     }
   end
 

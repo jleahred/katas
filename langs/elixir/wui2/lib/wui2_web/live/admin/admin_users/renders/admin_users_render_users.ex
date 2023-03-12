@@ -38,9 +38,7 @@ defmodule Wui2Web.AdminUsersRenderUsers do
               <% end %>
             </td>
             <td class="uk-text-nowrap">
-              <a href={~p"/admin/users/edit/" <> "#{r.id}"}>
-                <Heroicons.pencil_square class="w-6" />
-              </a>
+              <Heroicons.pencil_square class="w-6" phx-click="edit_user" phx-value-uid={r.id} />
             </td>
           </tr>
         <% end %>
@@ -48,6 +46,4 @@ defmodule Wui2Web.AdminUsersRenderUsers do
     </table>
     """
   end
-
-  def render(assigns), do: ~H""
 end

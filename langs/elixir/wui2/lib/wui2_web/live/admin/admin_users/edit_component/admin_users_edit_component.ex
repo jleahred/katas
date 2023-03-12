@@ -1,9 +1,9 @@
-defmodule Wui2Web.AdminUsersEdit do
+defmodule Wui2Web.AdminUsersEditComponent do
   use Wui2Web, :live_view
+  use Phoenix.LiveComponent
   import Ecto.Query
-  require Logger
 
-  def mount(_params, _session, socket) do
+  def mount(socket) do
     # if connected?(socket) do
     # users_email =
     #   Wui2.Repo.all(Wui2.Accounts.User)
@@ -12,63 +12,16 @@ defmodule Wui2Web.AdminUsersEdit do
     {
       :ok,
       socket
-      |> assign(tab_show: :tab_roles)
       #
     }
   end
 
-  def handle_params(params, _uri, socket) do
-    par_user_id = params |> Map.get("id")
-
-    selected_user =
-      if par_user_id != nil and par_user_id != "" do
-        case par_user_id |> Integer.parse() do
-          {val, ""} -> val
-          :error -> nil
-          {_, _} -> nil
-        end
-      else
-        nil
-      end
-
-    user_info = get_user_info(selected_user)
-
-    socket =
-      if user_info == nil and par_user_id != nil and par_user_id != "" do
-        socket |> put_flash(:error, "Invalid user id #{inspect(par_user_id)} ")
-      else
-        socket
-      end
-
-    tab =
-      case params |> Map.get("tab", "tab_roles") do
-        "tab_user_info" -> :tab_user_info
-        "tab_roles" -> :tab_roles
-        _ -> :tab_roles
-      end
-
-    {
-      :noreply,
-      socket
-      |> assign(debug: params)
-      |> assign(tab_show: tab)
-      |> assign(user_info: params["uid"] |> get_user_info())
-      #
-    }
-  end
-
-  defp socket_merge_params(socket, params \\ []) do
-    tab_show = socket.assigns.tab_show
-
-    "?" <>
-      (params
-       |> Enum.reduce(
-         %{tab: tab_show},
-         fn {id, val}, acc ->
-           acc |> Map.put(id, val)
-         end
-       )
-       |> URI.encode_query())
+  def update(assigns, socket) do
+    {:ok,
+     socket
+     |> assign(user_info: assigns.user_id |> get_user_info())
+     |> assign(user_id: assigns.user_id)
+     |> assign(tab_show: :tab_roles)}
   end
 
   def handle_event("switch-enabled-user", par, socket) do
@@ -96,13 +49,10 @@ defmodule Wui2Web.AdminUsersEdit do
   end
 
   def handle_event("tab-clicked", par, socket) do
-    tab = if par |> Map.get("tab") == "user_info", do: :tab_user_info, else: :tab_roles
-    url_params = socket |> socket_merge_params(tab: tab)
-
     {
       :noreply,
       socket
-      |> push_patch(to: ~p"/admin/users/edit/#{socket.assigns.user_info.id}" <> url_params)
+      |> assign(tab_show: if(par["tab"] == "user_info", do: :tab_user_info, else: :tab_roles))
     }
   end
 
@@ -163,6 +113,7 @@ defmodule Wui2Web.AdminUsersEdit do
                 else: "px-6  has-text-success"
             }>
               <a
+                phx-target={@myself}
                 phx-click="switch-enabled-user"
                 phx-value-enabled-current={inspect(@user_info.enabled)}
                 phx-value-id={inspect(@user_info.id)}
@@ -224,5 +175,88 @@ defmodule Wui2Web.AdminUsersEdit do
     else
       nil
     end
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="grid place-items-center">
+      <%= if(@user_info) do %>
+        <.header>
+          User: <%= @user_info.email %>
+        </.header>
+        <div class="tabs">
+          <span
+            class={"tab tab-bordered #{if @tab_show == :tab_user_info, do: "tab-active"} "}
+            phx-target={@myself}
+            phx-click="tab-clicked"
+            phx-value-tab="user_info"
+          >
+            Info
+          </span>
+          <span
+            class={"tab tab-bordered #{if @tab_show == :tab_roles, do: "tab-active"} "}
+            phx-target={@myself}
+            phx-click="tab-clicked"
+            phx-value-tab="roles"
+          >
+            Roles
+          </span>
+        </div>
+
+        <%= if @tab_show == :tab_user_info do %>
+          <.show_user_info user_info={@user_info} myself={@myself} />
+        <% end %>
+
+        <%= if @tab_show == :tab_roles  do %>
+          <div class="grid grid-cols-2 gap-8  py-8">
+            <div>
+              Active roles
+              <ul>
+                <%= for role <- @user_info.roles do %>
+                  <li>
+                    <span
+                      class="button is-link is-inverted is-fullwidth"
+                      phx-target={@myself}
+                      phx-click="active-rol-click"
+                      phx-value-user_id={@user_info.id}
+                      phx-value-role_id={role.id}
+                    >
+                      <div class="badge badge-success gap-2">
+                        <%= role.name %>
+                        <Heroicons.x_mark class="w-5 h-4" />
+                      </div>
+                    </span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+            <div>
+              Possible roles
+              <ul>
+                <%= for role <- @user_info.possible_roles do %>
+                  <li>
+                    <span
+                      class="button is-link is-inverted is-fullwidth"
+                      phx-target={@myself}
+                      phx-click="possible-role-click"
+                      phx-value-user_id={@user_info.id}
+                      phx-value-role_id={role.id}
+                    >
+                      <div class="badge badge-error gap-2">
+                        <Heroicons.plus_small class="w-5 h-6" />
+                        <%= role.name %>
+                      </div>
+                    </span>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        User not found :-( <%= inspect(@user_id) %>
+      <% end %>
+    </div>
+    """
   end
 end
