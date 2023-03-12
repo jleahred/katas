@@ -29,7 +29,7 @@ defmodule Wui2Web.AdminUsersParams do
             {:role_id, param2int(v)}
 
           "editting_user_id" ->
-            {:editting_user_id, v}
+            {:editting_user_id, param2int(v)}
 
           _ ->
             nil
@@ -56,6 +56,8 @@ defmodule Wui2Web.AdminUsersParams do
     "?" <>
       (params
        |> Map.from_struct()
+       |> Enum.filter(fn {_, v} -> v != nil end)
+       |> Enum.filter(fn {_, v} -> v != "" end)
        |> URI.encode_query())
   end
 end

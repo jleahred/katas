@@ -9,6 +9,7 @@ defmodule Wui2Web.AdminUsers do
   import Ecto.Query
 
   require Logger
+
   # alias Wui2Web.Router.Helpers, as: Routes
 
   def mount(_params, _session, socket) do
@@ -50,21 +51,25 @@ defmodule Wui2Web.AdminUsers do
       |> assign(debug: nil)
       |> assign(records: get_records_from_params(params))
       |> assign(params: params)
+      |> assign(editting_user_id: params.editting_user_id)
       #
     }
   end
 
   def handle_event("close_user_edit", _par, socket) do
+    socket_par =
+      get_current_params_from_socket(socket)
+      |> Map.put(:editting_user_id, nil)
+
+    Logger.info("=========== #{inspect(socket_par)}")
+
+    url_params = socket_par |> params_to_url()
+
     {
       :noreply,
       socket
       |> assign(editting_user_id: nil)
-      |> assign(
-        records:
-          socket
-          |> get_current_params_from_socket()
-          |> get_records_from_params()
-      )
+      |> push_patch(to: ~p"/admin/users" <> url_params)
     }
   end
 
@@ -112,13 +117,27 @@ defmodule Wui2Web.AdminUsers do
   end
 
   def handle_event("edit_user", par, socket) do
-    Logger.info(inspect(par))
+    socket_par = get_current_params_from_socket(socket)
+
+    socket_par =
+      if par["uid"],
+        do: %{socket_par | editting_user_id: par["uid"]},
+        else: socket_par
+
+    url_params = socket_par |> params_to_url()
 
     {
       :noreply,
       socket
+      |> push_patch(to: ~p"/admin/users" <> url_params)
       |> assign(editting_user_id: par["uid"])
     }
+
+    # {
+    #   :noreply,
+    #   socket
+    #   |> assign(editting_user_id: par["uid"])
+    # }
   end
 
   defp get_current_params_from_socket(socket) do

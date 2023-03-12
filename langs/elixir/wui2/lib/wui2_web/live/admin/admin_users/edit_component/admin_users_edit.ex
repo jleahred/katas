@@ -33,7 +33,7 @@ defmodule Wui2Web.AdminUsersEdit do
       case params |> Map.get("tab", "tab_roles") do
         "tab_user_info" -> :tab_user_info
         "tab_roles" -> :tab_roles
-        _ -> :tab_roles
+        _ -> :tab_user_info
       end
 
     {
@@ -52,7 +52,7 @@ defmodule Wui2Web.AdminUsersEdit do
       module={Wui2Web.AdminUsersEditComponent}
       id="edit_user_comp"
       user_id={@user_id}
-      tab_show={nil}
+      tab_show={@tab_show}
       }
     />
     """

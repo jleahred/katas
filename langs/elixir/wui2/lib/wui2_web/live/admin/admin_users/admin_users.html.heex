@@ -11,13 +11,13 @@
 
 <%= if @editting_user_id do %>
   <.modal id="confirm" show={@editting_user_id != nil} on_cancel={JS.push("close_user_edit")}>
-    <div class="overflow-auto  h-100">
+    <div class="container box-content  h-96 overflow-auto">
       <.live_component
         @socket
         module={Wui2Web.AdminUsersEditComponent}
         id="edit_user_comp"
         user_id={@editting_user_id}
-        tab_show={nil}
+        tab_show={:tab_user_info}
         }
       />
     </div>

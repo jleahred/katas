@@ -3,6 +3,8 @@ defmodule Wui2Web.AdminUsersEditComponent do
   use Phoenix.LiveComponent
   import Ecto.Query
 
+  require Logger
+
   def mount(socket) do
     # if connected?(socket) do
     # users_email =
@@ -21,7 +23,7 @@ defmodule Wui2Web.AdminUsersEditComponent do
      socket
      |> assign(user_info: assigns.user_id |> get_user_info())
      |> assign(user_id: assigns.user_id)
-     |> assign(tab_show: :tab_roles)}
+     |> assign(tab_show: assigns.tab_show)}
   end
 
   def handle_event("switch-enabled-user", par, socket) do
@@ -211,7 +213,7 @@ defmodule Wui2Web.AdminUsersEditComponent do
           <div class="grid grid-cols-2 gap-8  py-8">
             <div>
               Active roles
-              <ul>
+              <ul class="container box-content  h-48 overflow-auto border rounded border-slate-300">
                 <%= for role <- @user_info.roles do %>
                   <li>
                     <span
@@ -232,7 +234,7 @@ defmodule Wui2Web.AdminUsersEditComponent do
             </div>
             <div>
               Possible roles
-              <ul>
+              <ul class="container box-content  h-48 overflow-auto border rounded border-slate-300">
                 <%= for role <- @user_info.possible_roles do %>
                   <li>
                     <span
