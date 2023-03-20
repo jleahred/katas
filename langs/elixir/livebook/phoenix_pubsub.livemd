@@ -1,0 +1,97 @@
+# Phoenix.PubSub
+
+```elixir
+Mix.install([
+  {:phoenix_pubsub, "~> 2.1"}
+])
+```
+
+## Run to test...
+
+```elixir
+Supervisor.start_link([{Phoenix.PubSub, name: :testing}], strategy: :one_for_one)
+```
+
+```elixir
+defmodule TestPubSub do
+  use GenServer
+
+  def start_link(state) do
+    GenServer.start_link(__MODULE__, state, name: __MODULE__)
+  end
+
+  @impl true
+  def init(init_arg) do
+    alias Phoenix.PubSub
+    PubSub.subscribe(:testing, "testpubsub")
+
+    {:ok, init_arg}
+  end
+
+  @impl true
+  def handle_info(data, ctx) do
+    IO.puts("---------  #{data}")
+    {:noreply, ctx}
+  end
+end
+```
+
+```elixir
+0..10
+|> Stream.each(
+  &Phoenix.PubSub.broadcast(:testing, "testpubsub", "On testpubsubdddddaaaa" <> "#{inspect(&1)}")
+)
+|> Enum.each(fn _ -> Process.sleep(1000) end)
+```
+
+## Try distributed
+
+First you have to run two servers on different ports
+
+first server was
+
+```
+livebook server
+```
+
+second server, the new one in a different port
+
+```
+LIVEBOOK_IFRAME_PORT=8091 LIVEBOOK_PORT=8090 livebook server
+```
+
+Now get information from first instance running this code
+
+```elixir
+IO.inspect(node())
+IO.inspect(Node.get_cookie())
+```
+
+On the other instace, configure...
+
+```elixir
+# Node.set_cookie("other_node", "other_cookie")
+# Node.connect("other_node")
+```
+
+Or you can configure manually
+
+It's time to run in an empty livebook
+
+copy pate on a elixir cell...
+
+An send messages with...
+
+```
+  0..10
+  |> Stream.each(&Phoenix.PubSub.broadcast(:testing, "testpubsub", "On testpubsubdddddaaaa" <> "#{inspect(&1)}"))
+  |> Enum.each(fn _ -> Process.sleep(1000) end)
+```
+
+```elixir
+
+```
+
+```elixir
+
+```
