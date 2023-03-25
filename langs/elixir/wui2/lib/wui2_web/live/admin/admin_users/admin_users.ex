@@ -8,7 +8,7 @@ defmodule Wui2Web.AdminUsers do
   alias Wui2Web.AdminUsersParams.Params, as: Params
   import Ecto.Query
 
-  require Logger
+  # require Logger
 
   # alias Wui2Web.Router.Helpers, as: Routes
 
@@ -60,8 +60,6 @@ defmodule Wui2Web.AdminUsers do
     socket_par =
       get_current_params_from_socket(socket)
       |> Map.put(:editting_user_id, nil)
-
-    Logger.info("=========== #{inspect(socket_par)}")
 
     url_params = socket_par |> params_to_url()
 
