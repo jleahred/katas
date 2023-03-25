@@ -9,6 +9,10 @@ Mix.install([
 ## Run to test...
 
 ```elixir
+
+```
+
+```elixir
 Supervisor.start_link([{Phoenix.PubSub, name: :testing}], strategy: :one_for_one)
 ```
 
@@ -37,11 +41,19 @@ end
 ```
 
 ```elixir
-0..10
+GenServer.start_link(TestPubSub, %{})
+```
+
+```elixir
+0..100
 |> Stream.each(
   &Phoenix.PubSub.broadcast(:testing, "testpubsub", "On testpubsubdddddaaaa" <> "#{inspect(&1)}")
 )
 |> Enum.each(fn _ -> Process.sleep(1000) end)
+```
+
+```elixir
+
 ```
 
 ## Try distributed
@@ -89,9 +101,5 @@ An send messages with...
 ```
 
 ```elixir
-
-```
-
-```elixir
-
+Node.get_cookie()
 ```
