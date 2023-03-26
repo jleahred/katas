@@ -26,7 +26,6 @@ defmodule Wui2Web.Router do
     live "/admin/users/edit/:uid", AdminUsersEdit
     live "/admin/users", AdminUsers
     live "/admin/roles", AdminRoles
-    live "/admin/todo", AdminTodo
     live "/test/wui_components", TestWuiComponents
   end
 

@@ -4,8 +4,20 @@ This is a template of a base Web User Interface application
 
 It's modular
 
+## TODO:
 
-### Recomendable
+* remove daisy
+* components page
+* check permisions
+* email link on develop
+* Cambiar fuente por defecto en tailwind (probar a incrementar)
+
+### done:
+
+* remove UI-kit
+
+
+## Recomendable
 
 * Extensible
 * Fácil despliegue
@@ -96,7 +108,7 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
 
 ----
 
-# Wui2
+## Phoenix
 
 To start your Phoenix server:
 
