@@ -1,11 +1,14 @@
 <div class="pt-10">
   <div class="rounded-xl bg-transparent _ring mx-auto max-w-2xl py-6">
-    <.big_button admin={true} href={~p"/admin"} icon="fa-solid fa-user-doctor">
+    <.wbig_button admin={true} href={~p"/admin"}>
+      <:icon>
+        <Heroicons.wrench_screwdriver class="h-10 w-10 inline stroke-current" />
+      </:icon>
       Admin
-    </.big_button>
+    </.wbig_button>
 
-    <.big_button href={~p"/test/wui_components"}>
+    <.wbig_button href={~p"/test/wui_components"}>
       Test WUI components
-    </.big_button>
+    </.wbig_button>
   </div>
 </div>

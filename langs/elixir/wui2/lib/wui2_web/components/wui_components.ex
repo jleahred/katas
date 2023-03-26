@@ -19,22 +19,24 @@ defmodule Wui2Web.WUIComponents do
 
   ## Examples
 
-      <.big_button>Send!</.big_button>
-      <.big_button phx-click="go" class="ml-2">Send!</.button>
+      <.wbig_button>Send!</.wbig_button>
+      <.wbig_button phx-click="go" class="ml-2">Send!</.button>
   """
   attr :admin, :boolean, default: false
   attr :href, :string, default: "#"
-  attr :icon, :string, default: nil
+  # attr :icon, :string, default: nil
+  attr :icon2, :any, default: nil
   attr :type, :string, default: nil
   attr :class, :string, default: nil
   attr :rest, :global, include: ~w(disabled form name value)
 
+  slot :icon, required: false
   slot :inner_block, required: true
 
-  def big_button(assigns) do
+  def wbig_button(assigns) do
     admin_class = """
     " w-full
-    text-center rounded-full hover:no-underline
+    px-10 rounded-3xl hover:no-underline
     border border-red-600
     hover:bg-red-600 hover:text-white
     bg-transparent text-red-600
@@ -43,7 +45,8 @@ defmodule Wui2Web.WUIComponents do
     """
 
     normal_class = """
-    " w-full text-center rounded-full hover:no-underline
+    " w-full
+    px-10 rounded-3xl hover:no-underline
     border border-indigo-600
     hover:bg-indigo-600 hover:text-white
     bg-transparent text-indigo-600
@@ -60,8 +63,16 @@ defmodule Wui2Web.WUIComponents do
     <div class="flex py-2">
       <a type={@type} class={if @admin, do: @admin_class, else: @normal_class} href={@href}>
         <span {@rest}>
-          <i class={@icon}></i>
-          <%= render_slot(@inner_block) %>
+          <div class="flex">
+            <span class="px-5 w-1/6">
+              <%= if @icon != [],
+                do: render_slot(@icon),
+                else: "" %>
+            </span>
+            <div class="px-10">
+              <%= render_slot(@inner_block) %>
+            </div>
+          </div>
         </span>
       </a>
     </div>
@@ -133,6 +144,31 @@ defmodule Wui2Web.WUIComponents do
         </tbody>
       </table>
     </div>
+    """
+  end
+
+  @doc """
+  Renders a header with title.
+  """
+  attr(:class, :string, default: nil)
+
+  slot(:inner_block, required: true)
+  slot(:subtitle)
+  slot(:actions)
+
+  def wheader(assigns) do
+    ~H"""
+    <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
+      <div>
+        <h1 class="text-2xl font-semibold leading-8 text-zinc-800">
+          <%= render_slot(@inner_block) %>
+        </h1>
+        <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
+          <%= render_slot(@subtitle) %>
+        </p>
+      </div>
+      <div class="flex-none"><%= render_slot(@actions) %></div>
+    </header>
     """
   end
 end

@@ -1,19 +1,28 @@
 <div class="pt-10">
   <div class="rounded-xl bg-transparent _ring mx-auto max-w-2xl py-6">
-    <.big_button admin={true} href={~p"/admin/users"}>
-      <Heroicons.user solid class="h-10 w-10 inline stroke-current" /> Users
-    </.big_button>
+    <.wbig_button admin={true} href={~p"/admin/users"} icon2={&Heroicons.user/1}>
+      <:icon>
+        <Heroicons.user class="h-10 w-10 inline stroke-current" />
+      </:icon>
+      Users
+    </.wbig_button>
 
-    <.big_button admin={true} href={~p"/admin/roles"}>
-      <Heroicons.tag class="h-10 w-10 inline stroke-current" /> Roles
-    </.big_button>
+    <.wbig_button admin={true} href={~p"/admin/roles"}>
+      <:icon>
+        <Heroicons.tag class="h-10 w-10 inline stroke-current" />
+      </:icon>
+      Roles
+    </.wbig_button>
 
-    <.big_button admin={true} href={~p"/"}>
-      <Heroicons.puzzle_piece class="h-10 w-10 inline stroke-current" /> UI-Components
-    </.big_button>
+    <.wbig_button admin={true} href={~p"/"}>
+      <:icon>
+        <Heroicons.puzzle_piece class="h-10 w-10 inline stroke-current" />
+      </:icon>
+      UI-Components
+    </.wbig_button>
 
-    <.big_button admin={true} href="#">
+    <.wbig_button admin={true} href="#">
       Empty
-    </.big_button>
+    </.wbig_button>
   </div>
 </div>

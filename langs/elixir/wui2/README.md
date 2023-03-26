@@ -6,6 +6,7 @@ It's modular
 
 ## TODO:
 
+* big button icon
 * remove daisy
 * components page
 * check permisions

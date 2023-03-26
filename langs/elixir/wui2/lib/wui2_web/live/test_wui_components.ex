@@ -27,37 +27,37 @@ defmodule Wui2Web.TestWuiComponents do
         <button class="btn btn-ghost">Button</button>
         <button class="btn btn-link">Button</button>
 
-        <.big_button admin={true} href={~p"/admin"} icon="fa-solid fa-user-doctor">
+        <.wbig_button admin={true} href={~p"/admin"} icon="fa-solid fa-user-doctor">
           Admin
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href={~p"/test/wui_components"}>
+        <.wbig_button href={~p"/test/wui_components"}>
           Test WUI components
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href="/download">
+        <.wbig_button href="/download">
           <Heroicons.academic_cap class="w-10 h-10 inline" /> Download
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href="/download">
+        <.wbig_button href="/download">
           Download
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href="/download">
+        <.wbig_button href="/download">
           Download
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href="/download">
+        <.wbig_button href="/download">
           Download
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href="/download">
+        <.wbig_button href="/download">
           Download
-        </.big_button>
+        </.wbig_button>
 
-        <.big_button href="/download">
+        <.wbig_button href="/download">
           Download
-        </.big_button>
+        </.wbig_button>
       </div>
     </div>
     """
