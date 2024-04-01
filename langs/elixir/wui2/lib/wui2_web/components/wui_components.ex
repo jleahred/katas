@@ -14,6 +14,8 @@ defmodule Wui2Web.WUIComponents do
   # alias Phoenix.LiveView.JS
   # import Wui2Web.Gettext
 
+  require Logger
+
   @doc """
   Renders a big button.
 
@@ -34,6 +36,8 @@ defmodule Wui2Web.WUIComponents do
   slot :inner_block, required: true
 
   def wbig_button(assigns) do
+    Logger.info(inspect(assigns, pretty: true))
+
     admin_class = """
     " w-full
     px-10 rounded-3xl hover:no-underline
@@ -58,13 +62,18 @@ defmodule Wui2Web.WUIComponents do
       assigns
       |> Map.put(:admin_class, admin_class)
       |> Map.put(:normal_class, normal_class)
+      |> Map.put(:class, "h-10 w-10 inline stroke-current")
 
     ~H"""
     <div class="flex py-2">
+      <pre>
+      </pre>
       <a type={@type} class={if @admin, do: @admin_class, else: @normal_class} href={@href}>
         <span {@rest}>
           <div class="flex">
             <span class="px-5 w-1/6">
+              <% # Heroicons.LiveView.icon name="academic-cap" type="outline" class="h-4 w-4" / %>
+
               <%= if @icon != [],
                 do: render_slot(@icon),
                 else: "" %>

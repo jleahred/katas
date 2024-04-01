@@ -27,7 +27,7 @@ defmodule Wui2Web.TestWuiComponents do
         <button class="btn btn-ghost">Button</button>
         <button class="btn btn-link">Button</button>
 
-        <.wbig_button admin={true} href={~p"/admin"} icon="fa-solid fa-user-doctor">
+        <.wbig_button admin={true} href={~p"/admin"} icon2="fa-solid fa-user-doctor">
           Admin
         </.wbig_button>
 
