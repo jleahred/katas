@@ -26,7 +26,6 @@ pub fn middleware(
 
   // Rewrite HEAD requests to GET requests and return an empty body.
   use req <- wisp.handle_head(req)
-
   // Handle the request!
   handle_request(req)
 }
