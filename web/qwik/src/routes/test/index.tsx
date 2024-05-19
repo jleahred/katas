@@ -1,56 +1,65 @@
-import { component$, useSignal } from '@builder.io/qwik';
-import { routeLoader$, server$, Form, routeAction$ } from '@builder.io/qwik-city';
+import { component$, useSignal, useTask$, useVisibleTask$ } from '@builder.io/qwik';
+import { useLocation, useNavigate, type DocumentHead } from "@builder.io/qwik-city";
 
-
-export const useDadJoke = routeLoader$(async () => {
-  const response = await fetch('https://icanhazdadjoke.com/', {
-    headers: { Accept: 'application/json' },
-  });
-  return (await response.json()) as {
-    id: string;
-    status: number;
-    joke: string;
-  };
-});
-
-export const useJokeVoteAction = routeAction$((props) => {
-  console.log('VOTE', props);
-});
+type Params = {
+  v: string
+};
 
 export default component$(() => {
-  const isFavoriteSignal = useSignal(false);
-  const counter = useSignal(0);
-  // Calling our `useDadJoke` hook, will return a reactive signal to the loaded data.
-  const dadJokeSignal = useDadJoke();
-  const favoriteJokeAction = useJokeVoteAction();
+  const loc = useLocation();
+  console.log(loc.url.searchParams);
+  console.log("=================")
+  const parse_counter = Number(loc.url.searchParams.get("v") || "11");
+  console.log(parse_counter);
+  const nc = isNaN(parse_counter) ? 12 : parse_counter;
+  console.log(nc);
+  const counter = useSignal(nc);
 
-  const serverFn = server$(async function (val) { console.log(val); return val + 5; });
+  const nav = useNavigate();
+  //useVisibleTask$(async ({ track }) => {
+  useTask$(async ({ track }) => {
+    track(() => counter.value);
+    //nav('?v=' + (counter.value));
+    console.log(".....................");
+    console.log(counter.value);
+    const params: Params = { v: counter.value.toString() };
+    console.log(params);
+    const urlSP = new URLSearchParams(params)
+    console.log(urlSP.toString());
+    //nav('?' + (urlSP.toString()));
+    if (loc.url.searchParams.size != 0) {
+      nav('?' + (urlSP.toString()));
+    }
+    console.log("size: ", loc.url.searchParams.size);
+  });
+
 
   return (
-    <section class="section bright">
-      <p>{dadJokeSignal.value.joke}...</p>
-      <Form action={favoriteJokeAction}>
-        <input type="hidden" name="jokeID" value={dadJokeSignal.value.id} />
-        <button name="vote" value="up">
-          👍
-        </button>
-        <button name="vote" value="down">
-          👎
-        </button>
-      </Form>
-      <button
-        onClick$={() => (isFavoriteSignal.value = !isFavoriteSignal.value)}
-      >
-        {isFavoriteSignal.value ? '❤️' : '🤍'}
-      </button>
+    <>
+      <h1>Counter
+      </h1>
 
-      <p></p>
-      <button onClick$={async () => {
-        // const result = await serverFn();
-        // console.log(result);
-        counter.value = await serverFn(counter.value);
-      }}>{counter}</button>
+      counter initialized from server side reading url
 
-    </section >
+      <div>
+        <br />
+        <p></p>
+        <button onClick$={() => {
+          counter.value -= 1;
+        }}> - </button>
+        {counter.value}
+        <button onClick$={() => { counter.value += 1; }}> + </button>
+      </div>
+    </>
   );
 });
+
+export const head: DocumentHead = {
+  title: "testing qwik",
+  meta: [
+    {
+      name: "name",
+      content: "Qwik site description",
+    },
+  ],
+};

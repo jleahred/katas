@@ -5,22 +5,16 @@ import { Link, type DocumentHead } from "@builder.io/qwik-city";
 export default component$(() => {
   return (
     <>
-      <h1>Hi 👋</h1>
+      <h1>Hi... 👋</h1>
       <div>
         Can't wait to see what you build with qwik!
         <br />
         Happy coding...
         <p></p>
 
-        <Link href="/counter">counter</Link>
-        <p></p>
-        <Link href="/counter2">counter2</Link>
-        <p></p>
         <Link href="/hi">hi</Link>
         <p></p>
         <Link href="/hi2">hi2</Link>
-        <p></p>
-        <Link href="/test">test</Link>
 
       </div>
     </>
