@@ -1,0 +1,25 @@
+<div>
+  <%= if @flash[:error] do %>
+    <div class="alert alert-danger">
+      {@flash[:error]}
+    </div>
+  <% end %>
+</div>
+<div>
+  <h1>Counter 1: {@params.count1}</h1>
+  <.button phx-click="change_count" phx-value-counter="1" phx-value-action="increment">
+    Increment
+  </.button>
+  <.button phx-click="change_count" phx-value-counter="1" phx-value-action="decrement">
+    Decrement
+  </.button>
+</div>
+<div>
+  <h1>Counter 2: {@params.count2}</h1>
+  <.button phx-click="change_count" phx-value-counter="2" phx-value-action="increment">
+    Increment
+  </.button>
+  <.button phx-click="change_count" phx-value-counter="2" phx-value-action="decrement">
+    Decrement
+  </.button>
+</div>
