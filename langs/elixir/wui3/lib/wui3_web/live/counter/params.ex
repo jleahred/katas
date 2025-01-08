@@ -48,4 +48,34 @@ defmodule Wui3Web.Counter.Params do
     |> Map.put(counter, new_count)
     |> changeset()
   end
+
+  def generate_random_params do
+    %__MODULE__{
+      count1: :rand.uniform(100),
+      count2: :rand.uniform(100),
+      increment: Enum.random([:single, :double, :triple])
+    }
+  end
+
+  def generate_valid_random_params(attempts \\ 1000) do
+    generate_valid_random_params(attempts, 0)
+  end
+
+  def generate_valid_random_params!(attempts \\ 1000) do
+    {:ok, params} = generate_valid_random_params(attempts, 0)
+    params
+  end
+
+  defp generate_valid_random_params(0, _attempts) do
+    {:error, "Failed to generate valid random params"}
+  end
+
+  defp generate_valid_random_params(attempts, current_attempt) do
+    changeset = generate_random_params() |> Map.from_struct() |> changeset()
+
+    case changeset do
+      %Ecto.Changeset{valid?: true} -> {:ok, changeset}
+      _ -> generate_valid_random_params(attempts - 1, current_attempt + 1)
+    end
+  end
 end

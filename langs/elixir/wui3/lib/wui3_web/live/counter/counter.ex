@@ -6,25 +6,25 @@ defmodule Wui3Web.Counter do
 
   @impl true
   def mount(params, _session, socket) do
-    changeset = params |> Params.changeset()
-
-    if changeset.valid? do
-      {:ok,
-       socket
-       |> assign(params: changeset |> Changeset.apply_changes())}
-    else
-      {:ok,
-       socket
-       |> assign(params: %Params{})
-       |> put_flash(:error, "Invalid params using default params values")}
-    end
+    {:ok,
+     socket
+     |> assign(params: params |> Params.changeset() |> Changeset.apply_changes())}
   end
 
   @impl true
   def handle_params(params, _uri, socket) do
-    changeset = Params.changeset(params)
+    Logger.info("handle_params: #{inspect(params)}")
 
-    update_params_in_socket_ifso(socket, changeset)
+    changeset =
+      if map_size(params) == 0 do
+        Logger.info("generate_valid_random_params! #{inspect(params)}")
+        Params.generate_valid_random_params!()
+      else
+        Logger.info("NOT EMPTY generate_valid_random_params! #{inspect(params)}")
+        params |> Params.changeset()
+      end
+
+    # update_params_in_socket_ifso(socket, changeset)
 
     if changeset.valid? do
       {:noreply, socket |> assign(params: changeset |> Changeset.apply_changes())}
