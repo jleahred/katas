@@ -1,4 +1,5 @@
 defmodule Wui3Web.Counter do
+  require Logger
   use Wui3Web, :live_view
   alias Wui3Web.Counter.Params
   alias Ecto.Changeset
@@ -23,12 +24,15 @@ defmodule Wui3Web.Counter do
   def handle_params(params, _uri, socket) do
     changeset = Params.changeset(params)
 
+    update_params_in_socket_ifso(socket, changeset)
+
     if changeset.valid? do
       {:noreply, socket |> assign(params: changeset |> Changeset.apply_changes())}
     else
       error_message =
         changeset.errors
-        |> Enum.map(fn {field, {message, a}} -> "#{field}: #{message} #{inspect(a)}" end)
+        # |> Enum.map(fn {field, {message, a}} -> "#{field}: #{message} #{inspect(a)}" end)
+        |> Enum.map(fn {field, {message, _}} -> "#{field}: #{message}" end)
         |> Enum.join(", ")
 
       {
@@ -52,28 +56,32 @@ defmodule Wui3Web.Counter do
         "2" -> :count2
       end
 
-    count = socket.assigns.params |> Map.get(atom_counter, 0)
-
-    new_count =
+    direction =
       case action do
-        "increment" -> count + 1
-        "decrement" -> count - 1
+        "increment" -> +1
+        "decrement" -> -1
       end
 
-    changeset =
-      socket.assigns.params
-      |> Map.from_struct()
-      |> Map.put(atom_counter, new_count)
-      |> Params.changeset()
+    changeset = socket.assigns.params |> Params.update_counter(atom_counter, direction)
 
+    update_params_in_socket_ifso(socket, changeset)
+  end
+
+  def handle_event("change_increment", %{"increment" => increment}, socket) do
+    changeset = socket.assigns.params |> Params.update_increment(increment)
+
+    update_params_in_socket_ifso(socket, changeset)
+  end
+
+  defp update_params_in_socket_ifso(socket, changeset) do
     if changeset.valid? do
-      changeset = changeset |> Changeset.apply_changes()
+      new_params = changeset |> Changeset.apply_changes()
 
       {:noreply,
        socket
-       |> assign(params: changeset)
+       |> assign(params: new_params)
        |> push_patch(
-         to: "/counter?" <> Params.to_query_params(changeset),
+         to: ~p"/counter" <> "?#{Params.to_query_params(new_params)}",
          replace: true
        )}
     else
@@ -86,7 +94,7 @@ defmodule Wui3Web.Counter do
        socket
        |> put_flash(
          :error,
-         "Invalid input for #{Atom.to_string(atom_counter)}. Errors: #{error_message}"
+         "Errors: #{error_message}"
        )}
     end
   end
