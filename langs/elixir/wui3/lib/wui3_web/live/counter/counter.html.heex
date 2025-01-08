@@ -1,25 +1,30 @@
-<div>
-  <%= if @flash[:error] do %>
-    <div class="alert alert-danger">
-      {@flash[:error]}
-    </div>
-  <% end %>
-</div>
-<div>
-  <h1>Counter 1: {@params.count1}</h1>
+<div class="py-4 space-x-8">
   <.button phx-click="change_count" phx-value-counter="1" phx-value-action="increment">
     Increment
   </.button>
+  <span>Counter1: {@params.count1}</span>
   <.button phx-click="change_count" phx-value-counter="1" phx-value-action="decrement">
     Decrement
   </.button>
 </div>
-<div>
-  <h1>Counter 2: {@params.count2}</h1>
+
+<div class="py-4 space-x-8">
   <.button phx-click="change_count" phx-value-counter="2" phx-value-action="increment">
     Increment
   </.button>
+  <span>Counter2: {@params.count2}</span>
   <.button phx-click="change_count" phx-value-counter="2" phx-value-action="decrement">
     Decrement
   </.button>
+</div>
+
+<div class="py-4 space-x-8">
+  <form phx-change="change_increment">
+    <.input
+      type="select"
+      name="increment"
+      value={@params.increment}
+      options={["single", "double", "triple"]}
+    />
+  </form>
 </div>
