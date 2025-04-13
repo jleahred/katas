@@ -1,0 +1,31 @@
+[[process]]
+id = "prueba 1a"
+command = "echo Hello && sleep infinity"
+
+[[process]]
+id = "otra prueba 56"
+command = "ls -la && sleep infinity"
+
+
+[[process]]
+id = "A"
+command = "ls -la && sleep infinity"
+
+
+[[process]]
+id = "B"
+command = "ls -la && sleep infinity"
+
+
+[[process]]
+id = "C"
+command = "ls -la && sleep infinity"
+
+[[process]]
+id = "D"
+command = "ls -la  && sleep infinity"
+
+
+[[process]]
+id = "E"
+command = "ls -la && sleep infinity"
