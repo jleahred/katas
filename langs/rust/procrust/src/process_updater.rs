@@ -19,6 +19,7 @@ pub fn update_to_stopping(watched_processes: &[ProcessWatched]) {
         let updated_process = ProcessWatched {
             id: process.id.clone(),
             pid: process.pid,
+            apply_on: process.apply_on,
             procrust_uid: process.procrust_uid.clone(),
             status: ProcessStatus::ScheduledStop,
             applied_on: process.applied_on,

@@ -48,6 +48,7 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
             let updated_content = toml::to_string(&ProcessWatched {
                 id: watched.id,
                 pid: watched.pid,
+                apply_on: watched.apply_on,
                 procrust_uid: watched.procrust_uid,
                 status: crate::process_watcher::ProcessStatus::Stopping {
                     retries: 0,

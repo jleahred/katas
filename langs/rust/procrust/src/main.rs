@@ -84,12 +84,12 @@ fn process_oneshot() {
 fn print_diff(only_in_watched: &[ProcessWatched], only_in_config: &[ProcessConfig]) {
     println!("\nProcesses only in watched:");
     for process in only_in_watched {
-        println!("- {}", process.id);
+        println!("- {} (apply_on: {})", process.id, process.apply_on);
     }
 
     println!("\nProcesses only in config:");
     for process in only_in_config {
-        println!("- {}", process.id);
+        println!("- {} (apply_on: {})", process.id, process.apply_on);
     }
 
     println!();

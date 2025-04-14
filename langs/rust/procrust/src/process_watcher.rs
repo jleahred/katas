@@ -20,18 +20,27 @@ pub struct ProcessWatched {
     pub id: String,
     pub pid: u32,
     pub procrust_uid: String,
+    pub apply_on: NaiveDateTime,
     pub status: ProcessStatus,
     pub applied_on: NaiveDateTime,
 }
 
-pub fn write_process_watched(process_id: &str, pid: u32, cmd: &str) -> std::io::Result<()> {
+pub fn write_process_watched(
+    process_id: &str,
+    pid: u32,
+    cmd: &str,
+    apply_on: NaiveDateTime,
+) -> std::io::Result<()> {
     let dir_path = "/tmp/procrust/";
     fs::create_dir_all(dir_path)?;
 
-    let file_path = format!("{}{}.toml", dir_path, process_id);
+    let file_name = format!("{}.toml", process_id);
+
+    let file_path = format!("{}{}", dir_path, file_name);
     let process_watched = ProcessWatched {
         id: process_id.to_string(),
         pid,
+        apply_on,
         procrust_uid: cmd.to_string(), // todo:0 mejor un uuid
         status: ProcessStatus::Running,
         applied_on: chrono::Local::now().naive_utc(),
