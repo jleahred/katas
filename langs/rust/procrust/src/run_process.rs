@@ -1,13 +1,28 @@
 use crate::process_config::ProcessConfig;
 use std::io;
 use std::process::{Child, Command};
+use std::thread;
+use std::time::Duration;
 
 pub fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
-    let child: Child = Command::new("sh")
+    let mut child: Child = Command::new("sh")
         .arg("-c")
         .arg(&process.command)
         .env("SUPRUST", &process.command)
         .spawn()?;
+
+    thread::sleep(Duration::from_secs(2));
+
+    match child.try_wait()? {
+        Some(status) => {
+            if status.success() {
+                eprintln!("Running process, finished OK  ??  {}", process.id);
+            } else {
+                eprintln!("Running process, finished with error  :-(  {}", process.id);
+            }
+        }
+        None => {}
+    }
 
     Ok(child.id())
 }

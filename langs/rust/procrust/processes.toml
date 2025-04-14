@@ -1,31 +1,37 @@
-[[process]]
-id = "prueba 1a"
-command = "echo Hello && sleep infinity"
+uid = "550e8400-e29b-41d4-a716-446655440000"
 
 [[process]]
-id = "otra prueba 56"
-command = "ls -la && sleep infinity"
+id = "PRUEBA_A"
+command = "ls && sleep infinity"
+apply_on = "2023-10-01T12:20:00"
+
+[[process]]
+id = "PRUEBA_A"
+command = "ls && sleep infinity"
+apply_on = "2024-10-01T12:20:00"
 
 
 [[process]]
 id = "A"
 command = "ls -la && sleep infinity"
-
+apply_on = "2050-01-01T00:00:00"
 
 [[process]]
 id = "B"
 command = "ls -la && sleep infinity"
-
+apply_on = "2050-01-01T00:00:00"
 
 [[process]]
 id = "C"
 command = "ls -la && sleep infinity"
+apply_on = "2050-01-01T00:00:00"
 
 [[process]]
 id = "D"
 command = "ls -la  && sleep infinity"
-
+apply_on = "2050-01-01T00:00:00"
 
 [[process]]
-id = "E"
-command = "ls -la && sleep infinity"
+id = "F"
+command = "ls -la "
+apply_on = "2050-01-01T00:00:00"

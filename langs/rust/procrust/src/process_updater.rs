@@ -21,6 +21,7 @@ pub fn update_to_stopping(watched_processes: &[ProcessWatched]) {
             pid: process.pid,
             procrust_uid: process.procrust_uid.clone(),
             status: ProcessStatus::ScheduledStop,
+            applied_on: process.applied_on,
         };
 
         if let Ok(toml) = toml::to_string(&updated_process) {
