@@ -53,6 +53,7 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
                     retries: 0,
                     last_attempt: chrono::Local::now(),
                 },
+                applied_on: watched.applied_on,
             })?;
             fs::write(path, updated_content)?;
         }
