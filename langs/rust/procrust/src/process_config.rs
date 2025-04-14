@@ -5,6 +5,6 @@ use serde::{Deserialize, Serialize};
 pub struct ProcessConfig {
     pub id: String,
     pub command: String,
-    pub apply_on: Option<NaiveDateTime>,
+    pub apply_on: NaiveDateTime,
     // pub apply_on: chrono::DateTime<chrono::Local>,
 }

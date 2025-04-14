@@ -25,14 +25,12 @@ pub fn read_processes(file_path: &str) -> Vec<ProcessConfig> {
 
     if let Some(processes) = config.process {
         for process in processes {
-            if let Some(apply_on) = process.apply_on {
-                if apply_on < now {
-                    let entry = process_map
-                        .entry(process.id.clone())
-                        .or_insert(process.clone());
-                    if entry.apply_on.unwrap_or(NaiveDateTime::MIN) < apply_on {
-                        *entry = process;
-                    }
+            if process.apply_on < now {
+                let entry = process_map
+                    .entry(process.id.clone())
+                    .or_insert(process.clone());
+                if entry.apply_on < process.apply_on {
+                    *entry = process;
                 }
             }
         }

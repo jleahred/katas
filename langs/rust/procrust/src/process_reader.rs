@@ -32,14 +32,7 @@ fn process_file(path: std::path::PathBuf) -> Option<ProcessWatched> {
 
 fn parse_toml(path: &Path, content: &str) -> Option<ProcessWatched> {
     match toml::from_str::<ProcessWatched>(content) {
-        Ok(mut watcher) => {
-            watcher.id = path
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .unwrap_or("")
-                .to_string();
-            Some(watcher)
-        }
+        Ok(watcher) => Some(watcher),
         Err(err) => {
             eprintln!("Failed to parse TOML file '{}': {}", path.display(), err);
             None

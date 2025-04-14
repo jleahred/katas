@@ -16,9 +16,15 @@ pub fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
     match child.try_wait()? {
         Some(status) => {
             if status.success() {
-                eprintln!("Running process, finished OK  ??  {}", process.id);
+                eprintln!(
+                    "Running process, finished OK  ??  {} (apply_on: {})",
+                    process.id, process.apply_on
+                );
             } else {
-                eprintln!("Running process, finished with error  :-(  {}", process.id);
+                eprintln!(
+                    "Running process, finished with error  :-(  {} (apply_on: {})",
+                    process.id, process.apply_on
+                );
             }
         }
         None => {}
