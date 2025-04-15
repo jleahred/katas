@@ -1,10 +1,10 @@
-use crate::types::process_watcher::*;
+use crate::types::process_watched::*;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use toml;
 
-pub fn update_to_stopping(watched_processes: &[ProcessWatched]) {
+pub fn watched_update2stopping(path_persist_watched: &str, watched_processes: &[ProcessWatched]) {
     for process in watched_processes {
         if let ProcessStatus::Stopping { .. } = process.status {
             // If already in Stopping status, skip
@@ -15,7 +15,7 @@ pub fn update_to_stopping(watched_processes: &[ProcessWatched]) {
             continue;
         }
 
-        let file_path = format!("/tmp/procrust/{}.toml", process.id);
+        let file_path = format!("{}/{}.toml", path_persist_watched, process.id);
         let updated_process = ProcessWatched {
             id: process.id.clone(),
             pid: process.pid,

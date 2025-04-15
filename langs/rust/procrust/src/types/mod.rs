@@ -1,2 +1,2 @@
-pub mod process_config;
-pub mod process_watcher;
+pub mod config;
+pub mod process_watched;
