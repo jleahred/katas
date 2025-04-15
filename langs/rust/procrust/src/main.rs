@@ -1,33 +1,25 @@
-mod process_checker;
 mod process_cleaner;
-mod process_cmd;
-mod process_config;
-mod process_cookie;
 mod process_diff;
 mod process_killer;
 mod process_launcher;
 mod process_reader;
 mod process_updater;
-mod process_watcher;
 mod run_process;
 mod toml_reader;
+mod types;
 
-// use std::thread;
+use crate::types::process_watcher::ProcessWatched;
+use process_cleaner::clean_stale_watched_files;
 use std::time::Duration;
 use uuid::Uuid;
-// use process_checker::is_process_running;
-use crate::process_watcher::ProcessWatched;
-use process_cleaner::clean_stale_watched_files;
 
-use process_config::ProcessConfig;
 use process_diff::diff_processes;
-use process_killer::kill_stale_processes; // Import the new function
+use process_killer::kill_stale_processes;
 use process_launcher::launch_missing_processes;
 use process_reader::read_all_process_watchers;
 use process_updater::update_to_stopping;
-// use process_watcher::write_process_watched;
-// use run_process::run_process;
 use toml_reader::read_processes;
+use types::process_config::ProcessConfig;
 
 use std::env;
 use std::process::Command;
@@ -43,24 +35,19 @@ fn main() {
     }
 
     loop {
-        // Obtener la ruta del ejecutable actual
-        let current_exe = env::current_exe().expect("No se pudo obtener la ruta del ejecutable");
+        let current_exe = env::current_exe().expect("CRITIC: Can't get current executable path");
 
-        // Obtener los argumentos actuales
-        // let args: Vec<String> = env::args().skip(1).collect();
-
-        // Crear un nuevo proceso con el mismo ejecutable y argumentos
+        // Create a new process
         let mut child = Command::new(current_exe)
             .args(["--one-shot"])
             .spawn()
-            .expect("No se pudo crear el proceso hijo");
+            .expect("CRITIC: Can't spawn child process");
 
-        // Opcional: imprimir el PID del nuevo proceso
-        println!("Nuevo proceso creado con PID: {}", child.id());
+        // println!("New process created with PID: {}", child.id());
         if child.wait().is_err() {
-            eprintln!("Error al esperar el proceso hijo");
+            eprintln!("Error waiting for child process");
         } else {
-            println!("Proceso hijo terminado");
+            println!("Shot finished");
         }
         sleep(Duration::from_secs(2));
     }
@@ -98,5 +85,5 @@ fn print_diff(only_in_watched: &[ProcessWatched], only_in_config: &[ProcessConfi
 fn handle_stale_processes(only_in_watched: &[ProcessWatched], proc_watcheds: &[ProcessWatched]) {
     update_to_stopping(only_in_watched);
     clean_stale_watched_files(proc_watcheds);
-    kill_stale_processes("/tmp/procrust/"); // todo:0 add path to watched_processes_path?
+    kill_stale_processes("/tmp/procrust/");
 }

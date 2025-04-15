@@ -1,4 +1,4 @@
-use crate::process_watcher::{ProcessStatus, ProcessWatched};
+use crate::types::process_watcher::*;
 use std::fs;
 use std::io::Write;
 use std::path::Path;

@@ -1,5 +1,5 @@
-use crate::process_config::ProcessConfig;
-use crate::process_watcher::ProcessWatched;
+use crate::types::process_config::ProcessConfig;
+use crate::types::process_watcher::ProcessWatched;
 
 pub fn diff_processes(
     watched: &[ProcessWatched],
