@@ -1,7 +1,5 @@
-use crate::process_watcher;
-use crate::process_watcher::ProcessWatched;
+use crate::types::process_watcher::ProcessWatched;
 use std::fs;
-use std::io;
 use std::path::Path;
 
 pub fn read_all_process_watchers(dir_path: &str) -> Vec<ProcessWatched> {

@@ -1,4 +1,4 @@
-use crate::process_config::ProcessConfig;
+use crate::types::process_config::ProcessConfig;
 use std::io;
 use std::process::{Child, Command};
 use std::thread;
@@ -8,7 +8,7 @@ pub fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
     let mut child: Child = Command::new("sh")
         .arg("-c")
         .arg(&process.command)
-        .env("SUPRUST", &process.command)
+        .env("PROCRUST", &process.command)
         .spawn()?;
 
     thread::sleep(Duration::from_secs(2));

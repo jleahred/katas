@@ -1,4 +1,4 @@
-use crate::process_watcher::ProcessWatched;
+use crate::types::process_watcher::{ProcessStatus, ProcessWatched};
 use std::fs;
 use std::path::Path;
 
@@ -28,7 +28,7 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let mut watched: ProcessWatched = toml::from_str(&content)?;
 
     match watched.status {
-        crate::process_watcher::ProcessStatus::Stopping {
+        ProcessStatus::Stopping {
             ref mut retries,
             ref mut last_attempt,
         } => {
@@ -43,14 +43,14 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
             dbg!(&updated_content);
             fs::write(path, updated_content)?;
         }
-        crate::process_watcher::ProcessStatus::ScheduledStop => {
+        ProcessStatus::ScheduledStop => {
             kill_process(watched.pid, false)?;
             let updated_content = toml::to_string(&ProcessWatched {
                 id: watched.id,
                 pid: watched.pid,
                 apply_on: watched.apply_on,
                 procrust_uid: watched.procrust_uid,
-                status: crate::process_watcher::ProcessStatus::Stopping {
+                status: ProcessStatus::Stopping {
                     retries: 0,
                     last_attempt: chrono::Local::now(),
                 },
@@ -67,16 +67,6 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
 fn kill_process(pid: u32, force: bool) -> Result<(), Box<dyn std::error::Error>> {
     use nix::sys::signal::{kill, Signal};
     use nix::unistd::Pid;
-
-    // fn kill_pid(pid: u32) {
-    //     let _ = kill(Pid::from_raw(pid as i32), Signal::SIGTERM);
-    // }
-
-    // let signal = if force { "-9" } else { "-15" };
-    // let status = Command::new("kill")
-    //     .arg(signal)
-    //     .arg(pid.to_string())
-    //     .status()?;
 
     let signal = if force {
         Signal::SIGKILL

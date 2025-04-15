@@ -1,4 +1,4 @@
-use crate::process_config::ProcessConfig;
+use crate::types::process_config::ProcessConfig;
 use chrono::{Local, NaiveDateTime};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -8,6 +8,7 @@ use toml;
 #[derive(Deserialize)]
 struct Config {
     uid: String,
+    file_format: String,
     process: Option<Vec<ProcessConfig>>,
 }
 
