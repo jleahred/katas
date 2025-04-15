@@ -1,4 +1,4 @@
-use crate::types::process_watcher::{ProcessStatus, ProcessWatched};
+use crate::types::process_watched::{ProcessStatus, ProcessWatched};
 use std::fs;
 use std::path::Path;
 
@@ -40,7 +40,6 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
                 kill_process(watched.pid, false)?;
             }
             let updated_content = toml::to_string(&watched)?;
-            dbg!(&updated_content);
             fs::write(path, updated_content)?;
         }
         ProcessStatus::ScheduledStop => {

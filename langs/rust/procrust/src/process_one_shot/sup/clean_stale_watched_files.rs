@@ -1,10 +1,10 @@
-use crate::types::process_watcher::ProcessWatched;
+use crate::types::process_watched::ProcessWatched;
 use std::fs;
 use std::io::{self};
 
-pub fn clean_stale_watched_files(watched_processes: &[ProcessWatched]) {
+pub fn clean_stale_watched_files(path_persist_watched: &str, watched_processes: &[ProcessWatched]) {
     for process in watched_processes {
-        let file_path = format!("/tmp/procrust/{}.toml", process.id);
+        let file_path = format!("{}/{}.toml", path_persist_watched, process.id);
         let remove_file: bool = if !is_process_running(process.pid) {
             println!("Removing stale file: {} missing pid", file_path);
             true

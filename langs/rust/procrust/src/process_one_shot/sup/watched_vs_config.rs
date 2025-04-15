@@ -1,10 +1,14 @@
-use crate::types::process_config::ProcessConfig;
-use crate::types::process_watcher::ProcessWatched;
+use crate::types::config::ProcessConfig;
+use crate::types::process_watched::ProcessWatched;
 
-pub fn diff_processes(
+pub struct OnlyInWatched(pub Vec<ProcessWatched>);
+pub struct OnlyInConfig(pub Vec<ProcessConfig>);
+
+pub fn watched_vs_config(
     watched: &[ProcessWatched],
     config: &[ProcessConfig],
-) -> (Vec<ProcessWatched>, Vec<ProcessConfig>) {
+) -> (OnlyInWatched, OnlyInConfig) {
+    // Find processes that are only in the watched list but not in the config list
     let only_in_watched: Vec<ProcessWatched> = watched
         .iter()
         .filter(|w| {
@@ -15,6 +19,7 @@ pub fn diff_processes(
         .cloned()
         .collect();
 
+    // Find processes that are only in the config list but not in the watched list
     let only_in_config: Vec<ProcessConfig> = config
         .iter()
         .filter(|c| {
@@ -25,13 +30,14 @@ pub fn diff_processes(
         .cloned()
         .collect();
 
-    // Debug output (optional)
+    // Debug output: Log processes that are only in the watched list
     for process in &only_in_watched {
         eprintln!(
             "Only in watched: {} (apply_on: {})",
             process.id, process.apply_on
         );
     }
+    // Debug output: Log processes that are only in the config list
     for process in &only_in_config {
         eprintln!(
             "Only in config: {} (apply_on: {})",
@@ -39,5 +45,5 @@ pub fn diff_processes(
         );
     }
 
-    (only_in_watched, only_in_config)
+    (OnlyInWatched(only_in_watched), OnlyInConfig(only_in_config))
 }

@@ -1,8 +1,8 @@
-use crate::types::process_watcher::ProcessWatched;
+use crate::types::process_watched::ProcessWatched;
 use std::fs;
 use std::path::Path;
 
-pub fn read_all_process_watchers(dir_path: &str) -> Vec<ProcessWatched> {
+pub fn read_all_process_watcheds(dir_path: &str) -> Vec<ProcessWatched> {
     if let Ok(entries) = fs::read_dir(dir_path) {
         entries
             .filter_map(|entry| entry.ok())
