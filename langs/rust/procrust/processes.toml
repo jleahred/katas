@@ -2,7 +2,7 @@ uid = "550e8400-e29b-41d4-a716-446655440000"
 file_format = "0"
 
 [[process]]
-id = "PRUEBA_A"
+id = "PRUEBA_B"
 command = "ls -la  && sleep infinity"
 apply_on = "2023-10-01T12:20:00"
 

@@ -8,13 +8,17 @@ use std::process::Command;
 use std::time::Duration;
 
 fn main() {
-    if env::args().any(|arg| arg == "--one-shot") {
+    let mut args = env::args();
+    if args.any(|arg| arg == "--one-shot") {
         one_shot::one_shot();
         return;
-    } else if env::args().any(|arg| arg == "--supervise-process") {
-        let _ = launch_process::launch_process("laa -la", "TESTING");
+    } else if let Some(process_id) = args
+        .position(|arg| arg == "--supervise-process")
+        .and_then(|_| args.next())
+    {
+        let _ = launch_process::launch_process("laa -la", &process_id);
         return;
-    } else if env::args().any(|arg| arg == "--uid") {
+    } else if args.any(|arg| arg == "--uid") {
         println!("{}", uuid::Uuid::new_v4().to_string());
         return;
     }

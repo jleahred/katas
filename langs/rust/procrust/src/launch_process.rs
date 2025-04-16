@@ -1,4 +1,9 @@
+use crate::types::process_watched::{ProcessStatus, ProcessWatched};
+use chrono::NaiveDateTime;
+use std::fs::{self, File};
+use std::io::Write;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::thread;
 
@@ -53,31 +58,32 @@ pub fn launch_process(command: &str, prefix: &str) -> std::io::Result<i32> {
     Ok(status.code().unwrap_or(-1))
 }
 
-// fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
-//     let mut child: Child = Command::new("sh")
-//         .arg("-c")
-//         .arg(&process.command)
-//         .env("PROCRUST", &process.command)
-//         .spawn()?;
+fn write_process_watched(
+    path_persist_watched: &str,
+    process_id: &str,
+    pid: u32,
+    cmd: &str,
+    apply_on: NaiveDateTime,
+) -> std::io::Result<()> {
+    fs::create_dir_all(path_persist_watched)?;
 
-//     thread::sleep(Duration::from_secs(2));
+    let file_name = format!("{}.toml", process_id);
 
-//     match child.try_wait()? {
-//         Some(status) => {
-//             if status.success() {
-//                 eprintln!(
-//                     "Running process, finished OK  ??  {} (apply_on: {})",
-//                     process.id, process.apply_on
-//                 );
-//             } else {
-//                 eprintln!(
-//                     "Running process, finished with error  :-(  {} (apply_on: {})",
-//                     process.id, process.apply_on
-//                 );
-//             }
-//         }
-//         None => {}
-//     }
+    let file_path = format!("{}/{}", path_persist_watched, file_name);
+    let process_watched = ProcessWatched {
+        id: process_id.to_string(),
+        pid,
+        apply_on,
+        procrust_uid: cmd.to_string(), // todo:0 mejor un uuid
+        status: ProcessStatus::Running,
+        applied_on: chrono::Local::now().naive_utc(),
+    };
 
-//     Ok(child.id())
-// }
+    // Serialize the structure to TOML
+    let toml =
+        toml::to_string(&process_watched).expect("Failed to serialize ProcessWatched to TOML");
+    let mut file = File::create(Path::new(&file_path))?;
+    file.write_all(toml.as_bytes())?;
+
+    Ok(())
+}
