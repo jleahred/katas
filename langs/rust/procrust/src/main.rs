@@ -1,4 +1,5 @@
-mod process_one_shot;
+mod launch_process;
+mod one_shot;
 mod read_config_file;
 mod types;
 
@@ -8,7 +9,10 @@ use std::time::Duration;
 
 fn main() {
     if env::args().any(|arg| arg == "--one-shot") {
-        process_one_shot::process_one_shot();
+        one_shot::one_shot();
+        return;
+    } else if env::args().any(|arg| arg == "--supervise-process") {
+        let _ = launch_process::launch_process("laa -la", "TESTING");
         return;
     } else if env::args().any(|arg| arg == "--uid") {
         println!("{}", uuid::Uuid::new_v4().to_string());
