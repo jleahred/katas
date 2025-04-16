@@ -3,6 +3,7 @@ mod sup;
 use crate::read_config_file::read_config_file;
 use crate::types::config::{Config, ProcessConfig};
 use crate::types::process_watched::ProcessWatched;
+use std::fs::{self};
 
 pub fn one_shot() {
     println!("\n--------------------------------------------------------------------------------");
@@ -10,6 +11,7 @@ pub fn one_shot() {
 
     let config: Config = read_config_file("processes.toml");
     let path_persist_watched = format!("/tmp/procrust/{}/", config.uid);
+    fs::create_dir_all(&path_persist_watched).expect("Failed to create directory on /tmp/procrust");
 
     let active_proc_in_config = config.active_processes();
     let proc_watcheds = sup::read_all_process_watcheds(&path_persist_watched);
@@ -19,7 +21,7 @@ pub fn one_shot() {
 
     print_diff(&only_in_watched.0, &only_in_config.0);
 
-    sup::launch_missing_processes(&path_persist_watched, &only_in_config.0);
+    sup::launch_missing_processes(&path_persist_watched, &config.uid, &only_in_config.0);
     handle_stale_processes(&path_persist_watched, &only_in_watched.0, &proc_watcheds);
 }
 
