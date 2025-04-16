@@ -7,7 +7,12 @@ use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::thread;
 
-pub fn launch_process(command: &str, prefix: &str) -> std::io::Result<i32> {
+pub fn launch_process(
+    process_id: &str,
+    config_uid: &str,
+    apply_on: &str,
+    command: &str,
+) -> std::io::Result<i32> {
     let mut child: Child = Command::new("sh")
         .arg("-c")
         .arg(&command)
@@ -15,17 +20,26 @@ pub fn launch_process(command: &str, prefix: &str) -> std::io::Result<i32> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
-    // let mut child = Command::new(command)
-    //     .args(args)
-    //     .stdout(Stdio::piped())
-    //     .stderr(Stdio::piped())
-    //     .spawn()?;
+
+    let path_persist_watched = format!("/tmp/procrust/{}/", config_uid);
+
+    dbg!(apply_on);
+    if let Err(e) = write_process_watched(
+        &path_persist_watched,
+        &process_id,
+        std::process::id(),
+        &command,
+        NaiveDateTime::parse_from_str(apply_on, "%Y-%m-%d %H:%M:%S")
+            .expect("Invalid date format on apply_on"),
+    ) {
+        eprintln!("Failed to write process file for {}: {}", process_id, e);
+    }
 
     let stdout = child.stdout.take().expect("Failed to capture stdout");
     let stderr = child.stderr.take().expect("Failed to capture stderr");
 
-    let prefix_out = prefix.to_string();
-    let prefix_err = prefix.to_string();
+    let prefix_out = process_id.to_string();
+    let prefix_err = process_id.to_string();
 
     // Hilo para stdout
     let handle_out = thread::spawn(move || {

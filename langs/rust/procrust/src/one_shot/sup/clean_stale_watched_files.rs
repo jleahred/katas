@@ -5,7 +5,7 @@ use std::io::{self};
 pub fn clean_stale_watched_files(path_persist_watched: &str, watched_processes: &[ProcessWatched]) {
     for process in watched_processes {
         let file_path = format!("{}/{}.toml", path_persist_watched, process.id);
-        let remove_file: bool = if !is_process_running(process.pid) {
+        let remove_file = if !is_process_running(process.pid) {
             println!("Removing stale file: {} missing pid", file_path);
             true
         } else {
@@ -13,7 +13,7 @@ pub fn clean_stale_watched_files(path_persist_watched: &str, watched_processes: 
                 Ok(puid) => match puid {
                     None => {
                         eprintln!(
-                            "Removing file: Empty procrust UID for PID {}: {}",
+                            "Removing file watched: Empty procrust UID for PID {}: {}",
                             process.pid, file_path
                         );
                         true
@@ -21,7 +21,7 @@ pub fn clean_stale_watched_files(path_persist_watched: &str, watched_processes: 
                     Some(puid) => {
                         if puid != process.procrust_uid {
                             eprintln!(
-                                "Removing file: Different procrust UID for PID {}: {} -> {}",
+                                "Removing file watched: Different procrust UID for PID {}: {} -> {}",
                                 process.pid, puid, process.procrust_uid
                             );
                             true
@@ -39,6 +39,41 @@ pub fn clean_stale_watched_files(path_persist_watched: &str, watched_processes: 
                 }
             }
         };
+
+        // let remove_file: bool = if !is_process_running(process.pid) {
+        //     println!("Removing stale file: {} missing pid", file_path);
+        //     true
+        // } else {
+        //     match get_process_env_var(process.pid, "PROCRUST") {
+        //         Ok(puid) => match puid {
+        //             None => {
+        //                 eprintln!(
+        //                     "Removing file: Empty procrust UID for PID {}: {}",
+        //                     process.pid, file_path
+        //                 );
+        //                 true
+        //             }
+        //             Some(puid) => {
+        //                 if puid != process.procrust_uid {
+        //                     eprintln!(
+        //                         "Removing file: Different procrust UID for PID {}: {} -> {}",
+        //                         process.pid, puid, process.procrust_uid
+        //                     );
+        //                     true
+        //                 } else {
+        //                     false
+        //                 }
+        //             }
+        //         },
+        //         Err(e) => {
+        //             eprintln!(
+        //                 "Removing file: Failed to get command by PID {}: {}",
+        //                 process.pid, e
+        //             );
+        //             true
+        //         }
+        //     }
+        // };
 
         if remove_file {
             if let Err(e) = fs::remove_file(&file_path) {
