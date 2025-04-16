@@ -4,7 +4,7 @@ use crate::read_config_file::read_config_file;
 use crate::types::config::{Config, ProcessConfig};
 use crate::types::process_watched::ProcessWatched;
 
-pub fn process_one_shot() {
+pub fn one_shot() {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
