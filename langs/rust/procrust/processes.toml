@@ -1,16 +1,37 @@
 uid = "550e8400-e29b-41d4-a716-446655440000"
 file_format = "0"
 
+
+[[process]]
+id = "example_process"
+command = "echo 'Hello, World!' && sleep 10"
+apply_on = "2023-10-01T12:00:00"
+type = "normal"                              # optional  normal/fake
+start_time = "09:00:00"                      # optional
+stop_time = "23:00:00"                       # optional
+week_days = ["mon", "wed", "thu", "fri"]     # optional  
+# week_days = "mon-fri"   # also valid
+
+
 [[process]]
 id = "PRUEBA_C"
-command = "ls -la  && sleep infinity"
-apply_on = "2023-10-01T12:20:00"
+command = "echo $(date)  '  bb'"
+apply_on = "2029-11-01T12:20:00"
+
+[[process]]
+id = "PRUEBA_C"
+command = "echo $(date)  '  bb'; sleep 1; echo $(date)  '  bb'; sleep 1; echo $(date)  '  bb'; sleep 1"
+apply_on = "2029-11-01T12:20:00"
+
+[[process]]
+id = "PRUEBA_C"
+command = "while true; do echo $(date)  '  bb'; sleep 1; done"
+apply_on = "2024-10-01T12:20:00"
 
 [[process]]
 id = "PRUEBA_A"
 command = "ls -la && sleep infinity"
-apply_on = "2024-10-01T12:20:00"
-
+apply_on = "2026-10-01T12:20:00"
 
 [[process]]
 id = "A"
