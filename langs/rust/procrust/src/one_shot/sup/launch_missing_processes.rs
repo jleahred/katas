@@ -1,8 +1,6 @@
-use crate::launch_process::launch_process;
 use crate::types::config::ProcessConfig;
 use crate::types::process_watched::{ProcessStatus, ProcessWatched};
 use chrono::NaiveDateTime;
-use std::env;
 use std::fs::{self, File};
 use std::io;
 use std::io::Write;
@@ -14,7 +12,7 @@ use toml;
 
 pub fn launch_missing_processes(
     path_persist_watched: &str,
-    config_id: &str,
+    _config_id: &str,
     missing_processes: &[ProcessConfig],
 ) {
     for process in missing_processes {
@@ -28,41 +26,24 @@ pub fn launch_missing_processes(
             continue;
         }
 
-        let pid = crate::run_supervised_process(
-            &process.id,
-            &config_id,
-            &process.apply_on.format("%Y-%m-%d %H:%M:%S").to_string(),
-            &process.command,
-        );
-
-        if let Err(e) = write_process_watched(
-            &path_persist_watched,
-            &process.id,
-            pid,
-            &process.command,
-            process.apply_on.clone(),
-        ) {
-            eprintln!("Failed to write process file for {}: {}", process.id, e);
+        match run_process(process) {
+            Ok(pid) => {
+                println!(
+                    "Launched process {} with PID: {}   apply_on: {}",
+                    process.id, pid, process.apply_on
+                );
+                if let Err(e) = write_process_watched(
+                    &path_persist_watched,
+                    &process.id,
+                    pid,
+                    &process.command,
+                    process.apply_on.clone(),
+                ) {
+                    eprintln!("Failed to write process file for {}: {}", process.id, e);
+                }
+            }
+            Err(e) => eprintln!("Failed to launch process {}: {}", process.id, e),
         }
-
-        // match run_process(process) {
-        //     Ok(pid) => {
-        //         println!(
-        //             "Launched process {} with PID: {}   apply_on: {}",
-        //             process.id, pid, process.apply_on
-        //         );
-        //         if let Err(e) = write_process_watched(
-        //             &path_persist_watched,
-        //             &process.id,
-        //             pid,
-        //             &process.command,
-        //             process.apply_on.clone(),
-        //         ) {
-        //             eprintln!("Failed to write process file for {}: {}", process.id, e);
-        //         }
-        //     }
-        //     Err(e) => eprintln!("Failed to launch process {}: {}", process.id, e),
-        // }
     }
 }
 
@@ -96,31 +77,32 @@ fn write_process_watched(
     Ok(())
 }
 
-// fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
-//     let mut child: Child = Command::new("sh")
-//         .arg("-c")
-//         .arg(&process.command)
-//         .env("PROCRUST", &process.command)
-//         .spawn()?;
+fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
+    let mut child: Child = Command::new("sh")
+        .arg("-c")
+        .arg(&process.command)
+        .env("PROCRUST", &process.command)
+        .spawn()?;
+    //  todo: convendría desconectar la salida de error y la salida estándar para evitar zombis?
 
-//     thread::sleep(Duration::from_secs(2));
+    thread::sleep(Duration::from_secs(1));
 
-//     match child.try_wait()? {
-//         Some(status) => {
-//             if status.success() {
-//                 eprintln!(
-//                     "Running process, finished OK  ??  {} (apply_on: {})",
-//                     process.id, process.apply_on
-//                 );
-//             } else {
-//                 eprintln!(
-//                     "Running process, finished with error  :-(  {} (apply_on: {})",
-//                     process.id, process.apply_on
-//                 );
-//             }
-//         }
-//         None => {}
-//     }
+    match child.try_wait()? {
+        Some(status) => {
+            if status.success() {
+                eprintln!(
+                    "Running process, finished OK  ??  {} (apply_on: {})",
+                    process.id, process.apply_on
+                );
+            } else {
+                eprintln!(
+                    "Running process, finished with error  :-(  {} (apply_on: {})",
+                    process.id, process.apply_on
+                );
+            }
+        }
+        None => {}
+    }
 
-//     Ok(child.id())
-// }
+    Ok(child.id())
+}
