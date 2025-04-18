@@ -1,16 +1,18 @@
-use crate::types::process_watched::ProcessWatched;
+use super::get_running_processes::AllProcWatched;
+use crate::types::ProcessWatched;
 use std::fs;
 use std::path::Path;
 
-pub fn read_all_process_watcheds(dir_path: &str) -> Vec<ProcessWatched> {
+pub fn read_all_process_watcheds(dir_path: &str) -> AllProcWatched {
     if let Ok(entries) = fs::read_dir(dir_path) {
-        entries
+        let processes = entries
             .filter_map(|entry| entry.ok())
             .filter_map(|entry| process_file(entry.path()))
-            .collect()
+            .collect();
+        AllProcWatched(processes)
     } else {
         eprintln!("Failed to read directory: {}", dir_path);
-        Vec::new()
+        AllProcWatched(Vec::new())
     }
 }
 
