@@ -1,5 +1,5 @@
 use crate::types::config::ProcessConfig;
-use crate::types::process_watched::ProcessWatched;
+use crate::types::ProcessWatched;
 
 pub struct OnlyInWatched(pub Vec<ProcessWatched>);
 pub struct OnlyInConfig(pub Vec<ProcessConfig>);

@@ -2,6 +2,9 @@
 
 ## TODO
 
+* command parameters
+    * debug
+    * ...
 * depends_on.
     * if a process stops or is detected as stopped, stop all dependent processes
     * additionally, do not start until the dependent process is running
@@ -62,6 +65,7 @@ start_time = "09:00:00"                      # optional
 stop_time = "23:00:00"                       # optional
 week_days = ["mon", "wed", "thu", "fri"]     # optional  
 # week_days = "mon-fri"   # also valid
+# week_days = "all"       # also valid
 ```
 
 If only the command line is changed, the system will not restart the service (this is intentional).

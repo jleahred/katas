@@ -1,8 +1,7 @@
-mod sup;
+mod imp;
 
 use crate::read_config_file::read_config_file;
-use crate::types::config::{Config, ProcessConfig};
-use crate::types::process_watched::ProcessWatched;
+use crate::types::config::Config;
 use std::fs::{self};
 
 pub fn one_shot() {
@@ -13,36 +12,19 @@ pub fn one_shot() {
     let path_persist_watched = format!("/tmp/procrust/{}/", config.uid);
     fs::create_dir_all(&path_persist_watched).expect("Failed to create directory on /tmp/procrust");
 
-    sup::kill_stale_processes(&path_persist_watched);
+    imp::send_kill_if_stopping(&path_persist_watched);
 
-    let active_proc_in_config = config.act_proc_conf_by_date();
-    let proc_watcheds = sup::read_all_process_watcheds(&path_persist_watched);
+    let all_proc_watcheds = imp::read_all_process_watcheds(&path_persist_watched);
+    let watched_running_processes = imp::get_running_processes(&all_proc_watcheds);
+    let conf_proc_act_by_date = imp::get_act_proc_conf_by_date(&config);
 
     let (only_in_watched, only_in_config) =
-        sup::watched_vs_config(&proc_watcheds, &active_proc_in_config.0);
+        imp::watched_vs_config(&all_proc_watcheds.0, &conf_proc_act_by_date.0);
 
-    print_diff(&only_in_watched.0, &only_in_config.0);
+    imp::print_diff(&only_in_watched.0, &only_in_config.0);
 
-    sup::watched_update2stopping(&path_persist_watched, &only_in_watched.0);
-    sup::clean_stale_watched_files(&path_persist_watched, &proc_watcheds);
+    imp::watched_update2stopping(&path_persist_watched, &only_in_watched.0);
 
-    sup::launch_missing_processes(&path_persist_watched, &config.uid, &only_in_config.0);
-}
-
-fn print_diff(only_in_watched: &[ProcessWatched], only_in_config: &[ProcessConfig]) {
-    if !only_in_watched.is_empty() {
-        println!("\nProcesses only in watched:");
-    }
-    for process in only_in_watched {
-        println!("- {} (apply_on: {})", process.id, process.apply_on);
-    }
-
-    if !only_in_config.is_empty() {
-        println!("\nProcesses only in config:");
-    }
-    for process in only_in_config {
-        println!("- {} (apply_on: {})", process.id, process.apply_on);
-    }
-
-    println!();
+    imp::del_watched_files_if_missing_pid(&path_persist_watched, &all_proc_watcheds);
+    imp::launch_missing_processes(&path_persist_watched, &config.uid, &only_in_config.0);
 }

@@ -1,13 +1,16 @@
-use crate::types::config::ProcessConfig;
-use crate::types::process_watched::{ProcessStatus, ProcessWatched};
+use crate::types::{
+    config::ProcessConfig,
+    process_watched::{ProcessStatus, ProcessWatched},
+};
 use chrono::NaiveDateTime;
-use std::fs::{self, File};
-use std::io;
-use std::io::Write;
-use std::path::Path;
-use std::process::{Child, Command};
-use std::thread;
-use std::time::Duration;
+use std::{
+    fs::{self, File},
+    io::{self, Write},
+    path::Path,
+    process::{Child, Command},
+    thread,
+    time::Duration,
+};
 use toml;
 
 pub fn launch_missing_processes(

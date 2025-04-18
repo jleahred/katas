@@ -26,23 +26,7 @@ pub fn watched_update2stopping(path_persist_watched: &str, watched_processes: &[
             },
         };
 
-        // if let ProcessStatus::Stopping { .. } = process.status {
-        //     // If already in Stopping status, skip
-        //     continue;
-        // }
-        // if let ProcessStatus::ScheduledStop { .. } = process.status {
-        //     // If already in ScheduledStop status, skip
-        //     continue;
-        // }
-
         let file_path = format!("{}/{}.toml", path_persist_watched, process.id);
-        // let updated_process = ProcessWatched {
-        //     id: process.id.clone(),
-        //     apply_on: process.apply_on,
-        //     procrust_uid: process.procrust_uid.clone(),
-        //     status: ProcessStatus::ScheduledStop{pid: },
-        //     applied_on: process.applied_on,
-        // };
 
         if let Ok(toml) = toml::to_string(&updated_process) {
             if let Ok(mut file) = fs::File::create(Path::new(&file_path)) {
