@@ -54,19 +54,22 @@ fn should_apply(proc_conf: &ProcessConfig, datetime: NaiveDateTime) -> bool {
         }
     }
 
-    // Check if the day of the week matches
-    if let Some(week_days) = &proc_conf.week_days {
-        let weekday = datetime.weekday();
-        if !week_days.matches(weekday) {
-            return false;
+    // Check if the schedule is defined
+    if let Some(schedule) = &proc_conf.schedule {
+        // Check if the day of the week matches
+        if let Some(week_days) = &schedule.week_days {
+            let weekday = datetime.weekday();
+            if !week_days.matches(weekday) {
+                return false;
+            }
         }
-    }
 
-    // Check if the time is within the range of `start_time` and `stop_time`
-    if let (Some(start_time), Some(stop_time)) = (proc_conf.start_time, proc_conf.stop_time) {
-        let time = datetime.time();
-        if time < start_time || time >= stop_time {
-            return false;
+        // Check if the time is within the range of `start_time` and `stop_time`
+        if let (Some(start_time), Some(stop_time)) = (schedule.start_time, schedule.stop_time) {
+            let time = datetime.time();
+            if time < start_time || time >= stop_time {
+                return false;
+            }
         }
     }
 

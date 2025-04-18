@@ -6,19 +6,23 @@ use serde::Deserialize;
 use std::fmt;
 
 pub(super) fn is_valid_start_stop(proc_conf: &ProcessConfig) -> Result<(), String> {
-    match (proc_conf.start_time, proc_conf.stop_time) {
-        (Some(start), Some(stop)) => {
-            if start < stop {
-                Ok(())
-            } else {
-                Err(format!(
-                    "Invalid time range: start_time ({}) is not before stop_time ({})",
-                    start, stop
-                ))
+    if let Some(schedule) = &proc_conf.schedule {
+        match (schedule.start_time, schedule.stop_time) {
+            (Some(start), Some(stop)) => {
+                if start < stop {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "Invalid time range: start_time ({}) is not before stop_time ({})",
+                        start, stop
+                    ))
+                }
             }
+            (None, Some(_)) => Err("start_time is missing while stop_time is set".to_string()),
+            _ => Ok(()),
         }
-        (None, Some(_)) => Err("start_time is missing while stop_time is set".to_string()),
-        _ => Ok(()),
+    } else {
+        Ok(()) // If no schedule is defined, consider it valid
     }
 }
 

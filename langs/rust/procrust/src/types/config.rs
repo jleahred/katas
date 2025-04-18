@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(test)]
 mod tests;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Config {
     pub uid: String,
     #[serde(rename = "file_format")]
@@ -21,6 +21,18 @@ pub struct ProcessConfig {
     pub apply_on: NaiveDateTime,
 
     #[serde(default)]
+    pub schedule: Option<Schedule>,
+
+    #[serde(default, rename = "type")]
+    pub process_type: Option<ProcessType>,
+
+    #[serde(default)]
+    pub depends_on: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Schedule {
+    #[serde(default)]
     pub week_days: Option<DaySelection>,
 
     #[serde(default)]
@@ -28,12 +40,6 @@ pub struct ProcessConfig {
 
     #[serde(default)]
     pub stop_time: Option<NaiveTime>,
-
-    #[serde(default, rename = "type")]
-    pub process_type: Option<ProcessType>,
-
-    #[serde(default)]
-    pub depends_on: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
