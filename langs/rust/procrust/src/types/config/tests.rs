@@ -24,25 +24,27 @@ mod tests {
             command = "echo 'Hello, World!' && sleep 10"
             apply_on = "2023-10-01T12:00:00"
             # week_days = ["mon", "wed", "thu", "fri"]     # optional  
+            type = "normal"         # optional  normal/fake
+            [process.schedule]
             week_days = "mon-fri"   # optional  
             start_time = "09:00:00" # optional
             stop_time = "23:00:00"  # optional
-            type = "normal"         # optional  normal/fake
 
             [[process]]
             id = "example_process"
             command = "echo 'Hello, World!' && sleep 10"
             apply_on = "2023-10-01T12:00:00"
             # week_days = ["mon", "wed", "thu", "fri"]     # optional  
+            type = "normal"         # optional  normal/fake
+            [process.schedule]
             week_days = "mon-fri"   # optional  
             start_time = "09:00:00" # optional
             stop_time = "23:00:00"  # optional
-            type = "normal"         # optional  normal/fake
 
         "#;
 
         // Parse the TOML data
-        let parsed: Result<Config, _> = toml::from_str(toml_data);
+        let parsed: Result<Config, _> = toml::from_str::<Config>(toml_data);
 
         // Assert that parsing was successful, providing error details if it fails
         assert!(
@@ -57,9 +59,9 @@ mod tests {
         );
 
         // Verify the parsed data
-        let config = parsed.unwrap();
-        assert_eq!(config.process.as_ref().unwrap().len(), 4);
-        assert_eq!(config.process.as_ref().unwrap()[0].id, "example_process");
-        assert_eq!(config.process.as_ref().unwrap()[1].id, "PRUEBA_C");
+        let config: Config = parsed.unwrap();
+        assert_eq!(config.process.len(), 4);
+        assert_eq!(config.process[0].id, "example_process");
+        assert_eq!(config.process[1].id, "PRUEBA_C");
     }
 }

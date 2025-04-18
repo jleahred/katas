@@ -15,13 +15,7 @@ pub fn cfg_proc_filter_by_dependency(
     let result = cfg_procs
         .0
         .iter()
-        .filter(|proc| {
-            if let Some(depends_on) = &proc.depends_on {
-                depends_on.iter().all(|dep| running_ids.contains(&dep))
-            } else {
-                true // Keep processes without dependencies
-            }
-        })
+        .filter(|proc| proc.depends_on.iter().all(|dep| running_ids.contains(&dep)))
         .cloned()
         .collect();
     CfgProcsFilterByDependency(result)
