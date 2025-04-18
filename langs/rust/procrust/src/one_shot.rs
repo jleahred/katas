@@ -16,10 +16,13 @@ pub fn one_shot() {
 
     let all_proc_watcheds = imp::read_all_process_watcheds(&path_persist_watched);
     let watched_running_processes = imp::get_running_processes(&all_proc_watcheds);
+
     let conf_proc_act_by_date = imp::get_act_proc_conf_by_date(&config);
+    let cfg_proc_filter_by_dependency =
+        imp::cfg_proc_filter_by_dependency(&conf_proc_act_by_date, &watched_running_processes);
 
     let (only_in_watched, only_in_config) =
-        imp::watched_vs_config(&all_proc_watcheds.0, &conf_proc_act_by_date.0);
+        imp::watched_vs_config(&all_proc_watcheds.0, &cfg_proc_filter_by_dependency.0);
 
     imp::print_diff(&only_in_watched.0, &only_in_config.0);
 

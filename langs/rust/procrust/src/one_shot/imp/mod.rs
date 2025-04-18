@@ -1,3 +1,4 @@
+pub(super) mod cfg_proc_filter_by_dependency;
 pub(super) mod del_watched_files_if_missing_pid;
 pub(super) mod get_act_proc_conf_by_date;
 pub(super) mod get_running_processes;
@@ -8,8 +9,9 @@ pub(super) mod send_kill_if_stopping;
 pub(super) mod watched_update2stopping;
 pub(super) mod watched_vs_config;
 
+pub(super) use cfg_proc_filter_by_dependency::cfg_proc_filter_by_dependency;
 pub(super) use del_watched_files_if_missing_pid::del_watched_files_if_missing_pid;
-pub(super) use get_act_proc_conf_by_date::get_act_proc_conf_by_date;
+pub(super) use get_act_proc_conf_by_date::{get_act_proc_conf_by_date, ActiveByDateProcConf};
 pub(super) use get_running_processes::{
     get_running_processes, AllProcWatched, WatchedRunningProcesses,
 };
