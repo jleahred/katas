@@ -2,6 +2,10 @@
 
 ## TODO
 
+* check config
+    * depends existe
+    * circular references
+    * que no hay propiedades falsas o tipos
 * command parameters
     * debug
     * ...
