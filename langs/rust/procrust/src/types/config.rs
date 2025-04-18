@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 mod tests;
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     pub uid: String,
     #[serde(rename = "file_format")]
@@ -15,6 +16,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct ProcessConfig {
     pub id: String,
     pub command: String,
@@ -31,6 +33,7 @@ pub struct ProcessConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Schedule {
     #[serde(default)]
     pub week_days: Option<DaySelection>,
@@ -43,6 +46,7 @@ pub struct Schedule {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
 #[serde(rename_all = "lowercase")]
 pub enum ProcessType {
     Normal,
