@@ -8,10 +8,10 @@ command = "echo 'Hello, World!' && sleep 10"
 apply_on = "2024-10-01T12:00:00"
 type = "normal"                              # optional  normal/fake
 
-[schedule]
+[process.schedule]
 start_time = "20:00:00"                  # optional
 stop_time = "23:00:00"                   # optional
-week_days = ["mon", "wed", "thu", "fri"] # optional  
+week_days = ["mon", "wed", "thu", "fri"] # optional
 # week_days = "mon-fri"   # also valid
 # week_days = "all"   # also valid
 

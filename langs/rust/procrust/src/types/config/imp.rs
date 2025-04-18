@@ -36,7 +36,7 @@ where
         type Value = DaySelection;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a list of weekdays or the string 'mon-fri'")
+            formatter.write_str("a list of weekdays, 'mon-fri' or 'all'")
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
