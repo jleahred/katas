@@ -33,16 +33,8 @@ pub struct ProcessConfig {
     pub process_type: Option<ProcessType>,
 
     #[serde(default)]
-    pub depends_on: Option<String>,
+    pub depends_on: Option<Vec<String>>,
 }
-
-#[derive(Debug, Clone)]
-pub struct ProcessWatched {
-    pub id: String,
-    pub status: String, // Example: "running", "stopped", etc.
-}
-
-pub struct ActiveByDateProcConf(pub Vec<ProcessConfig>);
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
