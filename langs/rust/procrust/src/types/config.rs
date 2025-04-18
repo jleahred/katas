@@ -12,7 +12,7 @@ pub struct Config {
     pub uid: String,
     #[serde(rename = "file_format")]
     pub _file_format: String,
-    pub process: Option<Vec<ProcessConfig>>,
+    pub process: Vec<ProcessConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -26,23 +26,20 @@ pub struct ProcessConfig {
     pub schedule: Option<Schedule>,
 
     #[serde(default, rename = "type")]
-    pub process_type: Option<ProcessType>,
+    pub process_type: ProcessType,
 
     #[serde(default)]
-    pub depends_on: Option<Vec<String>>,
+    pub depends_on: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Schedule {
     #[serde(default)]
-    pub week_days: Option<DaySelection>,
+    pub week_days: DaySelection,
 
-    #[serde(default)]
-    pub start_time: Option<NaiveTime>,
-
-    #[serde(default)]
-    pub stop_time: Option<NaiveTime>,
+    pub start_time: NaiveTime,
+    pub stop_time: NaiveTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -51,6 +48,12 @@ pub struct Schedule {
 pub enum ProcessType {
     Normal,
     Fake,
+}
+
+impl Default for ProcessType {
+    fn default() -> Self {
+        ProcessType::Normal
+    }
 }
 
 impl ProcessConfig {
@@ -71,6 +74,12 @@ pub enum DaySelection {
     Mon2Fri,
     #[serde(rename = "all")]
     All,
+}
+
+impl Default for DaySelection {
+    fn default() -> Self {
+        DaySelection::All
+    }
 }
 
 impl DaySelection {
