@@ -50,6 +50,21 @@ pub enum ProcessType {
     Fake,
 }
 
+impl Config {
+    pub fn check_config(&self) -> Result<(), String> {
+        if self.uid.is_empty() {
+            return Err("UID cannot be empty".to_string());
+        }
+        if self.process.is_empty() {
+            return Err("Process list cannot be empty".to_string());
+        }
+        for process in &self.process {
+            process.check_config()?;
+        }
+        Ok(())
+    }
+}
+
 impl Default for ProcessType {
     fn default() -> Self {
         ProcessType::Normal
