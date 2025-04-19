@@ -9,7 +9,6 @@ pub(crate) fn one_shot() {
     println!("Checking... {}\n", chrono::Local::now());
 
     let config: Config = read_config_file("processes.toml");
-    dbg!(&config);
     let path_persist_watched = format!("/tmp/procrust/{}/", config.uid);
     fs::create_dir_all(&path_persist_watched).expect("Failed to create directory on /tmp/procrust");
 

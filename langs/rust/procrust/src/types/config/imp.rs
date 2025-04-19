@@ -67,3 +67,38 @@ pub(super) fn matches(ds: &DaySelection, weekday: chrono::Weekday) -> bool {
         DaySelection::All => true,
     }
 }
+
+pub(crate) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> {
+    let now = Local::now().naive_local();
+    let mut process_map: HashMap<ProcessId, ProcessConfig> = HashMap::new();
+
+    for process in &config.process {
+        if process.apply_on > now {
+            continue;
+        }
+
+        if let Some(schedule) = &process.schedule {
+            let weekday = now.weekday();
+            let time = now.time();
+
+            if !schedule.week_days.matches(weekday) {
+                continue;
+            }
+
+            if time < schedule.start_time || time >= schedule.stop_time {
+                continue;
+            }
+        }
+
+        // keep more recent process config
+        let entry = process_map
+            .entry(process.id.clone())
+            .or_insert_with(|| process.clone());
+
+        if entry.apply_on < process.apply_on {
+            *entry = process.clone();
+        }
+    }
+
+    process_map.values().cloned().collect()
+}
