@@ -1,5 +1,5 @@
-use crate::one_shot2::running_status::ProcessStatus;
-use crate::one_shot2::running_status::RunningStatus;
+use crate::one_shot::running_status::ProcessStatus;
+use crate::one_shot::running_status::RunningStatus;
 use crate::types::config::ProcessId;
 
 pub(crate) fn get_running_ids(runnstatus: &RunningStatus) -> Vec<ProcessId> {

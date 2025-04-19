@@ -1,5 +1,5 @@
 // mod one_shot;
-mod one_shot2;
+mod one_shot;
 mod read_config_file;
 mod types;
 mod cli_params;
@@ -12,7 +12,7 @@ use std::time::Duration;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 && args[1] == "--one-shot" {
-        one_shot2::one_shot2();
+        one_shot::one_shot2();
         return;
     } else if args.len() == 1 {
         run_in_loop()
