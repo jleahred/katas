@@ -1,10 +1,7 @@
 use crate::one_shot::running_status::{ProcessStatus, ProcessWatched, RunningStatus};
-use crate::types::config::{ProcessConfig, ProcessId};
-use chrono::NaiveDateTime;
+use crate::types::config::ProcessConfig;
 use std::{
-    fs::{self, File},
-    io::{self, Write},
-    path::Path,
+    io,
     process::{Child, Command},
     thread,
     time::Duration,
