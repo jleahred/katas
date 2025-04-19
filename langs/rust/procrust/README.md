@@ -3,6 +3,7 @@
 ## TODO
 
 * fake type does not run
+* helth-check
 * check config
     * depends exists
     * circular references
@@ -23,7 +24,7 @@
 
 ## Description
 
-The goal is to create a simple and secure tool to schedule and manage the startup of multiple services on a machine.
+The goal is to create a simple and secure tool to schedule and manage the startup of multiple services/processes on a machine.
 
 It will work with a text file (currently a TOML configuration) for management.
 
