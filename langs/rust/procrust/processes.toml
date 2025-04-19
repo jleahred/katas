@@ -19,12 +19,12 @@ week_days = ["mon", "wed", "thu", "sat"] # optional
 [[process]]
 id = "TEST_A"
 command = "while true; do echo $(date)  '  test a'; sleep 1; done"
-apply_on = "2024-11-01T12:20:00"
+apply_on = "2029-11-01T12:20:00"
 
 [[process]]
 id = "DEPENDS_ON_A"
 command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
-apply_on = "2029-10-01T12:20:00"
+apply_on = "2024-10-01T12:20:00"
 depends_on = ["TEST_A"]
 
 [[process]]
