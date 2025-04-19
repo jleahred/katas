@@ -1,4 +1,4 @@
-use crate::one_shot2::running_status::{ProcessStatus, ProcessWatched, RunningStatus};
+use crate::one_shot::running_status::{ProcessStatus, ProcessWatched, RunningStatus};
 use crate::types::config::{ProcessConfig, ProcessId};
 use chrono::NaiveDateTime;
 use std::{

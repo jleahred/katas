@@ -1,33 +1,30 @@
 mod imp;
+mod running_status;
 
-use crate::read_config_file::read_config_file;
+use crate::read_config_file::read_config_file_or_panic;
 use crate::types::config::Config;
-use std::fs;
 
-pub(crate) fn one_shot() {
+const RUNNING_STATUS_FOLDER: &str = "/tmp/procrust";
+
+pub(crate) fn one_shot2() {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
-    let config: Config = read_config_file("processes.toml");
-    let path_persist_watched = format!("/tmp/procrust/{}/", config.uid);
-    fs::create_dir_all(&path_persist_watched).expect("Failed to create directory on /tmp/procrust");
+    let config: Config = read_config_file_or_panic("processes.toml");
+    let running_status = running_status::load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
+    let active_procs_by_config = config.get_active_procs_by_config();
+    let running_processes = running_status.get_running_ids();
+    let active_procs_cfg_all_depends_running = imp::filter_active_procs_by_config_with_running(
+        &active_procs_by_config,
+        &running_processes,
+    );
+    let pending2run_processes =
+        imp::get_pending2run_processes(&active_procs_cfg_all_depends_running, &running_processes);
 
-    imp::send_kill_if_stopping(&path_persist_watched);
-
-    let all_proc_watcheds = imp::read_all_process_watcheds(&path_persist_watched);
-    let watched_running_processes = imp::get_running_processes(&all_proc_watcheds);
-
-    let conf_proc_act_by_date = imp::get_act_proc_conf_by_date(&config);
-    let cfg_proc_filter_by_dependency =
-        imp::cfg_proc_filter_by_dependency(&conf_proc_act_by_date, &watched_running_processes);
-
-    let (only_in_watched, only_in_config) =
-        imp::watched_vs_config(&all_proc_watcheds.0, &cfg_proc_filter_by_dependency.0);
-
-    imp::print_diff(&only_in_watched.0, &only_in_config.0);
-
-    imp::watched_update2stopping(&path_persist_watched, &only_in_watched.0);
-
-    imp::del_watched_files_if_missing_pid(&path_persist_watched, &all_proc_watcheds);
-    imp::launch_missing_processes(&path_persist_watched, &config.uid, &only_in_config.0);
+    running_status
+        .del_if_missing_pid()
+        .send_kill_on_stopping_processes()
+        .mark_stopping(&active_procs_cfg_all_depends_running)
+        .launch_missing_processes(&pending2run_processes)
+        .save(RUNNING_STATUS_FOLDER);
 }
