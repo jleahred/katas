@@ -1,7 +1,7 @@
 use crate::types::config::ProcessConfig;
 use crate::types::ProcessWatched;
 
-pub fn print_diff(only_in_watched: &[ProcessWatched], only_in_config: &[ProcessConfig]) {
+pub(crate) fn print_diff(only_in_watched: &[ProcessWatched], only_in_config: &[ProcessConfig]) {
     if !only_in_watched.is_empty() {
         println!("\nProcesses only in watched:");
     }

@@ -2,7 +2,7 @@ use crate::types::{ProcessStatus, ProcessWatched};
 use std::fs;
 use std::path::Path;
 
-pub fn send_kill_if_stopping(watched_dir: &str) {
+pub(crate) fn send_kill_if_stopping(watched_dir: &str) {
     let entries = match fs::read_dir(watched_dir) {
         Ok(entries) => entries,
         Err(e) => {

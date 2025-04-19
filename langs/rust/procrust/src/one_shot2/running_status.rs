@@ -8,50 +8,50 @@ use std::collections::HashMap;
 pub(crate) use imp::load_running_status::load_running_status;
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct RunningStatus {
-    pub uid: String,
+pub(crate) struct RunningStatus {
+    pub(crate) uid: String,
     #[serde(rename = "file_format")]
-    pub _file_format: String,
-    pub processes: HashMap<ProcessId, ProcessWatched>,
+    pub(crate) _file_format: String,
+    pub(crate) processes: HashMap<ProcessId, ProcessWatched>,
 }
 
 impl RunningStatus {
-    pub fn save(self, file_path: &str) {
+    pub(crate) fn save(self, file_path: &str) {
         imp::save(&self, file_path);
     }
-    pub fn send_kill_on_stopping_processes(self) -> Self {
+    pub(crate) fn send_kill_on_stopping_processes(self) -> Self {
         imp::send_kill_on_stopping_processes(self)
     }
 
-    pub fn mark_running_as_stop_by_config(mut self) -> Self {
+    pub(crate) fn mark_running_as_stop_by_config(mut self) -> Self {
         // todo
         self
     }
 
-    pub fn del_if_missing_pid(mut self) -> Self {
+    pub(crate) fn del_if_missing_pid(mut self) -> Self {
         // todo
         self
     }
-    pub fn launch_missing_processes(mut self, proc_conf: &Vec<ProcessConfig>) -> Self {
+    pub(crate) fn launch_missing_processes(mut self, proc_conf: &Vec<ProcessConfig>) -> Self {
         imp::launch_missing_processes(self, proc_conf)
     }
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
-pub struct ProcessId(pub String);
+pub(crate) struct ProcessId(pub(crate) String);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProcessWatched {
-    pub id: ProcessId,
-    pub pid: u32,
-    pub procrust_uid: String,
-    pub apply_on: NaiveDateTime,
-    pub status: ProcessStatus,
-    pub applied_on: NaiveDateTime,
+pub(crate) struct ProcessWatched {
+    pub(crate) id: ProcessId,
+    pub(crate) pid: u32,
+    pub(crate) procrust_uid: String,
+    pub(crate) apply_on: NaiveDateTime,
+    pub(crate) status: ProcessStatus,
+    pub(crate) applied_on: NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum ProcessStatus {
+pub(crate) enum ProcessStatus {
     Running,
     Stopping {
         retries: u32,

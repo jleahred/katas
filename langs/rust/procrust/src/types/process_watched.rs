@@ -2,17 +2,17 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProcessWatched {
-    pub id: String,
-    pub pid: u32,
-    pub procrust_uid: String,
-    pub apply_on: NaiveDateTime,
-    pub status: ProcessStatus,
-    pub applied_on: NaiveDateTime,
+pub(crate) struct ProcessWatched {
+    pub(crate) id: String,
+    pub(crate) pid: u32,
+    pub(crate) procrust_uid: String,
+    pub(crate) apply_on: NaiveDateTime,
+    pub(crate) status: ProcessStatus,
+    pub(crate) applied_on: NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum ProcessStatus {
+pub(crate) enum ProcessStatus {
     Running,
     Stopping {
         retries: u32,

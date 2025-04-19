@@ -2,7 +2,7 @@ use super::AllProcWatched;
 use std::fs;
 use std::io::{self};
 
-pub fn del_watched_files_if_missing_pid(
+pub(crate) fn del_watched_files_if_missing_pid(
     path_persist_watched: &str,
     watched_processes: &AllProcWatched,
 ) {
