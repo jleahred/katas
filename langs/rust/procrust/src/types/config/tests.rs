@@ -61,7 +61,7 @@ mod tests {
         // Verify the parsed data
         let config: Config = parsed.unwrap();
         assert_eq!(config.process.len(), 4);
-        assert_eq!(config.process[0].id, "example_process");
-        assert_eq!(config.process[1].id, "PRUEBA_C");
+        assert_eq!(config.process[0].id.0, "example_process");
+        assert_eq!(config.process[1].id.0, "PRUEBA_C");
     }
 }

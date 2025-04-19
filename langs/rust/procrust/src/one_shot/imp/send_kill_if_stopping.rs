@@ -27,7 +27,6 @@ fn process_file(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let content = fs::read_to_string(path)?;
     let mut watched: ProcessWatched = toml::from_str(&content)?;
 
-    dbg!(&watched.pid);
     match watched.status {
         ProcessStatus::Stopping {
             ref mut retries,
