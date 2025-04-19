@@ -3,7 +3,7 @@ use crate::types::ProcessWatched;
 use std::fs;
 use std::path::Path;
 
-pub fn read_all_process_watcheds(dir_path: &str) -> AllProcWatched {
+pub(crate) fn read_all_process_watcheds(dir_path: &str) -> AllProcWatched {
     if let Ok(entries) = fs::read_dir(dir_path) {
         let processes = entries
             .filter_map(|entry| entry.ok())

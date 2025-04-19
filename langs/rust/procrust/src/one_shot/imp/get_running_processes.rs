@@ -1,9 +1,9 @@
 use crate::types::ProcessWatched;
 
-pub struct AllProcWatched(pub Vec<ProcessWatched>);
+pub(crate) struct AllProcWatched(pub(crate) Vec<ProcessWatched>);
 
-pub struct WatchedRunningProcesses(pub(super) Vec<crate::types::ProcessWatched>);
-pub fn get_running_processes(processes: &AllProcWatched) -> WatchedRunningProcesses {
+pub(crate) struct WatchedRunningProcesses(pub(super) Vec<crate::types::ProcessWatched>);
+pub(crate) fn get_running_processes(processes: &AllProcWatched) -> WatchedRunningProcesses {
     let result = processes
         .0
         .iter()

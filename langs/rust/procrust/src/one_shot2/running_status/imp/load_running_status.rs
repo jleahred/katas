@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-pub fn load_running_status(file_path: &str, file_uuid: &str) -> RunningStatus {
+pub(crate) fn load_running_status(file_path: &str, file_uuid: &str) -> RunningStatus {
     let full_path = format!("{}/{}.toml", file_path, file_uuid); // Construir la ruta completa
 
     if Path::new(&full_path).exists() {

@@ -4,7 +4,7 @@ use crate::read_config_file::read_config_file;
 use crate::types::config::Config;
 use std::fs;
 
-pub fn one_shot() {
+pub(crate) fn one_shot() {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 

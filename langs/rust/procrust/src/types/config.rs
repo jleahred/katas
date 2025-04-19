@@ -1,57 +1,58 @@
 mod imp;
 
-use chrono::{NaiveDateTime, NaiveTime};
+use chrono::{Datelike, Local, NaiveDateTime, NaiveTime, Timelike};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-pub struct Config {
-    pub uid: String,
+pub(crate) struct Config {
+    pub(crate) uid: String,
     #[serde(rename = "file_format")]
-    pub _file_format: String,
-    pub process: Vec<ProcessConfig>,
+    pub(crate) _file_format: String,
+    pub(crate) process: Vec<ProcessConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct ProcessConfig {
-    pub id: String,
-    pub command: String,
-    pub apply_on: NaiveDateTime,
+pub(crate) struct ProcessConfig {
+    pub(crate) id: String,
+    pub(crate) command: String,
+    pub(crate) apply_on: NaiveDateTime,
 
     #[serde(default)]
-    pub schedule: Option<Schedule>,
+    pub(crate) schedule: Option<Schedule>,
 
     #[serde(default, rename = "type")]
-    pub process_type: ProcessType,
+    pub(crate) process_type: ProcessType,
 
     #[serde(default)]
-    pub depends_on: Vec<String>,
+    pub(crate) depends_on: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct Schedule {
+pub(crate) struct Schedule {
     #[serde(default)]
-    pub week_days: DaySelection,
+    pub(crate) week_days: DaySelection,
 
-    pub start_time: NaiveTime,
-    pub stop_time: NaiveTime,
+    pub(crate) start_time: NaiveTime,
+    pub(crate) stop_time: NaiveTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "lowercase")]
-pub enum ProcessType {
+pub(crate) enum ProcessType {
     Normal,
     Fake,
 }
 
 impl Config {
-    pub fn check_config(&self) -> Result<(), String> {
+    pub(crate) fn check_config(&self) -> Result<(), String> {
         if self.uid.is_empty() {
             return Err("UID cannot be empty".to_string());
         }
@@ -63,6 +64,43 @@ impl Config {
         }
         Ok(())
     }
+
+    pub(crate) fn get_active_procs_by_config(&self) -> Vec<ProcessConfig> {
+        let now = Local::now().naive_local();
+        let mut process_map: HashMap<String, ProcessConfig> = HashMap::new();
+
+        for process in &self.process {
+            // Ignorar procesos futuros
+            if process.apply_on > now {
+                continue;
+            }
+
+            // Verificar si el proceso tiene un schedule y si aplica
+            if let Some(schedule) = &process.schedule {
+                let weekday = now.weekday();
+                let time = now.time();
+
+                if !schedule.week_days.matches(weekday) {
+                    continue;
+                }
+
+                if time < schedule.start_time || time >= schedule.stop_time {
+                    continue;
+                }
+            }
+
+            // Mantener el proceso más reciente según apply_on
+            let entry = process_map
+                .entry(process.id.clone())
+                .or_insert_with(|| process.clone());
+
+            if entry.apply_on < process.apply_on {
+                *entry = process.clone();
+            }
+        }
+
+        process_map.into_values().collect()
+    }
 }
 
 impl Default for ProcessType {
@@ -72,7 +110,7 @@ impl Default for ProcessType {
 }
 
 impl ProcessConfig {
-    pub fn check_config(&self) -> Result<(), String> {
+    pub(crate) fn check_config(&self) -> Result<(), String> {
         if self.command.is_empty() {
             return Err("Command cannot be empty".to_string());
         }
@@ -83,7 +121,7 @@ impl ProcessConfig {
 //  ----------------
 
 #[derive(Debug, Clone, Serialize)]
-pub enum DaySelection {
+pub(crate) enum DaySelection {
     Days(Vec<chrono::Weekday>),
     #[serde(rename = "mon-fri")]
     Mon2Fri,
@@ -98,7 +136,7 @@ impl Default for DaySelection {
 }
 
 impl DaySelection {
-    pub fn matches(&self, weekday: chrono::Weekday) -> bool {
+    pub(crate) fn matches(&self, weekday: chrono::Weekday) -> bool {
         imp::matches(self, weekday)
     }
 }

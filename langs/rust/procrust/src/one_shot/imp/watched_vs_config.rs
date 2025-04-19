@@ -1,10 +1,10 @@
 use crate::types::config::ProcessConfig;
 use crate::types::ProcessWatched;
 
-pub struct OnlyInWatched(pub Vec<ProcessWatched>);
-pub struct OnlyInConfig(pub Vec<ProcessConfig>);
+pub(crate) struct OnlyInWatched(pub(crate) Vec<ProcessWatched>);
+pub(crate) struct OnlyInConfig(pub(crate) Vec<ProcessConfig>);
 
-pub fn watched_vs_config(
+pub(crate) fn watched_vs_config(
     watched: &[ProcessWatched],
     config: &[ProcessConfig],
 ) -> (OnlyInWatched, OnlyInConfig) {

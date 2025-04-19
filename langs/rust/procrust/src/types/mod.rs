@@ -1,5 +1,5 @@
-pub mod config;
-// pub mod process_watched;
+pub(crate) mod config;
+// pub(crate) mod process_watched;
 
-// pub use process_watched::ProcessStatus;
-// pub use process_watched::ProcessWatched;
+// pub(crate) use process_watched::ProcessStatus;
+// pub(crate) use process_watched::ProcessWatched;

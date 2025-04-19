@@ -4,9 +4,9 @@ use super::ActiveByDateProcConf;
 use super::WatchedRunningProcesses;
 use crate::types::config::ProcessConfig;
 
-pub struct CfgProcsFilterByDependency(pub Vec<ProcessConfig>);
+pub(crate) struct CfgProcsFilterByDependency(pub(crate) Vec<ProcessConfig>);
 
-pub fn cfg_proc_filter_by_dependency(
+pub(crate) fn cfg_proc_filter_by_dependency(
     cfg_procs: &ActiveByDateProcConf,
     running: &WatchedRunningProcesses,
 ) -> CfgProcsFilterByDependency {

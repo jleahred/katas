@@ -13,7 +13,7 @@ use std::{
 };
 use toml;
 
-pub fn launch_missing_processes(
+pub(crate) fn launch_missing_processes(
     path_persist_watched: &str,
     _config_id: &str,
     missing_processes: &[ProcessConfig],

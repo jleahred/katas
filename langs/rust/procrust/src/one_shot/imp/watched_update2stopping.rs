@@ -4,7 +4,10 @@ use std::io::Write;
 use std::path::Path;
 use toml;
 
-pub fn watched_update2stopping(path_persist_watched: &str, watched_processes: &[ProcessWatched]) {
+pub(crate) fn watched_update2stopping(
+    path_persist_watched: &str,
+    watched_processes: &[ProcessWatched],
+) {
     for process in watched_processes {
         let updated_process = match process.status {
             ProcessStatus::Stopping { .. } => {

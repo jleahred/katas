@@ -2,9 +2,9 @@ use crate::types::config::{Config, ProcessConfig, ProcessType};
 use chrono::{Datelike, Local, NaiveDateTime};
 use std::collections::HashMap;
 
-pub struct ActiveByDateProcConf(pub Vec<ProcessConfig>);
+pub(crate) struct ActiveByDateProcConf(pub(crate) Vec<ProcessConfig>);
 
-pub fn get_act_proc_conf_by_date(config: &Config) -> ActiveByDateProcConf {
+pub(crate) fn get_act_proc_conf_by_date(config: &Config) -> ActiveByDateProcConf {
     let now = Local::now().naive_local();
     let mut process_map: HashMap<String, ProcessConfig> = HashMap::new();
 
