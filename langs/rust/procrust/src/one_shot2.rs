@@ -1,68 +1,21 @@
-mod imp;
+mod running_status;
+use crate::read_config_file::read_config_file_or_panic;
+use crate::types::config::{Config, ProcessConfig};
 
-use crate::read_config_file::read_config_file;
-use crate::types::config::Config;
-use crate::types::config::RunningStatus;
-use std::fs;
-use std::fs::{self};
-use std::path::Path;
+const RUNNING_STATUS_FOLDER: &str = "/tmp/procrust";
 
 pub fn one_shot2() {
     println!("\n--------------------------------------------------------------------------------");
     println!("Checking... {}\n", chrono::Local::now());
 
-    let path_persist_running_status = format!("/tmp/procrust/{}/", config.uid);
-    let running_status = load_running_status(path_persist_running_status);
-}
+    let config: Config = read_config_file_or_panic("processes.toml");
+    let running_status = running_status::load_running_status(RUNNING_STATUS_FOLDER, &config.uid);
+    let active_procs_by_config: Vec<ProcessConfig> = config.get_active_procs_by_config();
 
-pub fn load_running_status<P: AsRef<Path>>(file_path: P) -> RunningStatus {
-    let content = fs::read_to_string(file_path.as_ref()).unwrap_or_else(|err| {
-        panic!(
-            "Failed to read file {}: {}",
-            file_path.as_ref().display(),
-            err
-        )
-    });
-    toml::from_str(&content).unwrap_or_else(|err| {
-        panic!(
-            "Failed to parse TOML from file {}: {}",
-            file_path.as_ref().display(),
-            err
-        )
-    })
-}
-
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-#[derive(Deserialize, Debug)]
-pub struct RunningStatus {
-    pub uid: String,
-    #[serde(rename = "file_format")]
-    pub _file_format: String,
-    pub processes: HashMap<ProcessId, ProcessWatched>,
-}
-
-#[derive(Deserialize, PartialEq, Eq, Hash, Debug)]
-pub struct ProcessId(pub String);
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProcessWatched {
-    pub id: String,
-    pub pid: u32,
-    pub procrust_uid: String,
-    pub apply_on: NaiveDateTime,
-    pub status: ProcessStatus,
-    pub applied_on: NaiveDateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum ProcessStatus {
-    Running,
-    Stopping {
-        retries: u32,
-        last_attempt: chrono::DateTime<chrono::Local>,
-    },
-    ScheduledStop,
+    running_status
+        .send_kill_on_stopping_processes()
+        .mark_running_as_stop_by_config()
+        .del_if_missing_pid()
+        .launch_missing_processes(&config.process)
+        .save(RUNNING_STATUS_FOLDER);
 }

@@ -2,7 +2,7 @@ mod imp;
 
 use crate::read_config_file::read_config_file;
 use crate::types::config::Config;
-use std::fs::{self};
+use std::fs;
 
 pub fn one_shot() {
     println!("\n--------------------------------------------------------------------------------");
