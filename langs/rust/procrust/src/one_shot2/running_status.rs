@@ -42,8 +42,16 @@ impl RunningStatus {
         imp::get_running_ids(self)
     }
 
-    pub(crate) fn inspect(self) -> Self {
-        fun(&self);
+    pub(crate) fn debug(self) -> Self {
+        dbg!(&self);
+        self
+    }
+
+    pub(crate) fn inspect<F>(self, func: F) -> Self
+    where
+        F: Fn(&Self),
+    {
+        func(&self);
         self
     }
 }
@@ -79,6 +87,10 @@ pub(crate) fn mark_stopping(
 
     for (id, process) in rs.processes.iter_mut() {
         if !active_ids.contains(id) && process.status == ProcessStatus::Running {
+            println!(
+                "Marking process {} with PID {} as stopping",
+                id.0, process.pid
+            );
             process.status = ProcessStatus::Stopping {
                 retries: 0,
                 last_attempt: chrono::Local::now(),
@@ -134,11 +146,11 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
             to_remove.push(id.clone());
         } else {
             // Check if the process is still being watched but procrust_uid is different
-            let remove = match get_process_env_var(process.pid, "PROCRUST_UID") {
+            let remove = match get_process_env_var(process.pid, "PROCRUST") {
                 Ok(Some(puid)) => {
                     if puid != process.procrust_uid {
                         eprintln!(
-                            "Removing file watched: Different procrust UID for PID {}: {} -> {}",
+                            "Removing watched: Different procrust UID for PID {}: {} -> {}",
                             process.pid, puid, process.procrust_uid
                         );
                         true
@@ -150,10 +162,16 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
                         false
                     }
                 }
-                Ok(None) => true,
+                Ok(None) => {
+                    eprintln!(
+                        "Removing watched: missing procrust_uid by PID {}",
+                        process.pid
+                    );
+                    true
+                }
                 Err(e) => {
                     eprintln!(
-                        "Removing file: Failed to get command by PID {}: {}",
+                        "Removing watched: Failed to procrust_uid by PID {}: {}",
                         process.pid, e
                     );
                     true

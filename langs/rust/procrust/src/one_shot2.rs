@@ -22,9 +22,9 @@ pub(crate) fn one_shot2() {
         imp::get_pending2run_processes(&active_procs_cfg_all_depends_running, &running_processes);
 
     running_status
+        .del_if_missing_pid()
         .send_kill_on_stopping_processes()
         .mark_stopping(&active_procs_cfg_all_depends_running)
-        .del_if_missing_pid()
         .launch_missing_processes(&pending2run_processes)
         .save(RUNNING_STATUS_FOLDER);
 }
