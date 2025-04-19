@@ -1,4 +1,3 @@
-// mod one_shot;
 mod one_shot;
 mod read_config_file;
 mod types;
