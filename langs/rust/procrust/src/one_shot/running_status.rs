@@ -1,6 +1,6 @@
 pub(crate) mod imp;
 
-use crate::types::config::{Command, ConfigUid, ProcessConfig, ProcessId};
+use crate::types::config::{Command, CommandCheckHealth, ConfigUid, ProcessConfig, ProcessId};
 use chrono::NaiveDateTime;
 pub(crate) use imp::load_running_status::load_running_status;
 use serde::{Deserialize, Serialize};
@@ -75,10 +75,12 @@ pub(crate) enum ProcessStatus {
     Ready2Start {
         command: Command,
         process_id: ProcessId,
+        start_health_check: Option<CommandCheckHealth>,
         apply_on: NaiveDateTime,
     },
     PendingHealthStartCheck {
         pid: u32,
+        start_health_check: Option<CommandCheckHealth>,
         retries: u32,
         last_attempt: chrono::DateTime<chrono::Local>,
     },

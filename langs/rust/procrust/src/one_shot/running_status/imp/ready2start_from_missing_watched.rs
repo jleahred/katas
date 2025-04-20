@@ -15,6 +15,7 @@ pub(crate) fn ready2start_from_missing_watched(
                 status: ProcessStatus::Ready2Start {
                     command: process.command.clone(),
                     process_id: process.id.clone(),
+                    start_health_check: process.start_health_check.clone(),
                     apply_on: process.apply_on,
                 },
                 applied_on: chrono::Local::now().naive_utc(),

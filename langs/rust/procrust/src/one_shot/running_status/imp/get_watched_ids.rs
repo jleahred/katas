@@ -11,12 +11,11 @@ pub(crate) fn get_watched_ids(runnstatus: &RunningStatus) -> Vec<ProcessId> {
                 ProcessStatus::ScheduledStop { pid } => Some(pid),
                 ProcessStatus::Stopping { pid, .. } => Some(pid),
                 ProcessStatus::Running { pid } => Some(pid),
-
-                ProcessStatus::PendingHealthStartCheck { .. }
-                | ProcessStatus::Ready2Start { .. } => None,
+                ProcessStatus::PendingHealthStartCheck { pid, .. } => Some(pid),
+                ProcessStatus::Ready2Start { .. } => None,
             };
 
-            if opid.is_none() {
+            if opid.is_some() {
                 Some(id.clone())
             } else {
                 None

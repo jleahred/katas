@@ -2,6 +2,7 @@
 
 ## TODO
 
+* rname CommandCheckHealth
 * command stop
 * fake type does not run
 * helth-check
@@ -77,6 +78,7 @@ If only the command line is changed, the system will not restart the service (th
 
 It is not good practice to change only the command line, and restarting the service is a delicate operation.
 
+
 ### Schedule a future new version
 
 Suppose we want to apply a change to service A for startup tomorrow
@@ -148,7 +150,8 @@ depends_on = ["TEST_A"]
 stateDiagram-v2
     [*] --> Ready2Start
     Ready2Start --> PendingHelthCheckStart: ok
-    PendingHelthCheckStart --> Running
+    PendingHelthCheckStart --> Ready2Run
+    Ready2Run -> Running
     Running --> ScheduledStop: send kill
     ScheduledStop --> Stopping: send kill
     Stopping --> [*]: pid gone
