@@ -9,7 +9,7 @@ pub(crate) fn send_kill_on_stopping_processes(mut st: RunningStatus) -> RunningS
             }
             Err(err) => {
                 eprintln!(
-                    "Failed to send kill signal for process '{}': {}",
+                    "[{}] Failed to send kill signal for process: {}",
                     proc_watched.id.0, err
                 );
             }
