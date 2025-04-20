@@ -22,7 +22,7 @@ pub(crate) fn ready2start_from_missing_watched(
             },
         );
         println!(
-            "Process {} is ready to start. Command: {}",
+            "[{}] Process is ready to start. Command: {}",
             process.id.0, process.command.0
         );
     }

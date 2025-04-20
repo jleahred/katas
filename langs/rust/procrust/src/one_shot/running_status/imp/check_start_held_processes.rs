@@ -17,7 +17,7 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
         {
             if retries > 0 && last_attempt + Duration::from_secs(20) > Local::now() {
                 println!(
-                    "Skipping start health check for process {}. Last attempt was at {}",
+                    "[{}] Skipping start health check. Last attempt was at {}",
                     id.0, last_attempt
                 );
                 continue;
@@ -25,19 +25,19 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
 
             match start_health_check {
                 Some(ref cmd) => {
-                    println!("cheking start health for process {}", id.0);
+                    println!("[{}] cheking start health", id.0);
                     let timeout = cmd.timeout.unwrap_or_else(|| Duration::from_secs(2));
                     match run_command_with_timeout(&cmd.command.0, timeout) {
                         Ok(()) => {
-                            println!("Health check succeeded for process {}", id.0);
+                            println!("[{}] Health check succeeded for process", id.0);
                             process.status = ProcessStatus::Running { pid };
                         }
                         Err(err) => {
                             eprintln!(
-                                "Health check failed for process {}: {}. Retries: {}",
+                                "[{}] Health check failed: {}. Retries: {}",
                                 id.0, err, retries
                             );
-                            eprintln!("Program process restart {} ", id.0);
+                            eprintln!("[{}] Program process restart", id.0);
                             if retries > 10 {
                                 process.status = ProcessStatus::ScheduledStop { pid };
                                 process.applied_on = Local::now().naive_local();
@@ -59,7 +59,7 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
                 }
                 None => {
                     println!(
-                        "No start health check command provided for process {}",
+                        "[{}] No start health check command provided for process",
                         id.0
                     );
                     process.status = ProcessStatus::Running { pid };

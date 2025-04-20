@@ -19,7 +19,7 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
             // Check if the process is running
             if !is_process_running(pid) {
                 // If not running, mark the process for removal
-                println!("Removing process {} with PID {}: Not running", id.0, pid);
+                println!("[{}] Removing process  with PID {}: Not running", id.0, pid);
                 to_remove.push(id.clone());
             } else {
                 // Check if the process is still being watched but procrust_uid is different
@@ -27,8 +27,8 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
                     Ok(Some(puid)) => {
                         if puid != process.procrust_uid {
                             eprintln!(
-                                "Removing watched: Different procrust UID for PID {}: {} -> {}",
-                                pid, puid, process.procrust_uid
+                                "[{}] Removing watched: Different procrust UID for PID: {} -> {}",
+                                id.0, pid, process.procrust_uid
                             );
                             true
                         } else {
@@ -40,13 +40,16 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
                         }
                     }
                     Ok(None) => {
-                        eprintln!("Removing watched: missing procrust_uid by PID {}", pid);
+                        eprintln!(
+                            "[{}] Removing watched: missing procrust_uid by PID {}",
+                            id.0, pid
+                        );
                         true
                     }
                     Err(e) => {
                         eprintln!(
-                            "Removing watched: Failed to procrust_uid by PID {}: {}",
-                            pid, e
+                            "[{}]Removing watched: Failed to procrust_uid by PID {}: {}",
+                            id.0, pid, e
                         );
                         true
                     }

@@ -19,13 +19,13 @@ pub(crate) fn launch_ready2start(mut running_status: RunningStatus) -> RunningSt
                 apply_on,
             } => {
                 println!(
-                    "Running process {}    apply_on: {}",
+                    "[{}] Running process     apply_on: {}",
                     process.id.0, process.apply_on
                 );
                 match run_process(&command, &process_id, &apply_on) {
                     Ok(pid) => {
                         println!(
-                            "Launched process {} with PID: {}   apply_on: {}",
+                            "[{}] Launched process  with PID: {}   apply_on: {}",
                             process.id.0, pid, process.apply_on
                         );
 
@@ -46,7 +46,7 @@ pub(crate) fn launch_ready2start(mut running_status: RunningStatus) -> RunningSt
                             },
                         );
                     }
-                    Err(e) => eprintln!("Failed to launch process {}: {}", process.id.0, e),
+                    Err(e) => eprintln!("[{}] Failed to launch process: {}", process.id.0, e),
                 }
             }
             _ => continue,
