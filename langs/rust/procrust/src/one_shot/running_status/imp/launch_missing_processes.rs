@@ -26,7 +26,7 @@ pub(crate) fn launch_missing_processes(
                         id: process.id.clone(),
                         pid,
                         apply_on: process.apply_on,
-                        procrust_uid: process.command.clone(), // TODO: Mejorar con un UUID único
+                        procrust_uid: process.command.0.clone(), // TODO: Mejorar con un UUID único
                         status: ProcessStatus::Running,
                         applied_on: chrono::Local::now().naive_utc(),
                     },
@@ -42,8 +42,8 @@ pub(crate) fn launch_missing_processes(
 fn run_process(process: &ProcessConfig) -> Result<u32, io::Error> {
     let mut child: Child = Command::new("sh")
         .arg("-c")
-        .arg(&process.command)
-        .env("PROCRUST", &process.command)
+        .arg(&process.command.0)
+        .env("PROCRUST", &process.command.0)
         .spawn()?;
     //  todo: convendría desconectar la salida de error y la salida estándar para evitar zombis?
 

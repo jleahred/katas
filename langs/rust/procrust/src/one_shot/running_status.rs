@@ -1,6 +1,6 @@
 pub(crate) mod imp;
 
-use crate::types::config::{ProcessConfig, ProcessId};
+use crate::types::config::{ConfigUid, ProcessConfig, ProcessId};
 use chrono::NaiveDateTime;
 pub(crate) use imp::load_running_status::load_running_status;
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub(crate) struct RunningStatus {
-    pub(crate) uid: String,
+    pub(crate) file_uid: ConfigUid,
     #[serde(rename = "file_format")]
     pub(crate) _file_format: String,
     pub(crate) processes: HashMap<ProcessId, ProcessWatched>,

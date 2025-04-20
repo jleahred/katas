@@ -10,10 +10,16 @@ mod tests;
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 pub(crate) struct ProcessId(pub(crate) String);
 
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+pub(crate) struct ConfigUid(pub(crate) String);
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+pub(crate) struct Command(pub(crate) String);
+
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
-    pub(crate) uid: String,
+    pub(crate) uid: ConfigUid,
     #[serde(rename = "file_format")]
     pub(crate) _file_format: String,
     pub(crate) process: Vec<ProcessConfig>,
@@ -23,7 +29,7 @@ pub(crate) struct Config {
 #[serde(deny_unknown_fields)]
 pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
-    pub(crate) command: String,
+    pub(crate) command: Command,
     pub(crate) apply_on: NaiveDateTime,
 
     #[serde(default)]
@@ -33,7 +39,7 @@ pub(crate) struct ProcessConfig {
     pub(crate) process_type: ProcessType,
 
     #[serde(default)]
-    pub(crate) depends_on: Vec<String>,
+    pub(crate) depends_on: Vec<ProcessId>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -56,7 +62,7 @@ pub(crate) enum ProcessType {
 
 impl Config {
     pub(crate) fn check_config(&self) -> Result<(), String> {
-        if self.uid.is_empty() {
+        if self.uid.0.is_empty() {
             return Err("UID cannot be empty".to_string());
         }
         if self.process.is_empty() {
@@ -81,7 +87,7 @@ impl Default for ProcessType {
 
 impl ProcessConfig {
     pub(crate) fn check_config(&self) -> Result<(), String> {
-        if self.command.is_empty() {
+        if self.command.0.is_empty() {
             return Err("Command cannot be empty".to_string());
         }
         imp::is_valid_start_stop(self)

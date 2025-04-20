@@ -2,6 +2,7 @@
 
 ## TODO
 
+* command stop
 * fake type does not run
 * helth-check
 * check config
