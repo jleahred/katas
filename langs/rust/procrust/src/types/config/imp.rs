@@ -90,6 +90,14 @@ pub(crate) fn get_active_procs_by_config(config: &Config) -> Vec<ProcessConfig> 
             }
         }
 
+        match process.process_type {
+            ProcessType::Normal => {}
+            ProcessType::Fake => {
+                println!("[{}] Process type is fake, skipping...", process.id.0);
+                continue;
+            }
+        }
+
         // keep more recent process config
         let entry = process_map
             .entry(process.id.clone())
