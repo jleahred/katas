@@ -1,8 +1,8 @@
 use chrono::Local;
-use std::process::Command;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
+use std::{process::Command, time};
 
 use super::super::{ProcessStatus, RunningStatus};
 
@@ -26,7 +26,8 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
             match start_health_check {
                 Some(ref cmd) => {
                     println!("cheking start health for process {}", id.0);
-                    match run_command_with_timeout("todo: 0") {
+                    let timeout = cmd.timeout.unwrap_or_else(|| Duration::from_secs(2));
+                    match run_command_with_timeout(&cmd.command.0, timeout) {
                         Ok(()) => {
                             println!("Health check succeeded for process {}", id.0);
                             process.status = ProcessStatus::Running { pid };
@@ -69,7 +70,17 @@ pub(crate) fn check_start_held_processes(mut rs: RunningStatus) -> RunningStatus
     rs
 }
 
-fn run_command_with_timeout(command: &str) -> Result<(), String> {
+fn run_command_with_timeout(command: &str, timeout: time::Duration) -> Result<(), String> {
+    let timeout = if timeout > time::Duration::from_secs(2) {
+        eprintln!(
+            "Timeout is too big ({}), setting to 2 seconds",
+            timeout.as_secs()
+        );
+        time::Duration::from_secs(2)
+    } else {
+        timeout
+    };
+
     let (sender, receiver) = mpsc::channel();
 
     let command = command.to_string();
@@ -80,7 +91,7 @@ fn run_command_with_timeout(command: &str) -> Result<(), String> {
         let _ = sender.send(output);
     });
 
-    let rec = receiver.recv_timeout(Duration::from_secs(2));
+    let rec = receiver.recv_timeout(timeout);
     match rec {
         Ok(Ok(output)) => {
             if output.status.success() {
