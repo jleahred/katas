@@ -22,19 +22,19 @@ pub(crate) fn send_kill_if_so(
     proc_watched: &ProcessWatched,
 ) -> Result<ProcessWatched, Box<dyn std::error::Error>> {
     match proc_watched.status {
-        ProcessStatus::Stopping { retries, .. } => {
+        ProcessStatus::Stopping { retries, pid, .. } => {
             if retries < 5 {
-                kill_process(proc_watched.pid, false)?;
+                kill_process(pid, false)?;
             } else {
-                kill_process(proc_watched.pid, true)?;
+                kill_process(pid, true)?;
             };
 
             let result = ProcessWatched {
                 id: proc_watched.id.clone(),
-                pid: proc_watched.pid,
                 apply_on: proc_watched.apply_on,
                 procrust_uid: proc_watched.procrust_uid.clone(),
                 status: ProcessStatus::Stopping {
+                    pid,
                     retries: retries + 1,
                     last_attempt: chrono::Local::now(),
                 },
@@ -42,18 +42,20 @@ pub(crate) fn send_kill_if_so(
             };
             Ok(result)
         }
-        ProcessStatus::ScheduledStop => Ok(ProcessWatched {
+        ProcessStatus::ScheduledStop { pid } => Ok(ProcessWatched {
             id: proc_watched.id.clone(),
-            pid: proc_watched.pid,
             apply_on: proc_watched.apply_on,
             procrust_uid: proc_watched.procrust_uid.clone(),
             status: ProcessStatus::Stopping {
+                pid,
                 retries: 0,
                 last_attempt: chrono::Local::now(),
             },
             applied_on: proc_watched.applied_on,
         }),
-        ProcessStatus::Running => Ok(proc_watched.clone()),
+        ProcessStatus::Running { .. }
+        | ProcessStatus::PendingHealthStartCheck { .. }
+        | ProcessStatus::Ready2Start { .. } => Ok(proc_watched.clone()),
     }
 }
 

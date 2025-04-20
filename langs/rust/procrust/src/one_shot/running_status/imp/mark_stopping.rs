@@ -11,15 +11,30 @@ pub(crate) fn mark_stopping(
         .collect();
 
     for (id, process) in rs.processes.iter_mut() {
-        if !active_ids.contains(id) && process.status == ProcessStatus::Running {
-            println!(
-                "Marking process {} with PID {} as stopping",
-                id.0, process.pid
-            );
-            process.status = ProcessStatus::Stopping {
-                retries: 0,
-                last_attempt: chrono::Local::now(),
-            };
+        match process.status {
+            ProcessStatus::Stopping { .. } => {
+                println!("Process {} is already stopping", id.0);
+                continue;
+            }
+            ProcessStatus::ScheduledStop { pid } => {
+                println!("Marking process {} with PID {} as stopping", id.0, pid);
+                process.status = ProcessStatus::Stopping {
+                    pid,
+                    retries: 0,
+                    last_attempt: chrono::Local::now(),
+                };
+            }
+            ProcessStatus::Running { pid } => {
+                if !active_ids.contains(id) {
+                    println!("Marking process {} with PID {} as stopping", id.0, pid);
+                    process.status = ProcessStatus::Stopping {
+                        pid,
+                        retries: 0,
+                        last_attempt: chrono::Local::now(),
+                    };
+                }
+            }
+            ProcessStatus::PendingHealthStartCheck { .. } | ProcessStatus::Ready2Start { .. } => {}
         }
     }
 
