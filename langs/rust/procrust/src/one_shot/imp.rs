@@ -11,7 +11,7 @@ pub(super) fn filter_active_procs_by_config_with_running(
                 || proc_config
                     .depends_on
                     .iter()
-                    .all(|dep| running_processes.contains(&ProcessId(dep.clone())))
+                    .all(|dep| running_processes.contains(dep))
         })
         .cloned()
         .collect()
