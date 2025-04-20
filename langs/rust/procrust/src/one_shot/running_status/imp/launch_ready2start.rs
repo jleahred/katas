@@ -15,6 +15,7 @@ pub(crate) fn launch_ready2start(mut running_status: RunningStatus) -> RunningSt
             ProcessStatus::Ready2Start {
                 command,
                 process_id,
+                start_health_check,
                 apply_on,
             } => {
                 println!(
@@ -37,6 +38,7 @@ pub(crate) fn launch_ready2start(mut running_status: RunningStatus) -> RunningSt
                                 procrust_uid: command.0.clone(), // TODO: Mejorar con un UUID único
                                 status: ProcessStatus::PendingHealthStartCheck {
                                     pid,
+                                    start_health_check,
                                     retries: 0,
                                     last_attempt: chrono::Local::now(),
                                 },

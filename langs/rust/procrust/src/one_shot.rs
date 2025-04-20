@@ -19,7 +19,7 @@ pub(crate) fn one_shot2() {
         imp::filter_active_procs_by_config_with_running(&active_procs_by_config, &running_ids);
     let pending2watch =
         imp::get_pending2run_processes(&active_procs_cfg_all_depends_running, &whatched_ids);
-
+    dbg!(&whatched_ids);
     //  --------------------
 
     running_status

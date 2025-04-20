@@ -11,10 +11,8 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
             ProcessStatus::ScheduledStop { pid } => Some(pid),
             ProcessStatus::Stopping { pid, .. } => Some(pid),
             ProcessStatus::Running { pid } => Some(pid),
-
-            ProcessStatus::PendingHealthStartCheck { .. } | ProcessStatus::Ready2Start { .. } => {
-                None
-            }
+            ProcessStatus::PendingHealthStartCheck { pid, .. } => Some(pid),
+            ProcessStatus::Ready2Start { .. } => None,
         };
 
         if let Some(pid) = opid {

@@ -33,7 +33,7 @@ pub(crate) struct Config {
 pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
     pub(crate) command: Command,
-    pub(crate) command_check_health: Option<CommandCheckHealth>,
+    pub(crate) start_health_check: Option<CommandCheckHealth>,
     pub(crate) apply_on: NaiveDateTime,
 
     #[serde(default)]
