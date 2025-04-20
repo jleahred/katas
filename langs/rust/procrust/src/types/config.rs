@@ -7,9 +7,12 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 
+/// process identification
+/// it's a unique string to identify a process to watch
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 pub(crate) struct ProcessId(pub(crate) String);
 
+/// Each file with a process cofig has to use a unique ID
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 pub(crate) struct ConfigUid(pub(crate) String);
 
@@ -17,7 +20,10 @@ pub(crate) struct ConfigUid(pub(crate) String);
 pub(crate) struct Command(pub(crate) String);
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
-pub(crate) struct CommandCheckHealth(pub(crate) String);
+pub(crate) struct CommandStartHealthCheck {
+    pub(crate) command: Command,
+    pub(crate) timeout: Option<std::time::Duration>,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
@@ -33,7 +39,7 @@ pub(crate) struct Config {
 pub(crate) struct ProcessConfig {
     pub(crate) id: ProcessId,
     pub(crate) command: Command,
-    pub(crate) start_health_check: Option<CommandCheckHealth>,
+    pub(crate) start_health_check: Option<CommandStartHealthCheck>,
     pub(crate) apply_on: NaiveDateTime,
 
     #[serde(default)]
