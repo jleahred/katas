@@ -1,4 +1,4 @@
-use super::super::RunningStatus;
+use super::super::{ProcessStatus, RunningStatus};
 use std::fs;
 use std::io::{self};
 
@@ -7,49 +7,55 @@ pub(crate) fn del_if_missing_pid(mut rs: RunningStatus) -> RunningStatus {
     let mut to_remove = Vec::new();
 
     for (id, process) in rs.processes.iter_mut() {
-        // Check if the process is running
-        if !is_process_running(process.pid) {
-            // If not running, mark the process for removal
-            println!(
-                "Removing process {} with PID {}: Not running",
-                id.0, process.pid
-            );
-            to_remove.push(id.clone());
-        } else {
-            // Check if the process is still being watched but procrust_uid is different
-            let remove = match get_process_env_var(process.pid, "PROCRUST") {
-                Ok(Some(puid)) => {
-                    if puid != process.procrust_uid {
+        let opid = match process.status {
+            ProcessStatus::ScheduledStop { pid } => Some(pid),
+            ProcessStatus::Stopping { pid, .. } => Some(pid),
+            ProcessStatus::Running { pid } => Some(pid),
+
+            ProcessStatus::PendingHealthStartCheck { .. } | ProcessStatus::Ready2Start { .. } => {
+                None
+            }
+        };
+
+        if let Some(pid) = opid {
+            // Check if the process is running
+            if !is_process_running(pid) {
+                // If not running, mark the process for removal
+                println!("Removing process {} with PID {}: Not running", id.0, pid);
+                to_remove.push(id.clone());
+            } else {
+                // Check if the process is still being watched but procrust_uid is different
+                let remove = match get_process_env_var(pid, "PROCRUST") {
+                    Ok(Some(puid)) => {
+                        if puid != process.procrust_uid {
+                            eprintln!(
+                                "Removing watched: Different procrust UID for PID {}: {} -> {}",
+                                pid, puid, process.procrust_uid
+                            );
+                            true
+                        } else {
+                            // println!(
+                            //     "Keeping process {} with PID {}: Still running",
+                            //     id.0, process.pid
+                            // );
+                            false
+                        }
+                    }
+                    Ok(None) => {
+                        eprintln!("Removing watched: missing procrust_uid by PID {}", pid);
+                        true
+                    }
+                    Err(e) => {
                         eprintln!(
-                            "Removing watched: Different procrust UID for PID {}: {} -> {}",
-                            process.pid, puid, process.procrust_uid
+                            "Removing watched: Failed to procrust_uid by PID {}: {}",
+                            pid, e
                         );
                         true
-                    } else {
-                        // println!(
-                        //     "Keeping process {} with PID {}: Still running",
-                        //     id.0, process.pid
-                        // );
-                        false
                     }
+                };
+                if remove {
+                    to_remove.push(id.clone());
                 }
-                Ok(None) => {
-                    eprintln!(
-                        "Removing watched: missing procrust_uid by PID {}",
-                        process.pid
-                    );
-                    true
-                }
-                Err(e) => {
-                    eprintln!(
-                        "Removing watched: Failed to procrust_uid by PID {}: {}",
-                        process.pid, e
-                    );
-                    true
-                }
-            };
-            if remove {
-                to_remove.push(id.clone());
             }
         }
     }

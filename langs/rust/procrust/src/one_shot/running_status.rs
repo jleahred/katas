@@ -1,6 +1,6 @@
 pub(crate) mod imp;
 
-use crate::types::config::{ConfigUid, ProcessConfig, ProcessId};
+use crate::types::config::{Command, ConfigUid, ProcessConfig, ProcessId};
 use chrono::NaiveDateTime;
 pub(crate) use imp::load_running_status::load_running_status;
 use serde::{Deserialize, Serialize};
@@ -30,18 +30,27 @@ impl RunningStatus {
         imp::del_if_missing_pid(self)
     }
 
-    pub(crate) fn launch_missing_processes(self, proc_conf: &Vec<ProcessConfig>) -> Self {
-        imp::launch_missing_processes(self, proc_conf)
+    pub(crate) fn ready2start_from_missing_watched(self, proc_conf: &Vec<ProcessConfig>) -> Self {
+        imp::ready2start_from_missing_watched(self, proc_conf)
+    }
+
+    pub(crate) fn launch_ready2start(self) -> Self {
+        imp::launch_ready2start(self)
+    }
+
+    pub(crate) fn check_start_held_processes(self) -> Self {
+        imp::check_start_held_processes(self)
+    }
+
+    //  -------------------------------------------------
+
+    pub(crate) fn get_watched_ids(&self) -> Vec<ProcessId> {
+        imp::get_watched_ids(self)
     }
 
     pub(crate) fn get_running_ids(&self) -> Vec<ProcessId> {
         imp::get_running_ids(self)
     }
-
-    // pub(crate) fn debug(self) -> Self {
-    //     dbg!(&self);
-    //     self
-    // }
 
     // pub(crate) fn inspect<F>(self, func: F) -> Self
     // where
@@ -55,7 +64,6 @@ impl RunningStatus {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct ProcessWatched {
     pub(crate) id: ProcessId,
-    pub(crate) pid: u32,
     pub(crate) procrust_uid: String,
     pub(crate) apply_on: NaiveDateTime,
     pub(crate) status: ProcessStatus,
@@ -64,10 +72,25 @@ pub(crate) struct ProcessWatched {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub(crate) enum ProcessStatus {
-    Running,
-    Stopping {
+    Ready2Start {
+        command: Command,
+        process_id: ProcessId,
+        apply_on: NaiveDateTime,
+    },
+    PendingHealthStartCheck {
+        pid: u32,
         retries: u32,
         last_attempt: chrono::DateTime<chrono::Local>,
     },
-    ScheduledStop,
+    Running {
+        pid: u32,
+    },
+    Stopping {
+        pid: u32,
+        retries: u32,
+        last_attempt: chrono::DateTime<chrono::Local>,
+    },
+    ScheduledStop {
+        pid: u32,
+    },
 }

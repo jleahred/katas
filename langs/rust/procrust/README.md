@@ -33,7 +33,7 @@ It is declarative; the system will adjust the service configuration to match the
 
 Although it may seem like a supervisor, it has some of the characteristics but intentionally lacks others.
 
-It is not intended to replace mature and high-quality tools like systemd, supervisord, or Kubernetes.
+It is not intended to replace mature and high-quality tools like systemd, supervisord, Kubernetes...
 
 It must be a small, lightweight, and non-critical program.
 
@@ -139,4 +139,17 @@ id = "DEPENDS_ON_A"
 command = "while true; do echo $(date)  '  depends on a'; sleep 1; done"
 apply_on = "2024-10-01T12:20:00"
 depends_on = ["TEST_A"]
+```
+
+
+## Watched ProcessStatus
+
+```mermaid
+stateDiagram-v2
+    [*] --> Ready2Start
+    Ready2Start --> PendingHelthCheckStart: ok
+    PendingHelthCheckStart --> Running
+    Running --> ScheduledStop: send kill
+    ScheduledStop --> Stopping: send kill
+    Stopping --> [*]: pid gone
 ```

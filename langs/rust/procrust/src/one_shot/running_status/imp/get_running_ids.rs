@@ -7,7 +7,7 @@ pub(crate) fn get_running_ids(runnstatus: &RunningStatus) -> Vec<ProcessId> {
         .processes
         .iter()
         .filter_map(|(id, process)| {
-            if matches!(process.status, ProcessStatus::Running) {
+            if matches!(process.status, ProcessStatus::Running { .. }) {
                 Some(id.clone())
             } else {
                 None
