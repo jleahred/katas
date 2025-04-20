@@ -3,11 +3,12 @@
 
 ## TODO
 
-* StartHealthCheck, it too many retrys, reset the service
-* command stop
+* commands
 * check config
     * depends exists
     * circular references
+* command stop
+* StartHealthCheck, it too many retrys, reset the service
 * command parameters
     * debug
     * ...
