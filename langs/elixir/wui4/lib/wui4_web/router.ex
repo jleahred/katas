@@ -1,5 +1,6 @@
 defmodule Wui4Web.Router do
   use Wui4Web, :router
+  import Wui4Web.RouterMacros
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -19,7 +20,14 @@ defmodule Wui4Web.Router do
 
     get "/", PageController, :home
 
-    live "/counter", CounterLive, :index
+    # live "/counter", CounterLive, :index
+  end
+
+  scope "/" do
+    pipe_through :browser
+
+    live2(Wui4Web.CounterLive)
+    live2(Wui4Web.RoutesLive)
   end
 
   # Other scopes may use custom stacks.
