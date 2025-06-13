@@ -17,7 +17,8 @@ defmodule Wui4.Application do
       # Start a worker by calling: Wui4.Worker.start_link(arg)
       # {Wui4.Worker, arg},
       # Start to serve requests, typically the last entry
-      Wui4Web.Endpoint
+      Wui4Web.Endpoint,
+      Wui4Web.RouteRegistry
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
