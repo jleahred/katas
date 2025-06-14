@@ -1,6 +1,7 @@
 defmodule Wui4Web.Router do
   use Wui4Web, :router
   import Wui4Web.RouterMacros
+  require Wui4Web.Macros.AutoRoutes
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -26,10 +27,11 @@ defmodule Wui4Web.Router do
   scope "/" do
     pipe_through :browser
 
-    registering_routes_start()
-    live2(Wui4Web.CounterLive)
-    live2(Wui4Web.Counter2Live)
-    live2(Wui4Web.RoutesLive)
+    # registering_routes_start()
+    Wui4Web.Macros.AutoRoutes.auto_live_routes("lib/wui4_web/live/")
+    # live2(Wui4Web.CounterLive)
+    # live2(Wui4Web.Counter2Live)
+    # live2(Wui4Web.RoutesLive)
   end
 
   # Other scopes may use custom stacks.
