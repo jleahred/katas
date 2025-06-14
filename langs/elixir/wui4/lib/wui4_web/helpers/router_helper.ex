@@ -206,20 +206,38 @@ defmodule Wui4Web.RouteRegistry do
   Busca rutas por descripción o path
   """
   def search_routes(query) do
-    query_lower = String.downcase(query)
+    query_words =
+      query
+      |> String.downcase()
+      |> String.split(~r/\s+/, trim: true)
+      |> Enum.uniq()
 
     get_all_routes()
     |> Enum.filter(fn route ->
-      String.contains?(String.downcase(route.description), query_lower) or
-        String.contains?(String.downcase(route.path), query_lower)
+      text = String.downcase("#{route.description} #{route.path}")
+      Enum.any?(query_words, &String.contains?(text, &1))
     end)
     |> Enum.map(fn route ->
+      text = String.downcase("#{route.description} #{route.path}")
+
+      match_count =
+        Enum.count(query_words, &String.contains?(text, &1))
+
       %{
         path: route.path,
         description: route.description,
         module: route.module,
-        action: route.action
+        action: route.action,
+        match_count: match_count
       }
+    end)
+    # |> Enum.map(fn route ->
+    #   IO.puts("Ruta encontrada: #{inspect(route)}")
+    #   route
+    # end)
+    |> Enum.sort_by(fn r -> {-r.match_count, r.path} end)
+    |> Enum.map(fn r ->
+      Map.drop(r, [:match_count])
     end)
   end
 

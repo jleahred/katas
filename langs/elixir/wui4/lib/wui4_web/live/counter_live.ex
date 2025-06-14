@@ -1,7 +1,7 @@
 defmodule Wui4Web.CounterLive do
   use Wui4Web, :live_view
 
-  def route_path, do: "/counter"
+  def route_path, do: "/countera"
   def route_description, do: "Contador interactivo con incremento y decremento"
 
   def mount(_params, _session, socket) do
