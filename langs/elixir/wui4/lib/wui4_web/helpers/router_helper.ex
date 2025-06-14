@@ -10,10 +10,11 @@ defmodule Wui4Web.RouterMacros do
   """
   defmacro live2(module_name) do
     quote do
-      path = unquote(module_name).route_path()
-      description = unquote(module_name).route_description()
+      path = unquote(module_name).__meta__().url
+      description = unquote(module_name).__meta__().description
       live(path, unquote(module_name))
       # Wui4Web.RouteRegistry.register_route(unquote(module_name), path, description)
+
       File.write!(
         "routes.jsonl",
         Jason.encode!(%{
@@ -322,8 +323,13 @@ end
 defmodule Wui4Web.RoutesLive do
   use Wui4Web, :live_view
 
-  def route_path, do: "/dev/routes"
-  def route_description, do: "Lista de todas las rutas registradas en la aplicación"
+  def __meta__ do
+    %{
+      url: "/dev/routes",
+      description: "List all routes registered in the application",
+      keywords: "list routes"
+    }
+  end
 
   def mount(_params, _session, socket) do
     routes = Wui4Web.RouteRegistry.list_routes()
