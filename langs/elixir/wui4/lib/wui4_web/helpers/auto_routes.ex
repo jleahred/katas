@@ -26,8 +26,8 @@ defmodule Wui4Web.Macros.AutoRoutes do
         File.write!(
           "routes.jsonl",
           Jason.encode!(%{
-        module: Atom.to_string(module),
-        meta: meta
+            module: Atom.to_string(module),
+            meta: meta
           }) <> "\n",
           [:append]
         )
@@ -38,7 +38,6 @@ defmodule Wui4Web.Macros.AutoRoutes do
           :index,
           as: Wui4Web.Macros.AutoRoutes.route_name_from_module(module)
         )
-      end
       end
     end
   end
@@ -55,6 +54,8 @@ defmodule Wui4Web.Macros.AutoRoutes do
         []
 
       true ->
+        IO.puts("Buscando módulos en: #{base_path}")
+
         base_path
         |> Path.join("**/*.ex")
         |> Path.wildcard()
