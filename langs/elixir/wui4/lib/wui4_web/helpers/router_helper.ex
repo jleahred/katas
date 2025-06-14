@@ -13,8 +13,23 @@ defmodule Wui4Web.RouterMacros do
       path = unquote(module_name).route_path()
       description = unquote(module_name).route_description()
       live(path, unquote(module_name))
-      Wui4Web.RouteRegistry.register_route(unquote(module_name), path, description)
+      # Wui4Web.RouteRegistry.register_route(unquote(module_name), path, description)
+      File.write!(
+        "routes.jsonl",
+        Jason.encode!(%{
+          module: unquote(module_name) |> to_string(),
+          path: path,
+          description: description
+        }) <> "\n",
+        [:append]
+      )
     end
+  end
+
+  defmacro registering_routes_start() do
+    IO.puts("Start registering routes...")
+    File.rm("routes.jsonl")
+    File.write!("routes.jsonl", "")
   end
 
   # defmacro live2(module_name, action) when is_atom(action) do
@@ -142,7 +157,33 @@ defmodule Wui4Web.RouteRegistry do
   Obtiene todas las rutas registradas
   """
   def get_all_routes do
-    GenServer.call(__MODULE__, :get_all_routes)
+    routes =
+      GenServer.call(__MODULE__, :get_all_routes)
+      |> case do
+        [] ->
+          if File.exists?("routes.jsonl") do
+            File.stream!("routes.jsonl")
+            |> Stream.map(&Jason.decode!/1)
+            |> Enum.map(fn %{"module" => module_str, "path" => path, "description" => description} ->
+              %{
+                module: Module.concat(Elixir, String.to_atom(module_str)),
+                path: path,
+                description: description,
+                action: :index,
+                opts: [],
+                registered_at: DateTime.utc_now()
+              }
+            end)
+          else
+            []
+          end
+
+        routes ->
+          routes
+      end
+
+    routes
+    # GenServer.call(__MODULE__, :get_all_routes)
   end
 
   @doc """
@@ -200,6 +241,23 @@ defmodule Wui4Web.RouteRegistry do
     routes = Map.values(state)
     {:reply, routes, state}
   end
+
+  # def load_routes_from_file() do
+  #   IO.puts("Loading routes from file...")
+  #   # Limpiar el registro de rutas antes de volver a registrar
+  #   :ok = GenServer.cast(Wui4Web.RouteRegistry, {:clear_routes})
+
+  #   File.stream!("routes.jsonl")
+  #   |> Stream.map(&Jason.decode!/1)
+  #   |> Enum.each(fn %{"module" => module_str, "path" => path, "description" => description} ->
+  #     IO.puts(
+  #       "Registrando ruta desde routes.jsonl: #{inspect(%{module: module_str, path: path, description: description})}"
+  #     )
+
+  #     module = Module.concat(Elixir, String.to_atom(module_str))
+  #     Wui4Web.RouteRegistry.register_route(module, path, description)
+  #   end)
+  # end
 end
 
 # # Behaviour para LiveViews con rutas documentadas
@@ -296,8 +354,8 @@ defmodule Wui4Web.RoutesLive do
   def render(assigns) do
     ~H"""
     <div class="p-6">
-      <h1 class="text-3xl font-bold mb-6">Rutas registradas</h1>
-      
+      <!-- <h1 class="text-3xl font-bold mb-6">Rutas registradas</h1> -->
+
     <!-- Buscador -->
       <div class="mb-6">
         <input
