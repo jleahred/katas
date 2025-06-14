@@ -3,7 +3,7 @@ defmodule Wui4Web.Counter2Live do
 
   def __meta__ do
     %{
-      url: "/counter2",
+      url: "/counter2a",
       description: "Interactive counter with increment and decrement",
       keywords: "counter example"
     }

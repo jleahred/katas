@@ -2,7 +2,7 @@ defmodule Wui4Web.CounterLive do
   use Wui4Web, :live_view
 
   def __meta__ do
-    %{
+    %Wui4Web.Helpers.RouterMeta{
       url: "/counter",
       description: "Interactive counter with increment and decrement",
       keywords: "counter example"
@@ -10,7 +10,7 @@ defmodule Wui4Web.CounterLive do
   end
 
   defmacro test do
-    IO.puts("compiling module  #{__MODULE__}")
+    IO.puts("compiling module #{__MODULE__}")
   end
 
   def route_path, do: "/counter"

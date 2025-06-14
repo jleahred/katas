@@ -14,6 +14,9 @@ defmodule Wui4Web.RouterMacros do
       description = unquote(module_name).__meta__().description
       live(path, unquote(module_name))
       # Wui4Web.RouteRegistry.register_route(unquote(module_name), path, description)
+      IO.puts(
+        "Registering route: #{path} for module #{unquote(module_name)}________________________"
+      )
 
       File.write!(
         "routes.jsonl",
