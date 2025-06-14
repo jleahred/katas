@@ -1,4 +1,16 @@
 defmodule Wui4Web.RouterMacros do
+  defmacro scope2(path, options \\ [], do: block) do
+    quote do
+      @current_scope_path unquote(path)
+
+      scope unquote(path), unquote(options) do
+        unquote(block)
+      end
+
+      @current_scope_path nil
+    end
+  end
+
   @doc """
   Macro simplificada que requiere que el LiveView implemente route_path/0
 
@@ -12,17 +24,21 @@ defmodule Wui4Web.RouterMacros do
     quote do
       path = unquote(module_name).__meta__().url
       description = unquote(module_name).__meta__().description
+
       live(path, unquote(module_name))
+
       # Wui4Web.RouteRegistry.register_route(unquote(module_name), path, description)
       IO.puts(
         "Registering route: #{path} for module #{unquote(module_name)}________________________"
       )
 
+      current_scope_path = if @current_scope_path == "/", do: "", else: @current_scope_path
+
       File.write!(
         "routes.jsonl",
         Jason.encode!(%{
           module: unquote(module_name) |> to_string(),
-          path: path,
+          path: "#{current_scope_path}#{path}",
           description: description
         }) <> "\n",
         [:append]
@@ -328,7 +344,7 @@ defmodule Wui4Web.RoutesLive do
 
   def __meta__ do
     %{
-      url: "/dev/routes",
+      url: "/",
       description: "List all routes registered in the application",
       keywords: "list routes"
     }

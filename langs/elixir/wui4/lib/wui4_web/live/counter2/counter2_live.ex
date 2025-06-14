@@ -2,23 +2,42 @@ defmodule Wui4Web.Counter2Live do
   use Wui4Web, :live_view
 
   def __meta__ do
-    %{
-      url: "/counter2a",
+    %Wui4Web.Helpers.RouterMeta{
+      url: "/counter2",
       description: "Interactive counter with increment and decrement",
-      keywords: "counter example"
+      keywords: "counter example",
+      grants: [:all]
     }
   end
 
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, count: 0)}
+    {:ok, assign(socket, count1: 0, count2: 0)}
   end
 
-  def handle_event("inc", _params, socket) do
-    {:noreply, update(socket, :count, &(&1 + 1))}
+  def handle_event("inc", %{"idx" => value}, socket) do
+    IO.puts(inspect(value))
+
+    field =
+      case value do
+        "1" -> :count1
+        "2" -> :count2
+        _ -> :count1
+      end
+
+    socket = update(socket, field, &(&1 + 1))
+    {:noreply, socket}
   end
 
-  def handle_event("dec", _params, socket) do
-    {:noreply, update(socket, :count, &(&1 - 1))}
+  def handle_event("dec", %{"idx" => value}, socket) do
+    field =
+      case value do
+        "1" -> :count1
+        "2" -> :count2
+        _ -> :count1
+      end
+
+    socket = update(socket, field, &(&1 - 1))
+    {:noreply, socket}
   end
 
   # def render(assigns) do
