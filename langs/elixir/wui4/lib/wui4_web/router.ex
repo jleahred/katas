@@ -26,6 +26,7 @@ defmodule Wui4Web.Router do
   scope "/" do
     pipe_through :browser
 
+    registering_routes_start()
     live2(Wui4Web.CounterLive)
     live2(Wui4Web.RoutesLive)
   end
