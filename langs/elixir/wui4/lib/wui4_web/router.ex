@@ -28,6 +28,7 @@ defmodule Wui4Web.Router do
 
     registering_routes_start()
     live2(Wui4Web.CounterLive)
+    live2(Wui4Web.Counter2Live)
     live2(Wui4Web.RoutesLive)
   end
 
