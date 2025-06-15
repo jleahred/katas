@@ -1,0 +1,2 @@
+{"module":"Elixir.Wui4Web.CounterLive","path":"/counter1","description":"Interactive counter with increment and decrement"}
+{"module":"Elixir.Wui4Web.Counter2Live","path":"/counter2","description":"Interactive two counters with increment and decrement"}
