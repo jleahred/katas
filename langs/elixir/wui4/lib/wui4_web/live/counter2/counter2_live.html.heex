@@ -1,10 +1,10 @@
 <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem;">
   <button class="btn btn-primary" phx-click="dec" phx-value-idx="1">-</button>
-  <span>Counter: {@count1}</span>
+  <span>Counter: {@params.counter1}</span>
   <.button phx-click="inc" phx-value-idx="1" variant="primary">+</.button>
 </div>
 <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem;">
   <button class="btn btn-primary" phx-click="dec" phx-value-idx="2">-</button>
-  <span>Counter: {@count2}</span>
+  <span>Counter: {@params.counter2}</span>
   <.button phx-click="inc" phx-value-idx="2" variant="primary">+</.button>
 </div>
