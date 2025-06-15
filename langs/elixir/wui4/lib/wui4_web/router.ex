@@ -24,10 +24,11 @@ defmodule Wui4Web.Router do
     # live "/counter", CounterLive, :index
   end
 
+  registering_routes_start()
+
   scope2 "/" do
     pipe_through :browser
 
-    registering_routes_start()
     # Wui4Web.Macros.AutoRoutes.auto_live_routes("lib/wui4_web/live/")
     live2(Wui4Web.CounterLive)
     live2(Wui4Web.Counter2Live)
