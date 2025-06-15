@@ -29,7 +29,6 @@ defmodule Wui4Web.Router do
   scope2 "/" do
     pipe_through :browser
 
-    # Wui4Web.Macros.AutoRoutes.auto_live_routes("lib/wui4_web/live/")
     live2(Wui4Web.CounterLive)
     live2(Wui4Web.Counter2Live)
     # live2(Wui4Web.RoutesLive)
