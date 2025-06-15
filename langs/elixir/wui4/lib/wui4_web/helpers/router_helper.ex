@@ -165,14 +165,12 @@ defmodule Wui4Web.RoutesLive do
   def render(assigns) do
     ~H"""
     <div class="p-6">
-      <!-- <h1 class="text-3xl font-bold mb-6">Rutas registradas</h1> -->
-
-    <!-- Buscador -->
+      <!-- Buscador -->
       <div class="mb-6">
         <input
           type="text"
           value={@search_query}
-          placeholder="Buscar rutas por path o descripción..."
+          placeholder="Search routes by description, path or keywords..."
           phx-keyup="search"
           phx-debounce="300"
           class="w-full p-3 border rounded-lg"
@@ -180,33 +178,38 @@ defmodule Wui4Web.RoutesLive do
       </div>
       
     <!-- Contador -->
-      <p class="mb-4 text-gray-600">
+      <p class="mb-4 text-base-content/70">
         Mostrando {length(@filtered_routes)} de {length(@routes)} rutas
       </p>
       
     <!-- Lista de rutas -->
       <div class="grid gap-4">
-        <div :for={route <- @filtered_routes} class="border rounded-lg p-4 bg-white shadow-sm">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="text-lg font-semibold text-blue-600">
-              <a href={route.path} class="hover:underline">{route.path}</a>
-            </h3>
-            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              {route.action}
-            </span>
-          </div>
+        <div
+          :for={route <- @filtered_routes}
+          class="card bg-base-100 shadow-md border border-base-200"
+        >
+          <div class="card-body p-4">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="card-title text-primary">
+                <a href={route.path} class="hover:underline">{route.path}</a>
+              </h3>
+              <span class="badge badge-outline badge-sm">
+                {route.action}
+              </span>
+            </div>
 
-          <p class="text-gray-700 mb-2">{route.description}</p>
+            <p class="text-base-content/80 mb-2">{route.description}</p>
 
-          <div class="text-sm text-gray-500">
-            <span class="font-mono bg-gray-100 px-2 py-1 rounded">
-              {inspect(route.module)}
-            </span>
+            <div class="text-sm text-base-content/60">
+              <span class="font-mono bg-base-200 px-2 py-1 rounded">
+                {inspect(route.module)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div :if={length(@filtered_routes) == 0} class="text-center py-8 text-gray-500">
+      <div :if={length(@filtered_routes) == 0} class="text-center py-8 text-base-content/60">
         No se encontraron rutas que coincidan con tu búsqueda.
       </div>
     </div>
