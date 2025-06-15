@@ -4,7 +4,7 @@ defmodule Wui4Web.Counter2Live do
   def __meta__ do
     %Wui4Web.Helpers.RouterMeta{
       url: "/counter2",
-      description: "Interactive counter with increment and decrement",
+      description: "Interactive two counters with increment and decrement",
       keywords: "counter example",
       grants: [:all]
     }
