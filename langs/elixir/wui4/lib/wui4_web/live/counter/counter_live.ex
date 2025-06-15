@@ -3,19 +3,12 @@ defmodule Wui4Web.CounterLive do
 
   def __meta__ do
     %Wui4Web.Helpers.RouterMeta{
-      url: "/counter",
+      url: "/counter1",
       description: "Interactive counter with increment and decrement",
       keywords: "counter example",
       grants: [:all]
     }
   end
-
-  defmacro test do
-    IO.puts("compiling module #{__MODULE__}")
-  end
-
-  def route_path, do: "/counter"
-  def route_description, do: "Contador interactivo con incremento y decremento"
 
   def mount(_params, _session, socket) do
     {:ok, assign(socket, count: 0)}

@@ -51,6 +51,82 @@ defmodule Wui4Web.RouterMacros do
     File.rm("routes.jsonl")
     File.write!("routes.jsonl", "")
   end
+end
+
+defmodule Wui4Web.RouterRegistry do
+  def get_all_routes do
+    routes =
+      if File.exists?("routes.jsonl") do
+        File.stream!("routes.jsonl")
+        |> Stream.map(&Jason.decode!/1)
+        |> Enum.map(fn %{"module" => module_str, "path" => path, "description" => description} ->
+          %{
+            module: Module.concat(Elixir, String.to_atom(module_str)),
+            path: path,
+            description: description,
+            action: :index,
+            opts: [],
+            registered_at: DateTime.utc_now()
+          }
+        end)
+      else
+        []
+      end
+
+    routes
+  end
+
+  def list_routes do
+    get_all_routes()
+    |> Enum.map(fn route ->
+      %{
+        path: route.path,
+        description: route.description,
+        module: route.module,
+        action: route.action
+      }
+    end)
+    |> Enum.sort_by(& &1.path)
+  end
+
+  @doc """
+  Busca rutas por descripción o path
+  """
+  def search_routes(query) do
+    query_words =
+      query
+      |> String.downcase()
+      |> String.split(~r/\s+/, trim: true)
+      |> Enum.uniq()
+
+    get_all_routes()
+    |> Enum.filter(fn route ->
+      text = String.downcase("#{route.description} #{route.path}")
+      Enum.any?(query_words, &String.contains?(text, &1))
+    end)
+    |> Enum.map(fn route ->
+      text = String.downcase("#{route.description} #{route.path}")
+
+      match_count =
+        Enum.count(query_words, &String.contains?(text, &1))
+
+      %{
+        path: route.path,
+        description: route.description,
+        module: route.module,
+        action: route.action,
+        match_count: match_count
+      }
+    end)
+    # |> Enum.map(fn route ->
+    #   IO.puts("Ruta encontrada: #{inspect(route)}")
+    #   route
+    # end)
+    |> Enum.sort_by(fn r -> {-r.match_count, r.path} end)
+    |> Enum.map(fn r ->
+      Map.drop(r, [:match_count])
+    end)
+  end
 
   # defmacro live2(module_name, action) when is_atom(action) do
   #   quote do
@@ -143,160 +219,162 @@ end
 #   end
 # end
 
-# Módulo para registrar y consultar todas las rutas
-defmodule Wui4Web.RouteRegistry do
-  use GenServer
+# # Módulo para registrar y consultar todas las rutas
+# defmodule Wui4Web.RouteRegistry__deprecated do
+#   use GenServer
 
-  @doc """
-  Inicia el registro de rutas
-  """
-  def start_link(_opts) do
-    IO.puts("Iniciando el registro de rutas...")
-    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  end
+#   @doc """
+#   Inicia el registro de rutas
+#   """
+#   def start_link(_opts) do
+#     IO.puts("Iniciando el registro de rutas...")
+#     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+#   end
 
-  @doc """
-  Registra una nueva ruta
-  """
-  def register_route(module, path, description, action \\ :index, opts \\ []) do
-    IO.puts("registrando ruta: #{path} para el módulo #{module}")
+#   # @doc """
+#   # Registra una nueva ruta
+#   # """
 
-    route_info = %{
-      module: module,
-      path: path,
-      description: description,
-      action: action,
-      opts: opts,
-      registered_at: DateTime.utc_now()
-    }
+#   # def register_route(module, path, description, action \\ :index, opts \\ []) do
+#   #   IO.puts("registrando ruta: #{path} para el módulo #{module}")
 
-    GenServer.cast(__MODULE__, {:register_route, route_info})
-  end
+#   #   route_info = %{
+#   #     module: module,
+#   #     path: path,
+#   #     description: description,
+#   #     action: action,
+#   #     opts: opts,
+#   #     registered_at: DateTime.utc_now()
+#   #   }
 
-  @doc """
-  Obtiene todas las rutas registradas
-  """
-  def get_all_routes do
-    routes =
-      GenServer.call(__MODULE__, :get_all_routes)
-      |> case do
-        [] ->
-          if File.exists?("routes.jsonl") do
-            File.stream!("routes.jsonl")
-            |> Stream.map(&Jason.decode!/1)
-            |> Enum.map(fn %{"module" => module_str, "path" => path, "description" => description} ->
-              %{
-                module: Module.concat(Elixir, String.to_atom(module_str)),
-                path: path,
-                description: description,
-                action: :index,
-                opts: [],
-                registered_at: DateTime.utc_now()
-              }
-            end)
-          else
-            []
-          end
+#   #   GenServer.cast(__MODULE__, {:register_route, route_info})
+#   # end
 
-        routes ->
-          routes
-      end
+#   @doc """
+#   Obtiene todas las rutas registradas
+#   """
 
-    routes
-    # GenServer.call(__MODULE__, :get_all_routes)
-  end
+#   # def get_all_routes do
+#   #   routes =
+#   #     GenServer.call(__MODULE__, :get_all_routes)
+#   #     |> case do
+#   #       [] ->
+#   #         if File.exists?("routes.jsonl") do
+#   #           File.stream!("routes.jsonl")
+#   #           |> Stream.map(&Jason.decode!/1)
+#   #           |> Enum.map(fn %{"module" => module_str, "path" => path, "description" => description} ->
+#   #             %{
+#   #               module: Module.concat(Elixir, String.to_atom(module_str)),
+#   #               path: path,
+#   #               description: description,
+#   #               action: :index,
+#   #               opts: [],
+#   #               registered_at: DateTime.utc_now()
+#   #             }
+#   #           end)
+#   #         else
+#   #           []
+#   #         end
 
-  @doc """
-  Obtiene las rutas en formato de lista para mostrar
-  """
-  def list_routes do
-    get_all_routes()
-    |> Enum.map(fn route ->
-      %{
-        path: route.path,
-        description: route.description,
-        module: route.module,
-        action: route.action
-      }
-    end)
-    |> Enum.sort_by(& &1.path)
-  end
+#   #       routes ->
+#   #         routes
+#   #     end
 
-  @doc """
-  Busca rutas por descripción o path
-  """
-  def search_routes(query) do
-    query_words =
-      query
-      |> String.downcase()
-      |> String.split(~r/\s+/, trim: true)
-      |> Enum.uniq()
+#   #   routes
+#   #   # GenServer.call(__MODULE__, :get_all_routes)
+#   # end
 
-    get_all_routes()
-    |> Enum.filter(fn route ->
-      text = String.downcase("#{route.description} #{route.path}")
-      Enum.any?(query_words, &String.contains?(text, &1))
-    end)
-    |> Enum.map(fn route ->
-      text = String.downcase("#{route.description} #{route.path}")
+#   # @doc """
+#   # Obtiene las rutas en formato de lista para mostrar
+#   # """
+#   # def list_routes do
+#   #   get_all_routes()
+#   #   |> Enum.map(fn route ->
+#   #     %{
+#   #       path: route.path,
+#   #       description: route.description,
+#   #       module: route.module,
+#   #       action: route.action
+#   #     }
+#   #   end)
+#   #   |> Enum.sort_by(& &1.path)
+#   # end
 
-      match_count =
-        Enum.count(query_words, &String.contains?(text, &1))
+#   # @doc """
+#   # Busca rutas por descripción o path
+#   # """
+#   # def search_routes(query) do
+#   #   query_words =
+#   #     query
+#   #     |> String.downcase()
+#   #     |> String.split(~r/\s+/, trim: true)
+#   #     |> Enum.uniq()
 
-      %{
-        path: route.path,
-        description: route.description,
-        module: route.module,
-        action: route.action,
-        match_count: match_count
-      }
-    end)
-    # |> Enum.map(fn route ->
-    #   IO.puts("Ruta encontrada: #{inspect(route)}")
-    #   route
-    # end)
-    |> Enum.sort_by(fn r -> {-r.match_count, r.path} end)
-    |> Enum.map(fn r ->
-      Map.drop(r, [:match_count])
-    end)
-  end
+#   #   get_all_routes()
+#   #   |> Enum.filter(fn route ->
+#   #     text = String.downcase("#{route.description} #{route.path}")
+#   #     Enum.any?(query_words, &String.contains?(text, &1))
+#   #   end)
+#   #   |> Enum.map(fn route ->
+#   #     text = String.downcase("#{route.description} #{route.path}")
 
-  # Callbacks del GenServer
-  @impl true
-  def init(state) do
-    {:ok, state}
-  end
+#   #     match_count =
+#   #       Enum.count(query_words, &String.contains?(text, &1))
 
-  @impl true
-  def handle_cast({:register_route, route_info}, state) do
-    # Usar el módulo como clave para evitar duplicados
-    new_state = Map.put(state, route_info.module, route_info)
-    {:noreply, new_state}
-  end
+#   #     %{
+#   #       path: route.path,
+#   #       description: route.description,
+#   #       module: route.module,
+#   #       action: route.action,
+#   #       match_count: match_count
+#   #     }
+#   #   end)
+#   #   # |> Enum.map(fn route ->
+#   #   #   IO.puts("Ruta encontrada: #{inspect(route)}")
+#   #   #   route
+#   #   # end)
+#   #   |> Enum.sort_by(fn r -> {-r.match_count, r.path} end)
+#   #   |> Enum.map(fn r ->
+#   #     Map.drop(r, [:match_count])
+#   #   end)
+#   # end
 
-  @impl true
-  def handle_call(:get_all_routes, _from, state) do
-    routes = Map.values(state)
-    {:reply, routes, state}
-  end
+#   # Callbacks del GenServer
+#   @impl true
+#   def init(state) do
+#     {:ok, state}
+#   end
 
-  # def load_routes_from_file() do
-  #   IO.puts("Loading routes from file...")
-  #   # Limpiar el registro de rutas antes de volver a registrar
-  #   :ok = GenServer.cast(Wui4Web.RouteRegistry, {:clear_routes})
+#   # @impl true
+#   # def handle_cast({:register_route, route_info}, state) do
+#   #   # Usar el módulo como clave para evitar duplicados
+#   #   new_state = Map.put(state, route_info.module, route_info)
+#   #   {:noreply, new_state}
+#   # end
 
-  #   File.stream!("routes.jsonl")
-  #   |> Stream.map(&Jason.decode!/1)
-  #   |> Enum.each(fn %{"module" => module_str, "path" => path, "description" => description} ->
-  #     IO.puts(
-  #       "Registrando ruta desde routes.jsonl: #{inspect(%{module: module_str, path: path, description: description})}"
-  #     )
+#   # @impl true
+#   # def handle_call(:get_all_routes, _from, state) do
+#   #   routes = Map.values(state)
+#   #   {:reply, routes, state}
+#   # end
 
-  #     module = Module.concat(Elixir, String.to_atom(module_str))
-  #     Wui4Web.RouteRegistry.register_route(module, path, description)
-  #   end)
-  # end
-end
+#   # def load_routes_from_file() do
+#   #   IO.puts("Loading routes from file...")
+#   #   # Limpiar el registro de rutas antes de volver a registrar
+#   #   :ok = GenServer.cast(Wui4Web.RouteRegistry, {:clear_routes})
+
+#   #   File.stream!("routes.jsonl")
+#   #   |> Stream.map(&Jason.decode!/1)
+#   #   |> Enum.each(fn %{"module" => module_str, "path" => path, "description" => description} ->
+#   #     IO.puts(
+#   #       "Registrando ruta desde routes.jsonl: #{inspect(%{module: module_str, path: path, description: description})}"
+#   #     )
+
+#   #     module = Module.concat(Elixir, String.to_atom(module_str))
+#   #     Wui4Web.RouteRegistry.register_route(module, path, description)
+#   #   end)
+#   # end
+# end
 
 # # Behaviour para LiveViews con rutas documentadas
 # defmodule Wui4Web.RoutableLive do
@@ -351,7 +429,7 @@ defmodule Wui4Web.RoutesLive do
   end
 
   def mount(_params, _session, socket) do
-    routes = Wui4Web.RouteRegistry.list_routes()
+    routes = Wui4Web.RouterRegistry.list_routes()
 
     socket =
       socket
@@ -383,7 +461,7 @@ defmodule Wui4Web.RoutesLive do
       if query == "" do
         socket.assigns.routes
       else
-        Wui4Web.RouteRegistry.search_routes(query)
+        Wui4Web.RouterRegistry.search_routes(query)
       end
 
     socket =
