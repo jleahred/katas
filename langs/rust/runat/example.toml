@@ -1,0 +1,33 @@
+[[tasks]]
+name = "fake"
+scheduled = "2025-06-02T20:30:00"
+commands = "faasd"
+daily = true
+
+[[tasks]]
+name = "Print Working Directory"
+scheduled = "2025-06-02T15:11:00"
+commands = "pwd"
+
+
+[[tasks]]
+name = "List Files"
+scheduled = "2025-06-02T15:30:00"
+commands = """
+set -e
+ls -la
+ls -lh
+fake  || true
+ls -lth
+"""
+
+
+[[tasks]]
+name = "Show Date"
+scheduled = "2027-06-22T16:00:00"
+commands = "date"
+
+[[tasks]]
+name = "Echo Hello"
+scheduled = "2027-06-21T20:30:00"
+commands = "echo 'Hello, Runat!'"
