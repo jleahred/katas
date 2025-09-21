@@ -1,9 +1,6 @@
 defmodule Wui6.Accounts do
   @moduledoc """
   Accounts context with helpers to list users for the admin UI.
-
-  Falls back to sample data when the backing table has not been created yet so
-  that the LiveView remains usable during early development.
   """
 
   import Ecto.Query, warn: false
@@ -50,13 +47,6 @@ defmodule Wui6.Accounts do
     case fetch_page(limit, page, query, role_filter) do
       {:ok, %{entries: []}} when page > 1 ->
         do_list_users(limit, page - 1, query, role_filter)
-
-      {:ok, %{entries: []} = _page_map}
-      when page == 1 and query == "" and is_nil(role_filter) ->
-        case seed_sample_users(limit) do
-          {:ok, seeded_page} -> {:ok, seeded_page}
-          {:error, reason} -> {:error, reason}
-        end
 
       {:ok, page_map} ->
         {:ok, page_map}
@@ -122,41 +112,22 @@ defmodule Wui6.Accounts do
     end
   end
 
-  defp fallback_page(limit, page, query, role_filter) do
-    query_downcased = String.downcase(query)
-
-    filtered =
-      sample_users()
-      |> Enum.with_index(1)
-      |> Enum.map(fn {attrs, idx} -> struct(%User{}, Map.put(attrs, :id, idx)) end)
-      |> Enum.filter(fn user ->
-        email =
-          case user.email do
-            nil -> ""
-            value -> String.downcase(value)
-          end
-
-        query_downcased == "" or String.contains?(email, query_downcased)
-      end)
-      |> Enum.sort_by(& &1.id, :asc)
-      |> maybe_filter_by_role(role_filter)
-
-    offset = max(page - 1, 0) * limit
-
-    entries_with_extra =
-      filtered
-      |> Enum.drop(offset)
-      |> Enum.take(limit + 1)
-
-    build_page(entries_with_extra, limit, page)
+  defp fallback_page(_limit, page, _query, _role_filter) do
+    %{
+      entries: [],
+      has_more?: false,
+      page: page,
+      prev_page: if(page > 1, do: page - 1, else: nil),
+      next_page: nil
+    }
   end
 
   @doc """
   Returns up to `limit` users ordered by oldest activity first.
 
   Users without recorded activity are listed before those with a timestamp. In
-  case of database errors or during early development when the table might be
-  missing, the function falls back to the in-memory sample data.
+  case of database errors the function simply returns an empty list so the admin
+  view can degrade gracefully.
   """
   @spec list_stale_users(keyword()) :: list(user())
   def list_stale_users(opts \\ []) do
@@ -173,7 +144,7 @@ defmodule Wui6.Accounts do
       |> Repo.all()
       |> Repo.preload(:roles)
     rescue
-      _error -> fallback_stale_users(limit)
+      _error -> []
     end
   end
 
@@ -345,90 +316,6 @@ defmodule Wui6.Accounts do
   end
 
   def list_sessions_for_user(_), do: []
-
-  @doc """
-  Seeds the users table with sample data if it is currently empty.
-
-  Returns `{:ok, page}` with the freshly loaded result set (limited to `limit + 1`
-  rows) or `{:error, reason}` if the operation fails. The page map matches the
-  structure returned by `list_users/1`.
-  """
-  @spec seed_sample_users(pos_integer()) ::
-          {:ok,
-           %{
-             entries: list(user()),
-             has_more?: boolean(),
-             next_page: integer() | nil,
-             prev_page: integer() | nil,
-             page: integer()
-           }}
-          | {:error, term()}
-  def seed_sample_users(limit) when is_integer(limit) and limit > 0 do
-    Repo.transaction(fn ->
-      if Repo.aggregate(User, :count, :id) == 0 do
-        sample_users()
-        |> Enum.each(fn attrs ->
-          %User{}
-          |> struct(attrs)
-          |> Repo.insert!()
-        end)
-      end
-    end)
-
-    fetch_page(limit, 1, "", nil)
-  rescue
-    error in [QueryError, DBConnection.ConnectionError] -> {:error, error}
-    error -> {:error, error}
-  end
-
-  def seed_sample_users(_limit), do: {:error, :invalid_limit}
-
-  defp fallback_stale_users(limit) do
-    sample_users()
-    |> Enum.with_index(1)
-    |> Enum.map(fn {attrs, idx} ->
-      attrs = Map.put(attrs, :id, idx)
-      struct(%User{}, attrs)
-    end)
-    |> Enum.sort_by(fn user ->
-      case Map.get(user, :last_activity) do
-        nil ->
-          {0, nil, Map.get(user, :inserted_at), Map.get(user, :id)}
-
-        %NaiveDateTime{} = datetime ->
-          {1, datetime, Map.get(user, :inserted_at), Map.get(user, :id)}
-
-        %DateTime{} = datetime ->
-          {1, DateTime.to_naive(datetime), Map.get(user, :inserted_at), Map.get(user, :id)}
-
-        other ->
-          {1, to_string(other), Map.get(user, :inserted_at), Map.get(user, :id)}
-      end
-    end)
-    |> Enum.take(limit)
-  end
-
-  defp sample_users do
-    1..15
-    |> Enum.map(fn idx ->
-      inserted_at = NaiveDateTime.add(~N[2024-01-01 12:00:00], idx * 3_600)
-      last_activity_offset_days = rem(idx, 5)
-
-      last_activity =
-        case last_activity_offset_days do
-          0 -> nil
-          offset -> NaiveDateTime.add(inserted_at, -offset * 86_400)
-        end
-
-      %{
-        email: "user#{idx}@example.com",
-        inserted_at: inserted_at,
-        last_activity: last_activity,
-        enabled: rem(idx, 4) != 0,
-        roles: []
-      }
-    end)
-  end
 
   @doc """
   Fetch a user with preloaded roles. Falls back to user with ID 1 if the requested user is missing.
@@ -698,24 +585,6 @@ defmodule Wui6.Accounts do
         }
 
         Enum.concat(alerts, [alert])
-    end
-  end
-
-  defp maybe_filter_by_role(users, role_filter) do
-    case normalize_id(role_filter) do
-      nil ->
-        users
-
-      role_id ->
-        Enum.filter(users, fn user ->
-          user
-          |> Map.get(:roles, [])
-          |> Enum.any?(fn
-            %Roles.Role{id: id} -> id == role_id
-            id when is_integer(id) -> id == role_id
-            _ -> false
-          end)
-        end)
     end
   end
 
