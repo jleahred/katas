@@ -35,3 +35,5 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
 * admin para borrar sesiones
 * el filtro de usuarios no funciona, rehacer
 * hay que actualizar última actividad en user
+* al crear un usuario, por defecto tiene que estar en disabled
+* 
