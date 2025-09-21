@@ -1,0 +1,75 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-4xl space-y-6"
+>
+  <section class="card bg-base-100 shadow-lg">
+    <div class="card-body space-y-6">
+      <header class="space-y-2">
+        <h2 class="text-2xl font-semibold tracking-tight">Perfil de usuario</h2>
+        <p class="text-sm text-base-content/70">
+          Consulta tu correo registrado, el token actual y el historial reciente de tokens activos.
+        </p>
+      </header>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="stat bg-base-200/60 rounded-box">
+          <div class="stat-title">Correo electrónico</div>
+          <div class="stat-value text-lg font-mono break-all">{@user.email}</div>
+        </div>
+
+        <div class="stat bg-base-200/60 rounded-box">
+          <div class="stat-title">Token actual</div>
+          <div class="stat-value text-xs font-mono break-all">{@current_token}</div>
+        </div>
+      </div>
+
+      <section class="card bg-base-200/40 border border-base-200">
+        <div class="card-body space-y-3">
+          <header class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Roles asignados</h3>
+            <span class="badge badge-outline">{length(@current_user_roles)}</span>
+          </header>
+
+          <div :if={@current_user_roles != []} class="flex flex-wrap gap-2">
+            <span :for={role <- @current_user_roles} class="badge badge-info badge-outline">
+              {role.name}
+            </span>
+          </div>
+
+          <p :if={@current_user_roles == []} class="text-sm text-base-content/60">
+            No tienes roles asignados actualmente.
+          </p>
+        </div>
+      </section>
+
+      <div class="overflow-x-auto">
+        <table class="table table-zebra min-w-[720px]">
+          <thead>
+            <tr>
+              <th class="text-left">Token</th>
+              <th class="text-left">Creado</th>
+              <th class="text-left">Último acceso</th>
+              <th class="text-left">Último contexto</th>
+              <th class="text-left">Contexto inicial</th>
+              <th class="text-left">Alertas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <.session_details
+              :for={session <- @sessions}
+              session={session}
+              current_token={@current_token}
+            />
+            <tr :if={@sessions == []}>
+              <td colspan="5" class="text-center text-base-content/60 py-6">
+                Sin tokens activos registrados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</Layouts.app>

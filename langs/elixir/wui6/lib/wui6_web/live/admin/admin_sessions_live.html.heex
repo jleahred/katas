@@ -1,0 +1,65 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-4xl space-y-6"
+>
+  <section class="card bg-base-100 shadow-lg w-full">
+    <div class="card-body space-y-6">
+      <header class="space-y-2">
+        <h2 class="text-xl font-semibold tracking-tight">Sesiones activas</h2>
+        <p class="text-sm text-base-content/70">
+          Filtra por correo electrónico para localizar sesiones concretas. Se muestran primero las
+          más antiguas.
+        </p>
+      </header>
+
+      <form phx-submit="filter" class="flex flex-col gap-3 md:flex-row md:items-end">
+        <label class="form-control w-full md:max-w-sm">
+          <div class="label">
+            <span class="label-text">Correo electrónico</span>
+          </div>
+          <input
+            type="text"
+            name="q"
+            value={@query}
+            placeholder="usuario@example.com"
+            class="input input-bordered"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary">Buscar</button>
+          <button type="button" phx-click="clear_filter" class="btn btn-outline">Limpiar</button>
+        </div>
+      </form>
+
+      <div class="overflow-x-auto">
+        <table class="table table-zebra min-w-[640px]">
+          <thead>
+            <tr>
+              <th class="text-left">Usuario</th>
+              <th class="text-left">Token</th>
+              <th class="text-left">Último acceso</th>
+              <th class="text-left">Contexto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={session <- @sessions}>
+              <td class="font-mono text-sm">{user_email(session)}</td>
+              <td class="font-mono text-xs break-all">{session.token}</td>
+              <td>{format_datetime(session.last_access)}</td>
+              <td class="text-sm">{session.context_info}</td>
+            </tr>
+            <tr :if={@sessions == []}>
+              <td colspan="4" class="text-center text-base-content/60 py-6">
+                Sin sesiones para mostrar.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</Layouts.app>

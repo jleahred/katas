@@ -1,0 +1,131 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-4xl space-y-6"
+>
+  <div class="space-y-6">
+    <section class="card bg-base-100 shadow-lg w-full">
+      <div class="card-body space-y-4">
+        <.form
+          for={%{}}
+          id="admin-users-filter"
+          phx-change="filter"
+          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"
+        >
+          <label class="input input-bordered flex flex-1 items-center gap-2 transition-colors focus-within:border-primary focus-within:ring focus-within:ring-primary/70 focus-within:outline-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              class="size-5 stroke-current opacity-70"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="m21 21-5.2-5.2M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"
+              />
+            </svg>
+            <input
+              name="q"
+              value={@query}
+              type="search"
+              placeholder="Filtrar por email"
+              class="grow bg-transparent outline-none"
+              phx-debounce="400"
+            />
+          </label>
+
+          <select name="role" class="select select-bordered sm:w-52">
+            <option value="" selected={is_nil(@role_filter)}>Todos los roles</option>
+            <option :for={role <- @roles} value={role.id} selected={role.id == @role_filter}>
+              {role.name}
+            </option>
+          </select>
+        </.form>
+      </div>
+    </section>
+
+    <section class="card bg-base-100 shadow-lg w-full">
+      <div class="card-body overflow-x-auto">
+        <div class="w-full overflow-x-auto">
+          <table class="table table-zebra min-w-[640px]">
+            <thead>
+              <tr>
+                <th class="text-left">Email</th>
+                <th class="text-left">Creado</th>
+                <th class="text-left">Última actividad</th>
+                <th class="text-left">Enabled</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={user <- @users} class={row_classes(user)}>
+                <td class={"font-mono text-sm #{row_text_class(user)}"}>{user.email}</td>
+                <td class={row_text_class(user)}>{format_datetime(user.inserted_at)}</td>
+                <td class={row_text_class(user)}>{format_datetime(user.last_activity)}</td>
+                <td class={row_text_class(user)}>
+                  <div class="flex items-center">
+                    <input
+                      type="checkbox"
+                      class={"toggle toggle-sm #{if user_enabled?(user), do: "toggle-primary", else: ""}"}
+                      checked={user_enabled?(user)}
+                      phx-click="toggle_enabled"
+                      phx-value-id={user.id}
+                      aria-label="Cambiar enabled"
+                    />
+                  </div>
+                </td>
+                <td class={"text-right #{row_text_class(user)}"}>
+                  <.link
+                    navigate={~p"/admin/user/#{user.id}?#{[return_to: @current_path]}"}
+                    class="btn btn-xs btn-outline"
+                    aria-label="Editar usuario"
+                  >
+                    <.icon name="hero-pencil-square" class="size-4" />
+                  </.link>
+                </td>
+              </tr>
+              <tr :if={@users == []}>
+                <td colspan="5" class="text-center text-base-content/60 py-6">
+                  Sin usuarios disponibles.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+          <div>
+            <button
+              type="button"
+              class={"btn btn-sm btn-ghost #{if is_nil(@prev_page), do: "btn-disabled"}"}
+              phx-click="prev_page"
+              phx-disable-with="Cargando..."
+              disabled={is_nil(@prev_page)}
+            >
+              Prev
+            </button>
+          </div>
+
+          <span class="justify-self-center text-sm text-base-content/60">
+            Página {@page}
+          </span>
+
+          <div class="justify-self-end">
+            <button
+              type="button"
+              class={"btn btn-sm btn-outline #{if is_nil(@next_page), do: "btn-disabled"}"}
+              phx-click="next_page"
+              phx-disable-with="Cargando..."
+              disabled={is_nil(@next_page)}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layouts.app>

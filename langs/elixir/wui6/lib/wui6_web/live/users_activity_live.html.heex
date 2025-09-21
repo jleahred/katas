@@ -1,0 +1,58 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-4xl space-y-6"
+>
+  <section class="card bg-base-100 shadow-lg w-full">
+    <div class="card-body space-y-6">
+      <header class="space-y-2">
+        <h2 class="text-xl font-semibold tracking-tight">Actividad pendiente</h2>
+        <p class="text-sm text-base-content/70">
+          Los siguientes usuarios no tienen actividad registrada o llevan más tiempo sin conectarse.
+        </p>
+      </header>
+
+      <div class="overflow-x-auto">
+        <table class="table table-zebra min-w-[640px]">
+          <thead>
+            <tr>
+              <th class="text-left">Email</th>
+              <th class="text-left">Última actividad</th>
+              <th class="text-left">Creado</th>
+              <th class="text-left">Estado</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={user <- @users} class={row_classes(user)}>
+              <td class={"font-mono text-sm #{row_text_class(user)}"}>{user.email}</td>
+              <td class={row_text_class(user)}>
+                <span>{format_datetime(user.last_activity)}</span>
+                <p class="text-xs text-base-content/60">{activity_status(user.last_activity)}</p>
+              </td>
+              <td class={row_text_class(user)}>{format_datetime(user.inserted_at)}</td>
+              <td class={row_text_class(user)}>
+                {if user_enabled?(user), do: "Habilitado", else: "Deshabilitado"}
+              </td>
+              <td class={"text-right #{row_text_class(user)}"}>
+                <.link
+                  navigate={~p"/admin/user/#{user.id}?#{[return_to: @current_path]}"}
+                  class="btn btn-xs btn-outline"
+                  aria-label="Editar usuario"
+                >
+                  <.icon name="hero-pencil-square" class="size-4" />
+                </.link>
+              </td>
+            </tr>
+            <tr :if={@users == []}>
+              <td colspan="5" class="text-center text-base-content/60 py-6">
+                Sin usuarios pendientes de actividad.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</Layouts.app>
