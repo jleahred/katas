@@ -1,0 +1,311 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-5xl space-y-6"
+  phx-window-keydown="close-modals"
+  phx-key="escape"
+>
+  <section class="card bg-base-100 shadow-lg">
+    <div class="card-body space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="card-title text-xl">Roles</h2>
+        <button type="button" class="btn btn-primary btn-sm" phx-click="new">Nuevo rol</button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+          <thead>
+            <tr>
+              <th class="text-left">Nombre</th>
+              <th class="text-center">Usuarios</th>
+              <th class="text-left">Descripción</th>
+              <th class="text-left">Actualizado</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={role <- @roles}
+              class={["group", role.name in @system_roles && "bg-error/10"]}
+            >
+              <td class="font-medium">{role.name}</td>
+              <td class="text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <span :if={role.name != "public"} class="text-sm font-medium">
+                    {role.users_count}
+                  </span>
+                  <span :if={role.name == "public"} class="text-sm text-base-content/40">
+                    —
+                  </span>
+                  <button
+                    :if={role.name != "public"}
+                    type="button"
+                    class="btn btn-xs btn-outline"
+                    phx-click="show-role-users"
+                    phx-value-id={role.id}
+                    aria-label="Ver usuarios con este rol"
+                  >
+                    <.icon name="hero-user-group-solid" class="size-4 text-base-content/50" />
+                  </button>
+                </div>
+              </td>
+              <td class="max-w-[320px] truncate">{role.description}</td>
+              <td>{format_datetime(role.updated_at || role.inserted_at)}</td>
+              <td class="text-right">
+                <div class="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    class="opacity-0 group-hover:opacity-100 transition inline-flex items-center justify-center rounded-full p-1 text-base-content/60 hover:text-primary"
+                    phx-click="edit"
+                    phx-value-id={role.id}
+                    aria-label={"Editar rol #{role.name}"}
+                  >
+                    <.icon name="hero-pencil-square" class="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    class="opacity-0 group-hover:opacity-100 transition inline-flex items-center justify-center rounded-full p-1 text-base-content/60 hover:text-error"
+                    phx-click="delete"
+                    phx-value-id={role.id}
+                    data-confirm="¿Eliminar este rol?"
+                    aria-label={"Eliminar rol #{role.name}"}
+                  >
+                    <.icon name="hero-trash" class="size-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr :if={@roles == []}>
+              <td colspan="5" class="text-center text-base-content/60 py-6">
+                Aún no hay roles.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="text-xs text-base-content/60">
+    <strong>Roles del sistema:</strong>
+    {Enum.join(@system_roles, ", ")}
+  </div>
+
+  <div
+    :if={@show_users_modal}
+    class="fixed inset-0 z-50 flex items-center justify-center bg-base-content/30 backdrop-blur-sm px-4"
+    role="dialog"
+    aria-modal="true"
+    phx-click="close-modals"
+  >
+    <div class="relative w-full max-w-xl rounded-lg bg-base-100 shadow-xl" phx-click="noop">
+      <div class="flex items-center justify-between border-b border-base-200 px-6 py-4">
+        <h2 class="text-xl font-semibold">{@selected_role.name}</h2>
+        <button type="button" class="btn btn-sm btn-ghost" phx-click="close-modals">
+          ✕
+        </button>
+      </div>
+
+      <div class="space-y-4 px-6 py-6">
+        <p :if={@selected_role} class="text-sm text-base-content/70">
+          Usuarios con el rol <span class="font-medium">{@selected_role.name}</span>
+        </p>
+
+        <div
+          :if={@selected_role && @selected_role_users != []}
+          class="overflow-x-auto max-h-64 overflow-y-auto"
+        >
+          <table class="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th class="text-left">Email</th>
+                <th class="text-left">Estado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={user <- @selected_role_users}>
+                <td class="font-mono text-sm">{user.email}</td>
+                <td>
+                  <span class={
+                    if Map.get(user, :enabled, true),
+                      do: "badge badge-success",
+                      else: "badge badge-ghost"
+                  }>
+                    {if Map.get(user, :enabled, true), do: "Activo", else: "Inactivo"}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <div class="flex items-center justify-center gap-2">
+                    <.link
+                      navigate={~p"/admin/user/#{user.id}?#{[return_to: @current_path]}"}
+                      class="btn btn-xs btn-ghost"
+                      aria-label={"Editar usuario #{user.email}"}
+                    >
+                      <.icon name="hero-user-solid" class="size-4 text-base-content/40" />
+                    </.link>
+
+                    <button
+                      type="button"
+                      class="inline-flex items-center text-error transition hover:text-error/80 focus:outline-none focus:ring-2 focus:ring-error/40 focus:ring-offset-2"
+                      phx-click="remove_user_from_role"
+                      phx-value-user-id={user.id}
+                      aria-label={"Quitar rol de #{user.email}"}
+                      data-confirm="¿Quitar este usuario del rol?"
+                    >
+                      <.icon name="hero-minus-circle" class="size-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p
+          :if={@selected_role && @selected_role_users == []}
+          class="text-center text-base-content/60"
+        >
+          Ningún usuario utiliza este rol en este momento.
+        </p>
+
+        <p :if={is_nil(@selected_role)} class="text-center text-base-content/60">
+          Selecciona un rol de la tabla para ver qué usuarios lo tienen asignado.
+        </p>
+
+        <div class="border-t border-base-200 pt-5">
+          <h3 class="text-sm font-semibold text-base-content/70">Añadir usuarios al rol</h3>
+
+          <.form
+            for={%{}}
+            as={:search}
+            id="role-user-search"
+            phx-change="search_users"
+            class="mt-3 flex flex-col gap-3 sm:flex-row"
+          >
+            <label class="input input-bordered flex flex-1 items-center gap-2 transition-colors focus-within:border-primary focus-within:ring-0 focus-within:outline-none">
+              <.icon name="hero-magnifying-glass" class="size-4 text-base-content/60" />
+              <input
+                type="search"
+                name="q"
+                value={@user_search_query}
+                placeholder="Filtrar por email"
+                class="grow bg-transparent outline-none"
+                phx-debounce="300"
+              />
+            </label>
+          </.form>
+
+          <p :if={@user_search_query == ""} class="mt-2 text-sm text-base-content/60">
+            Escribe para localizar usuarios y asignarlos rápidamente.
+          </p>
+
+          <p
+            :if={@user_search_query != "" and @user_search_results == []}
+            class="mt-2 text-sm text-base-content/60"
+          >
+            No se encontraron usuarios que coincidan con "{@user_search_query}".
+          </p>
+
+          <div :if={@user_search_results != []} class="mt-4 space-y-2">
+            <div
+              :for={result <- @user_search_results}
+              class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-base-200 px-3 py-2"
+            >
+              <div class="flex items-center gap-3">
+                <span class="font-mono text-sm">{result.email}</span>
+                <span
+                  :if={not is_nil(result.enabled)}
+                  class={
+                    "badge badge-sm " <>
+                      if(result.enabled, do: "badge-success", else: "badge-ghost")
+                  }
+                >
+                  {if result.enabled, do: "Activo", else: "Inactivo"}
+                </span>
+                <span :if={is_nil(result.enabled)} class="text-base-content/60 text-xs">—</span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  :if={!result.has_role}
+                  type="button"
+                  class="inline-flex items-center text-success transition hover:text-success/80 focus:outline-none focus:ring-2 focus:ring-success/40 focus:ring-offset-2"
+                  phx-click="add_user_to_role"
+                  phx-value-user-id={result.id}
+                  aria-label={"Añadir rol a #{result.email}"}
+                >
+                  <.icon name="hero-plus-circle" class="size-5" />
+                </button>
+
+                <button
+                  :if={result.has_role}
+                  type="button"
+                  class="inline-flex items-center text-error transition hover:text-error/80 focus:outline-none focus:ring-2 focus:ring-error/40 focus:ring-offset-2"
+                  phx-click="remove_user_from_role"
+                  phx-value-user-id={result.id}
+                  aria-label={"Quitar rol de #{result.email}"}
+                  data-confirm="¿Quitar este usuario del rol?"
+                >
+                  <.icon name="hero-minus-circle" class="size-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+          <button type="button" class="btn" phx-click="close-modals">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    :if={@show_form_modal}
+    class="fixed inset-0 z-50 flex items-center justify-center bg-base-content/30 backdrop-blur-sm px-4"
+    role="dialog"
+    aria-modal="true"
+    phx-click="close-modals"
+  >
+    <div class="relative w-full max-w-xl rounded-lg bg-base-100 shadow-xl" phx-click="noop">
+      <button
+        type="button"
+        class="btn btn-sm btn-ghost absolute right-3 top-3"
+        phx-click="cancel"
+        aria-label="Cerrar"
+      >
+        ✕
+      </button>
+
+      <div class="space-y-4 p-6">
+        <h2 class="text-xl font-semibold">
+          {if @form_mode == :new, do: "Crear rol", else: "Editar rol"}
+        </h2>
+
+        <.form
+          :let={f}
+          for={@form_changeset}
+          phx-submit="save"
+          phx-change="validate"
+          class="space-y-4"
+        >
+          <.input field={f[:name]} type="text" label="Nombre" placeholder="role name" required />
+          <.input field={f[:description]} type="textarea" label="Descripción" />
+
+          <div class="flex items-center gap-3">
+            <button type="submit" class="btn btn-primary">
+              {if @form_mode == :new, do: "Guardar", else: "Actualizar"}
+            </button>
+            <button type="button" class="btn btn-ghost" phx-click="cancel">
+              Cancelar
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

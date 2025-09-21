@@ -1,0 +1,55 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-xl space-y-6"
+>
+  <section class="card bg-base-100 shadow-lg">
+    <div class="card-body space-y-6">
+      <header class="space-y-2">
+        <h2 class="text-xl font-semibold tracking-tight">Enviar enlace de registro</h2>
+        <p class="text-sm text-base-content/70">
+          Introduce el correo del usuario para enviarle un enlace único y activar su sesión.
+        </p>
+      </header>
+
+      <form
+        phx-submit="send_link"
+        class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+      >
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Correo electrónico</span>
+          </div>
+          <input
+            type="email"
+            name="email"
+            value={@form[:email].value}
+            required
+            class="input input-bordered"
+            placeholder="usuario@example.com"
+            autocomplete="email"
+          />
+        </label>
+
+        <div class="flex gap-3 justify-end sm:justify-start sm:col-start-2 sm:row-start-1">
+          <button type="submit" class="btn btn-primary w-full sm:w-auto">
+            Enviar enlace
+          </button>
+        </div>
+      </form>
+
+      <div :if={@status == :sent} class="alert alert-success">
+        <span>
+          Hemos enviado el enlace a {@last_email}. Revisa el correo o el panel de Swoosh.
+        </span>
+      </div>
+
+      <div :if={@status == :error} class="alert alert-warning">
+        <span>
+          Revisa el mensaje mostrado arriba para más detalles.
+        </span>
+      </div>
+    </div>
+  </section>
+</Layouts.app>

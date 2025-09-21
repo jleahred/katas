@@ -1,0 +1,93 @@
+<Layouts.app flash={@flash} page_title={@page_title} current_user_email={@current_user_email}>
+  <div class="space-y-8 pt-4">
+    <section class="card bg-base-100 shadow-lg">
+      <div class="card-body space-y-4">
+        <div class="space-y-2"></div>
+
+        <.form
+          for={%{}}
+          id="route-search"
+          phx-change="search"
+          class="flex flex-col gap-3 sm:flex-row"
+        >
+          <label class="input input-bordered flex items-center gap-2 sm:flex-1 transition-colors focus-within:border-primary focus-within:ring focus-within:ring-primary/70 focus-within:outline-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              class="size-5 stroke-current opacity-70"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="m21 21-5.2-5.2M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z"
+              />
+            </svg>
+            <input
+              name="q"
+              value={@query}
+              type="search"
+              placeholder="Search by path, helper or module"
+              class="grow bg-transparent outline-none focus:outline-none focus:ring-0 focus-visible:ring-0"
+              phx-debounce="500"
+            />
+          </label>
+        </.form>
+
+        <div class="text-sm text-base-content/60 text-right">
+          {if @match_count == 1, do: "Result", else: "Results"} {@match_count} of {@total_routes}
+        </div>
+      </div>
+    </section>
+
+    <section class="">
+      <div class="card-body space-y-5">
+        <ul :if={@filtered_routes != []} class="space-y-3">
+          <li :for={route <- @filtered_routes}>
+            <.link
+              navigate={route.path}
+              class="block border border-base-300/60 rounded-box bg-base-200/40 p-4 space-y-3 transition-colors duration-150 hover:bg-base-200 hover:border-primary/60 hover:shadow-md focus:outline-none focus-visible:ring focus-visible:ring-primary/40 shadow-lg"
+            >
+              <div class="flex flex-col gap-2 sm:gap-3">
+                <div :if={route.title} class="text-lg font-semibold text-base-content">
+                  {route.title}
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-sm sm:text-base flex-1 truncate">
+                    {route.path}
+                  </span>
+                  <span :if={route.verb} class="badge badge-primary badge-outline">
+                    {route.verb}
+                  </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-base-content/70">
+                  <span :if={route.helper_label} class="badge badge-neutral badge-outline">
+                    helper: {route.helper_label}
+                  </span>
+                  <span
+                    :if={route.plug_label != ""}
+                    class="ml-auto font-mono text-xs sm:text-sm text-base-content/50"
+                  >
+                    {route.plug_label}
+                  </span>
+                  <span :if={route.action_label != ""} class="badge badge-outline">
+                    action: {route.action_label}
+                  </span>
+                </div>
+              </div>
+
+              <p :if={route.description} class="text-sm text-base-content/70">
+                {Phoenix.HTML.raw(route.description)}
+              </p>
+            </.link>
+          </li>
+        </ul>
+
+        <div :if={@filtered_routes == []} class="alert alert-warning">
+          <span>No routes match "{@query}".</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layouts.app>

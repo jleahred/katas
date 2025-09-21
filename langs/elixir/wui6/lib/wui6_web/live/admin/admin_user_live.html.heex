@@ -1,0 +1,151 @@
+<Layouts.app
+  flash={@flash}
+  page_title={@page_title}
+  current_user_email={@current_user_email}
+  container_class="mx-auto w-full max-w-3xl space-y-6"
+  return_to={@return_to}
+>
+  <div :if={@user} class={["space-y-6"]}>
+    <section class={["card", "bg-base-100", "shadow-lg", @user.id == 1 && "bg-error/12"]}>
+      <div class="card-body space-y-4">
+        <div class="flex items-start">
+          <h2 class="card-title text-xl">{@user.email || "—"}</h2>
+        </div>
+
+        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <dt class="text-sm text-base-content/70">ID</dt>
+            <dd class="font-mono text-lg">{@user.id}</dd>
+          </div>
+          <div>
+            <dt class="text-sm text-base-content/70">Email</dt>
+            <dd class="font-medium">{@user.email || "—"}</dd>
+          </div>
+          <div>
+            <dt class="text-sm text-base-content/70">Creado</dt>
+            <dd>{format_datetime(@user.inserted_at)}</dd>
+          </div>
+          <div>
+            <dt class="text-sm text-base-content/70">Última actividad</dt>
+            <dd>{format_datetime(@user.last_activity)}</dd>
+          </div>
+          <div>
+            <dt class="text-sm text-base-content/70">Actualizado</dt>
+            <dd>{format_datetime(@user.updated_at)}</dd>
+          </div>
+          <div>
+            <dt class="text-sm text-base-content/70">Estado</dt>
+            <% {status_text, status_class} = enabled_badge(@user.enabled) %>
+            <% toggle_label = if @user.enabled, do: "Desactivar", else: "Activar" %>
+            <dd class="flex items-center gap-3">
+              <span class={status_class}>{status_text}</span>
+              <button
+                type="button"
+                class="btn btn-xs btn-outline"
+                phx-click="toggle_enabled"
+                phx-disable-with="Actualizando..."
+              >
+                {toggle_label}
+              </button>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <section class="card bg-base-100 shadow-lg">
+        <div class="card-body space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="card-title text-xl">Roles asignados</h2>
+            <span class="badge badge-outline">{length(@user_roles)}</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">Nombre</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={role <- @user_roles}>
+                  <td class="font-medium">
+                    <span title={role.description || ""}>{role.name}</span>
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-outline"
+                      phx-click="remove_role"
+                      phx-value-role-id={role.id}
+                    >
+                      Quitar
+                    </button>
+                  </td>
+                </tr>
+                <tr :if={@user_roles == []}>
+                  <td colspan="2" class="text-center text-base-content/60 py-6">
+                    El usuario aún no tiene roles asignados.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="card bg-base-100 shadow-lg">
+        <div class="card-body space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="card-title text-xl">Roles disponibles</h2>
+            <span class="badge badge-outline">{length(@available_roles)}</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th class="text-left">Nombre</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={role <- @available_roles}>
+                  <td class="font-medium">
+                    <span title={role.description || ""}>{role.name}</span>
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-primary"
+                      phx-click="add_role"
+                      phx-value-role-id={role.id}
+                    >
+                      Añadir
+                    </button>
+                  </td>
+                </tr>
+                <tr :if={@available_roles == []}>
+                  <td colspan="2" class="text-center text-base-content/60 py-6">
+                    No hay roles adicionales disponibles.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div :if={!@user} class="card bg-base-100 shadow-lg">
+    <div class="card-body">
+      <p class="text-center text-base-content/60">No hay usuarios para mostrar.</p>
+      <div class="mt-4 flex justify-center">
+        <.link navigate={~p"/admin/users"} class="btn btn-primary">Ir al listado</.link>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

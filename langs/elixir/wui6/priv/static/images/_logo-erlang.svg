@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Erlang">
+  <defs>
+    <radialGradient id="erlangGradient" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+      <stop offset="65%" stop-color="#b71c1c" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#8b0000" />
+    </radialGradient>
+  </defs>
+  <circle cx="80" cy="80" r="72" fill="url(#erlangGradient)" />
+  <path
+    d="M52 98c8 18 24 27 44 24 13-2 20-10 21-19 2-14-11-20-26-18l-13 2c-5 1-9-2-9-6 0-5 5-9 12-10 12-2 20 1 28 5l6-18c-9-5-21-8-35-6-22 3-34 16-34 30 0 12 9 20 21 22l19 3c5 1 7 3 7 6s-3 6-9 7c-8 1-15-3-19-11z"
+    fill="#fff"
+    fill-rule="evenodd"
+  />
+</svg>

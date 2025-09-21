@@ -1,0 +1,24 @@
+<Layouts.app flash={@flash} page_title={@page_title} current_user_email={@current_user_email}>
+  <div class="space-y-10 pt-4">
+    <section class="card bg-base-100 shadow-xl">
+      <div class="card-body items-center text-center space-y-6">
+        <h2 class="card-title text-3xl font-bold">Counter</h2>
+        <p class="text-base-content/70 max-w-md">
+          Use the buttons to increase or decrease the current value.
+        </p>
+        <div class="flex items-center gap-6">
+          <button type="button" phx-click="decrement" class="btn btn-error btn-lg">
+            -1
+          </button>
+          <div class="stat bg-base-200 rounded-box px-10 py-6">
+            <span class="stat-title uppercase text-sm tracking-wide">Current value</span>
+            <span class="stat-value text-5xl">{@count}</span>
+          </div>
+          <button type="button" phx-click="increment" class="btn btn-success btn-lg">
+            +1
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layouts.app>
