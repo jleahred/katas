@@ -1,0 +1,57 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "beam28Packages.elixir_1_19@latest": {
+      "last_modified": "2025-11-15T07:28:48Z",
+      "resolved": "github:NixOS/nixpkgs/1d4c88323ac36805d09657d13a5273aea1b34f0c#beam28Packages.elixir_1_19",
+      "source": "devbox-search",
+      "version": "1.19.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/r541wfg8xd2aac680nj3yfqm735nvifj-elixir-1.19.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/r541wfg8xd2aac680nj3yfqm735nvifj-elixir-1.19.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/k8d4bqsqxfw74law39l8hfqlgnykdi5y-elixir-1.19.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/k8d4bqsqxfw74law39l8hfqlgnykdi5y-elixir-1.19.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bxwsmy0s83k1fyrb0crc56brfhyyi6vs-elixir-1.19.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/bxwsmy0s83k1fyrb0crc56brfhyyi6vs-elixir-1.19.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/803w44avii32mykm6sm8qcvb9zmlzs63-elixir-1.19.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/803w44avii32mykm6sm8qcvb9zmlzs63-elixir-1.19.3"
+        }
+      }
+    },
+    "github:NixOS/nixpkgs/nixpkgs-unstable": {
+      "last_modified": "2025-11-15T07:28:48Z",
+      "resolved": "github:NixOS/nixpkgs/1d4c88323ac36805d09657d13a5273aea1b34f0c?lastModified=1763191728&narHash=sha256-esRhOS0APE6k40Hs%2FjjReXg%2Brx%2BJ5LkWw7cuWFKlwYA%3D"
+    }
+  }
+}
