@@ -7,11 +7,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(supervisor
     main.cpp
-    supervisor.cpp
+    ../src/supervisor.cpp
+    ../src/supervisor.h
 )
 
 include(GNUInstallDirs)
 install(TARGETS supervisor
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+target_include_directories(supervisor
+    PRIVATE
+        ../src
 )
