@@ -19,16 +19,16 @@ struct OutputBatch
     [[nodiscard]] bool empty() const;
 };
 
-class Supervisor
+class Process
 {
 public:
-    Supervisor();
-    ~Supervisor();
+    Process();
+    ~Process();
 
-    Supervisor(const Supervisor&) = delete;
-    Supervisor& operator=(const Supervisor&) = delete;
-    Supervisor(Supervisor&&) = delete;
-    Supervisor& operator=(Supervisor&&) = delete;
+    Process(const Process&) = delete;
+    Process& operator=(const Process&) = delete;
+    Process(Process&&) = delete;
+    Process& operator=(Process&&) = delete;
 
     [[nodiscard]] long run(const std::vector<std::string>& command);
     [[nodiscard]] long run(const std::function<int()>& action);

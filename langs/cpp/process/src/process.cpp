@@ -1,4 +1,4 @@
-#include "supervisor.h"
+#include "process.h"
 
 #include <array>
 #include <chrono>
@@ -71,9 +71,9 @@ bool OutputBatch::empty() const
     return stdout_lines.empty() && stderr_lines.empty();
 }
 
-Supervisor::Supervisor() = default;
+Process::Process() = default;
 
-Supervisor::~Supervisor()
+Process::~Process()
 {
     static_cast<void>(request_stop());
 #ifdef _WIN32
@@ -83,7 +83,7 @@ Supervisor::~Supervisor()
 #endif
 }
 
-bool Supervisor::can_spawn() const
+bool Process::can_spawn() const
 {
 #ifdef _WIN32
     return mut_process_info.hProcess == nullptr;
@@ -92,7 +92,7 @@ bool Supervisor::can_spawn() const
 #endif
 }
 
-long Supervisor::run(const std::vector<std::string>& command)
+long Process::run(const std::vector<std::string>& command)
 {
     if (command.empty() || !can_spawn())
     {
@@ -112,7 +112,7 @@ long Supervisor::run(const std::vector<std::string>& command)
 #endif
 }
 
-long Supervisor::run(const std::function<int()>& action)
+long Process::run(const std::function<int()>& action)
 {
 #ifdef _WIN32
     (void)action;
@@ -133,7 +133,7 @@ long Supervisor::run(const std::function<int()>& action)
 #endif
 }
 
-bool Supervisor::is_running()
+bool Process::is_running()
 {
 #ifdef _WIN32
     if (mut_process_info.hProcess == nullptr)
@@ -176,7 +176,7 @@ bool Supervisor::is_running()
 #endif
 }
 
-bool Supervisor::request_stop()
+bool Process::request_stop()
 {
 #ifdef _WIN32
     if (mut_process_info.hProcess == nullptr)
@@ -219,7 +219,7 @@ bool Supervisor::request_stop()
 #endif
 }
 
-OutputBatch Supervisor::poll_output()
+OutputBatch Process::poll_output()
 {
     OutputBatch result;
     result.stdout_lines.swap(mut_stdout_pending);
@@ -240,7 +240,7 @@ OutputBatch Supervisor::poll_output()
     return result;
 }
 
-long Supervisor::pid() const
+long Process::pid() const
 {
 #ifdef _WIN32
     return mut_process_info.dwProcessId;
@@ -249,7 +249,7 @@ long Supervisor::pid() const
 #endif
 }
 
-bool Supervisor::write(const std::string_view data)
+bool Process::write(const std::string_view data)
 {
 #ifdef _WIN32
     if (mut_stdin_write == nullptr || data.empty())
@@ -272,7 +272,7 @@ bool Supervisor::write(const std::string_view data)
 }
 
 #ifdef _WIN32
-bool Supervisor::spawn_process(const std::vector<std::string>& command)
+bool Process::spawn_process(const std::vector<std::string>& command)
 {
     SECURITY_ATTRIBUTES mut_sa{};
     mut_sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -375,7 +375,7 @@ bool Supervisor::spawn_process(const std::vector<std::string>& command)
     return true;
 }
 
-void Supervisor::close_handles()
+void Process::close_handles()
 {
     if (mut_process_info.hProcess != nullptr)
     {
@@ -403,7 +403,7 @@ void Supervisor::close_handles()
     }
 }
 
-void Supervisor::read_pipe(HANDLE pipe_handle, std::string& buffer, std::vector<std::string>& lines)
+void Process::read_pipe(HANDLE pipe_handle, std::string& buffer, std::vector<std::string>& lines)
 {
     if (pipe_handle == nullptr)
     {
@@ -435,7 +435,7 @@ void Supervisor::read_pipe(HANDLE pipe_handle, std::string& buffer, std::vector<
 }
 
 #else
-bool Supervisor::spawn_process(const std::vector<std::string>& command)
+bool Process::spawn_process(const std::vector<std::string>& command)
 {
     std::array<int, 2> mut_stdout_pipe{};
     std::array<int, 2> mut_stderr_pipe{};
@@ -516,7 +516,7 @@ bool Supervisor::spawn_process(const std::vector<std::string>& command)
     return true;
 }
 
-bool Supervisor::spawn_action(const std::function<int()>& action)
+bool Process::spawn_action(const std::function<int()>& action)
 {
     std::array<int, 2> mut_stdout_pipe{};
     std::array<int, 2> mut_stderr_pipe{};
@@ -588,7 +588,7 @@ bool Supervisor::spawn_action(const std::function<int()>& action)
     return true;
 }
 
-void Supervisor::close_fds()
+void Process::close_fds()
 {
     if (mut_stdout_fd != -1)
     {
@@ -609,7 +609,7 @@ void Supervisor::close_fds()
     }
 }
 
-void Supervisor::read_pipe(const int fd, std::string& buffer, std::vector<std::string>& lines)
+void Process::read_pipe(const int fd, std::string& buffer, std::vector<std::string>& lines)
 {
     std::array<char, 512> mut_chunk{};
     while (true)

@@ -1,4 +1,4 @@
-# Supervisor
+# Process
 
 Pequeña utilidad en C++20 para lanzar y supervisar procesos hijos, leer su salida estándar/errores por líneas y detenerlos bajo demanda.
 
@@ -7,21 +7,21 @@ Pequeña utilidad en C++20 para lanzar y supervisar procesos hijos, leer su sali
 ```bash
 cmake -S . -B build
 cmake --build build
-./build/supervisor
+./build/process
 ```
 
 ## Ejemplo sencillo (comando externo)
 
 ```cpp
-Supervisor mut_supervisor;
+Process mut_process;
 
-const auto pid = mut_supervisor.run({"/bin/sh", "-c", "echo hola; sleep 1; echo adios"});
+const auto pid = mut_process.run({"/bin/sh", "-c", "echo hola; sleep 1; echo adios"});
 if (pid == 0) {
     return 1;
 }
 
-while (mut_supervisor.is_running()) {
-    const auto batch = mut_supervisor.poll_output();
+while (mut_process.is_running()) {
+    const auto batch = mut_process.poll_output();
     for (const auto& line : batch.stdout_lines) {
         std::cout << line << std::endl;
     }
@@ -30,7 +30,7 @@ while (mut_supervisor.is_running()) {
     }
 }
 
-const auto final_batch = mut_supervisor.poll_output();
+const auto final_batch = mut_process.poll_output();
 for (const auto& line : final_batch.stdout_lines) {
     std::cout << line << std::endl;
 }
@@ -52,8 +52,8 @@ int main(int argc, char* argv[]) {
     }
 
     const auto self_path = std::filesystem::absolute(argv[0]).string();
-    Supervisor mut_one;
-    Supervisor mut_second;
+    Process mut_one;
+    Process mut_second;
 
     mut_one.run({self_path, "--self", "one"});
     mut_second.run({self_path, "--self", "second"});
@@ -82,8 +82,8 @@ int main(int argc, char* argv[]) {
 Puedes probar manualmente:
 
 ```bash
-./build/supervisor --self prueba
-./build/supervisor          # lanza dos hijos y muestra su salida por consola
+./build/process --self prueba
+./build/process          # lanza dos hijos y muestra su salida por consola
 ```
 
 ## API principal

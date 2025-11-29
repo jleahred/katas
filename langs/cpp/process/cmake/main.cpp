@@ -1,4 +1,4 @@
-#include "supervisor.h"
+#include "process.h"
 
 #include <chrono>
 #include <filesystem>
@@ -52,14 +52,14 @@ int main(const int argc, char* argv[])
     struct Runner
     {
         std::string label;
-        Supervisor supervisor;
+        Process process;
     };
 
     Runner mut_first{"one", {}};
     Runner mut_second{"second", {}};
 
-    const auto first_pid = mut_first.supervisor.run({self_path, "--self", mut_first.label});
-    const auto second_pid = mut_second.supervisor.run({self_path, "--self", mut_second.label});
+    const auto first_pid = mut_first.process.run({self_path, "--self", mut_first.label});
+    const auto second_pid = mut_second.process.run({self_path, "--self", mut_second.label});
 
     if (first_pid == 0 || second_pid == 0)
     {
@@ -70,21 +70,21 @@ int main(const int argc, char* argv[])
     std::cout << "PID (" << mut_first.label << "): " << first_pid << std::endl;
     std::cout << "PID (" << mut_second.label << "): " << second_pid << std::endl;
 
-    while (mut_first.supervisor.is_running() || mut_second.supervisor.is_running())
+    while (mut_first.process.is_running() || mut_second.process.is_running())
     {
-        const auto first_batch = mut_first.supervisor.poll_output();
+        const auto first_batch = mut_first.process.poll_output();
         print_batch(mut_first.label, first_batch);
 
-        const auto second_batch = mut_second.supervisor.poll_output();
+        const auto second_batch = mut_second.process.poll_output();
         print_batch(mut_second.label, second_batch);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
-    const auto final_first = mut_first.supervisor.poll_output();
+    const auto final_first = mut_first.process.poll_output();
     print_batch(mut_first.label, final_first);
 
-    const auto final_second = mut_second.supervisor.poll_output();
+    const auto final_second = mut_second.process.poll_output();
     print_batch(mut_second.label, final_second);
 
     return 0;
