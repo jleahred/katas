@@ -11,6 +11,18 @@
 
 namespace
 {
+void print_batch(const std::string& label, const OutputBatch& batch)
+{
+    for (const auto& line : batch.stdout_lines)
+    {
+        std::cout << "[" << label << " stdout] " << line << std::endl;
+    }
+    for (const auto& line : batch.stderr_lines)
+    {
+        std::cout << "[" << label << " stderr] " << line << std::endl;
+    }
+}
+
 void run_self(const std::string_view name)
 {
     std::random_device rd;
@@ -61,47 +73,19 @@ int main(const int argc, char* argv[])
     while (mut_first.supervisor.is_running() || mut_second.supervisor.is_running())
     {
         const auto first_batch = mut_first.supervisor.poll_output();
-        for (const auto& line : first_batch.stdout_lines)
-        {
-            std::cout << "[" << mut_first.label << " stdout] " << line << std::endl;
-        }
-        for (const auto& line : first_batch.stderr_lines)
-        {
-            std::cout << "[" << mut_first.label << " stderr] " << line << std::endl;
-        }
+        print_batch(mut_first.label, first_batch);
 
         const auto second_batch = mut_second.supervisor.poll_output();
-        for (const auto& line : second_batch.stdout_lines)
-        {
-            std::cout << "[" << mut_second.label << " stdout] " << line << std::endl;
-        }
-        for (const auto& line : second_batch.stderr_lines)
-        {
-            std::cout << "[" << mut_second.label << " stderr] " << line << std::endl;
-        }
+        print_batch(mut_second.label, second_batch);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
     const auto final_first = mut_first.supervisor.poll_output();
-    for (const auto& line : final_first.stdout_lines)
-    {
-        std::cout << "[" << mut_first.label << " stdout] " << line << std::endl;
-    }
-    for (const auto& line : final_first.stderr_lines)
-    {
-        std::cout << "[" << mut_first.label << " stderr] " << line << std::endl;
-    }
+    print_batch(mut_first.label, final_first);
 
     const auto final_second = mut_second.supervisor.poll_output();
-    for (const auto& line : final_second.stdout_lines)
-    {
-        std::cout << "[" << mut_second.label << " stdout] " << line << std::endl;
-    }
-    for (const auto& line : final_second.stderr_lines)
-    {
-        std::cout << "[" << mut_second.label << " stderr] " << line << std::endl;
-    }
+    print_batch(mut_second.label, final_second);
 
     return 0;
 }

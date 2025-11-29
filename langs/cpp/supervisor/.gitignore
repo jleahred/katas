@@ -1,3 +1,4 @@
 devbox/fake_home/*
 cmake/fake_home/*
 cmake/.vscode/*
+supervisor/.vscode/*
