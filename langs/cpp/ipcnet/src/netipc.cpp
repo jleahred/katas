@@ -134,6 +134,16 @@ std::vector<std::byte> read_buffer(tcp::socket& socket,
     return mut_buf;
 }
 
+void set_non_blocking(tcp::socket& socket, const bool value) {
+    asio::error_code mut_ec;
+    socket.non_blocking(value, mut_ec);
+}
+
+void set_non_blocking(tcp::acceptor& acceptor, const bool value) {
+    asio::error_code mut_ec;
+    acceptor.non_blocking(value, mut_ec);
+}
+
 void try_invoke(const std::function<void()>& fn) {
     if (fn) {
         fn();
@@ -244,12 +254,12 @@ void ClientWriter::run(std::stop_token stop_token) {
             }
 
             tcp::socket mut_new_socket(mut_io);
-            mut_new_socket.non_blocking(true);
             asio::connect(mut_new_socket, mut_endpoints, mut_ec);
             if (mut_ec) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 continue;
             }
+            set_non_blocking(mut_new_socket, true);
             mut_socket = std::move(mut_new_socket);
             const bool was_connected = mut_connected_.exchange(true);
             if (!was_connected) {
@@ -401,12 +411,12 @@ void ClientReader::run(std::stop_token stop_token) {
                 continue;
             }
             tcp::socket mut_new_socket(mut_io);
-            mut_new_socket.non_blocking(true);
             asio::connect(mut_new_socket, mut_endpoints, mut_ec);
             if (mut_ec) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 continue;
             }
+            set_non_blocking(mut_new_socket, true);
             mut_socket = std::move(mut_new_socket);
             const bool was_connected = mut_connected_.exchange(true);
             if (!was_connected) {
@@ -587,7 +597,7 @@ void ServerWriter::run(std::stop_token stop_token) {
         return;
     }
     tcp::acceptor mut_acceptor(mut_io, tcp::endpoint(mut_addr, port_));
-    mut_acceptor.non_blocking(true);
+    set_non_blocking(mut_acceptor, true);
 
     while (!stop_token.stop_requested()) {
         tcp::socket mut_socket(mut_io);
@@ -600,7 +610,7 @@ void ServerWriter::run(std::stop_token stop_token) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
-        mut_socket.non_blocking(true);
+        set_non_blocking(mut_socket, true);
         std::lock_guard<std::mutex> lock(mut_clients_mutex_);
         mut_client_threads_.emplace_back([this, mut_socket = std::move(mut_socket)](
                                               std::stop_token client_stop_token) mutable {
@@ -646,14 +656,15 @@ void ServerWriter::run(std::stop_token stop_token) {
                     auto iter = mut_writers_.find(mut_queue_name);
                     if (iter == mut_writers_.end()) {
                         auto mut_writer = std::make_unique<QueueWriter>(resolver_(mut_queue_name));
-                        auto [new_iter, std::ignore] =
-                            mut_writers_.emplace(mut_queue_name, std::move(mut_writer));
-                        iter = new_iter;
-                    }
-                    iter->second->write(std::span<const std::byte>(mut_payload.data(),
+                            auto [new_iter, mut_inserted] =
+                                mut_writers_.emplace(mut_queue_name, std::move(mut_writer));
+                            iter = new_iter;
+                            (void)mut_inserted;
+                        }
+                        iter->second->write(std::span<const std::byte>(mut_payload.data(),
                                                                    mut_payload.size()));
-                } catch (...) {
-                    break;
+                    } catch (...) {
+                        break;
                 }
 
                 NetStats mut_local{};
@@ -729,7 +740,7 @@ void ServerReader::run(std::stop_token stop_token) {
         return;
     }
     tcp::acceptor mut_acceptor(mut_io, tcp::endpoint(mut_addr, port_));
-    mut_acceptor.non_blocking(true);
+    set_non_blocking(mut_acceptor, true);
 
     while (!stop_token.stop_requested()) {
         tcp::socket mut_socket(mut_io);
@@ -742,7 +753,7 @@ void ServerReader::run(std::stop_token stop_token) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
-        mut_socket.non_blocking(true);
+        set_non_blocking(mut_socket, true);
         std::lock_guard<std::mutex> lock(mut_clients_mutex_);
         mut_client_threads_.emplace_back([this, mut_socket = std::move(mut_socket)](
                                               std::stop_token client_stop_token) mutable {
@@ -783,9 +794,10 @@ void ServerReader::run(std::stop_token stop_token) {
                 if (iter == mut_readers.end()) {
                     try {
                         auto mut_reader = std::make_unique<QueueReader>(resolver_(mut_queue_name));
-                        auto [new_iter, std::ignore] =
+                        auto [new_iter, mut_inserted] =
                             mut_readers.emplace(mut_queue_name, std::move(mut_reader));
                         iter = new_iter;
+                        (void)mut_inserted;
                     } catch (...) {
                         iter = mut_readers.end();
                     }
