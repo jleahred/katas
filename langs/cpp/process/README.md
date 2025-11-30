@@ -2,6 +2,8 @@
 
 Pequeña utilidad en C++20 para lanzar y supervisar procesos hijos, leer su salida estándar/errores por líneas y detenerlos bajo demanda.
 
+Todos los tipos viven en el espacio de nombres `chi`.
+
 ## Compilar
 
 ```bash
@@ -13,7 +15,7 @@ cmake --build build
 ## Ejemplo sencillo (comando externo)
 
 ```cpp
-Process mut_process;
+chi::Process mut_process;
 
 const auto pid = mut_process.run({"/bin/sh", "-c", "echo hola; sleep 1; echo adios"});
 if (pid == 0) {
@@ -52,8 +54,8 @@ int main(int argc, char* argv[]) {
     }
 
     const auto self_path = std::filesystem::absolute(argv[0]).string();
-    Process mut_one;
-    Process mut_second;
+    chi::Process mut_one;
+    chi::Process mut_second;
 
     mut_one.run({self_path, "--self", "one"});
     mut_second.run({self_path, "--self", "second"});
@@ -88,13 +90,13 @@ Puedes probar manualmente:
 
 ## API principal
 
-- `long run(const std::vector<std::string>& command)`: lanza un proceso externo; devuelve el pid (o 0 si falla).
-- `long run(const std::function<int()>& action)`: POSIX únicamente; ejecuta una función en un hijo y redirige sus stdout/stderr.
-- `bool is_running()`: indica si el hijo sigue vivo; al detectar que termina, lee la salida pendiente.
-- `bool request_stop()`: envía SIGTERM (POSIX) o `TerminateProcess` (Windows); intenta drenar la salida antes de cerrar recursos.
-- `OutputBatch poll_output()`: devuelve solo las líneas no leídas de stdout/stderr; si no hay nuevas, los vectores vienen vacíos.
-- `bool write(std::string_view data)`: escribe en la entrada estándar del hijo; devuelve `false` si no hay proceso activo o si la escritura no pudo completarse.
-- `long pid() const`: obtiene el pid del hijo actual (0 si no hay).
+- `long chi::Process::run(const std::vector<std::string>& command)`: lanza un proceso externo; devuelve el pid (o 0 si falla).
+- `long chi::Process::run(const std::function<int()>& action)`: POSIX únicamente; ejecuta una función en un hijo y redirige sus stdout/stderr.
+- `bool chi::Process::is_running()`: indica si el hijo sigue vivo; al detectar que termina, lee la salida pendiente.
+- `bool chi::Process::request_stop()`: envía SIGTERM (POSIX) o `TerminateProcess` (Windows); intenta drenar la salida antes de cerrar recursos.
+- `chi::OutputBatch chi::Process::poll_output()`: devuelve solo las líneas no leídas de stdout/stderr; si no hay nuevas, los vectores vienen vacíos.
+- `bool chi::Process::write(std::string_view data)`: escribe en la entrada estándar del hijo; devuelve `false` si no hay proceso activo o si la escritura no pudo completarse.
+- `long chi::Process::pid() const`: obtiene el pid del hijo actual (0 si no hay).
 
 ## Detalles de comportamiento
 

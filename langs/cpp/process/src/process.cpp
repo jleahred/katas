@@ -66,6 +66,8 @@ std::string build_command_line(const std::vector<std::string>& command)
 #endif
 } // namespace
 
+namespace chi {
+
 bool OutputBatch::empty() const
 {
     return stdout_lines.empty() && stderr_lines.empty();
@@ -645,3 +647,5 @@ void Process::read_pipe(const int fd, std::string& buffer, std::vector<std::stri
     }
 }
 #endif
+
+}

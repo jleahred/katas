@@ -11,7 +11,7 @@
 
 namespace
 {
-void print_batch(const std::string& label, const OutputBatch& batch)
+void print_batch(const std::string& label, const chi::OutputBatch& batch)
 {
     for (const auto& line : batch.stdout_lines)
     {
@@ -52,7 +52,7 @@ int main(const int argc, char* argv[])
     struct Runner
     {
         std::string label;
-        Process process;
+        chi::Process process;
     };
 
     Runner mut_first{"one", {}};

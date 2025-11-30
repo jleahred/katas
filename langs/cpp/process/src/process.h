@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #endif
 
+namespace chi {
+
 struct OutputBatch
 {
     std::vector<std::string> stdout_lines;
@@ -66,3 +68,5 @@ private:
     std::vector<std::string> mut_stdout_pending;
     std::vector<std::string> mut_stderr_pending;
 };
+
+}
