@@ -7,7 +7,7 @@ Pequeño experimento de colas en disco y una capa de red TCP cruda para leer y e
 - `chi::ClientWriter`, `chi::ClientReader`, `chi::ServerWriter`, `chi::ServerReader`: hablan TCP crudo (ASIO standalone) con framing propio, chunking y callbacks; cada rol usa puerto distinto (writer y reader separados para simplificar).
 
 ## Build y ejecución rápida
-ASIO ya viene vendorizado en `third_party/asio-asio-1-30-2/asio/include` (standalone, sin Boost). Compila así:
+ASIO ya viene vendorizado en `third_party/asio` (standalone, sin Boost). Compila así:
 ```
 cd cmake
 cmake -S . -B build

@@ -25,7 +25,7 @@ install(TARGETS ipc
 target_include_directories(ipc
     PRIVATE
         ../src
-        ../third_party/asio-asio-1-30-2/asio/include
+        ../third_party/asio
 )
 
 target_link_libraries(ipc
