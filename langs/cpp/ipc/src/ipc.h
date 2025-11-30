@@ -65,4 +65,7 @@ private:
     bool loadQueueSignature(std::string& signature_out, std::uint64_t& header_out) const;
 };
 
+// Remove queue file and its cursor file. Returns true on success or if files do not exist.
+bool drop_queue_files(const std::filesystem::path& queue_path);
+
 }  // namespace chi

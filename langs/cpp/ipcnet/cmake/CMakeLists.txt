@@ -9,7 +9,12 @@ add_executable(ipc
     main.cpp
     ../src/ipc.cpp
     ../src/ipc.h
+    ../src/ipc_extra.cpp
+    ../src/netipc.cpp
+    ../src/netipc.h
 )
+
+find_package(Threads REQUIRED)
 
 include(GNUInstallDirs)
 install(TARGETS ipc
@@ -20,4 +25,10 @@ install(TARGETS ipc
 target_include_directories(ipc
     PRIVATE
         ../src
+        ../third_party/asio-asio-1-30-2/asio/include
+)
+
+target_link_libraries(ipc
+    PRIVATE
+        Threads::Threads
 )
