@@ -1,0 +1,5 @@
+devbox/fake_home/*
+cmake/fake_home/*
+cmake/.vscode/*
+.vscode/*
+build/*

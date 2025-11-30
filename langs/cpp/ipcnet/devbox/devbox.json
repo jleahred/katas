@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": [
+    "gcc@latest",
+    "clang@latest",
+    "qtcreator@latest",
+    "vscode@latest"
+  ],
+  "env": {
+    "HOME": "/home/maiquel/inet.prj/katas/langs/cpp/ipcnet/devbox/fake_home"
+  },
+  "shell": {
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null"
+    ],
+    "scripts": {
+      "test": [
+        "echo \"Error: no test specified\" && exit 1"
+      ]
+    }
+  }
+}
