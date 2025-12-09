@@ -26,6 +26,7 @@ defmodule Wui7Web.Router do
       live "/counter2", Counter2Live
       live "/counter_cp", CounterCpLive
       live "/counter_cp2", CounterCp2Live
+      live "/test", TestLive
     end
   end
 

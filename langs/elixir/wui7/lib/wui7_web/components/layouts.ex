@@ -35,24 +35,38 @@ defmodule Wui7Web.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">wui7</span>
+    <header class="flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+      <a href="/" class="flex items-center gap-2">
+        <img src={~p"/images/logo.svg"} width="36" />
+        <span class="text-base font-semibold text-base-content">wui7</span>
+      </a>
+
+      <div class="flex flex-1 items-center justify-end gap-4">
+        <nav class="flex items-center gap-4 text-sm font-medium text-base-content/80">
+          <%= if @current_scope && @current_scope.user do %>
+            <span class="hidden sm:inline text-base-content/60">
+              {@current_scope.user.email}
+            </span>
+            <.link href={~p"/users/settings"} class="hover:text-base-content">
+              Settings
+            </.link>
+            <.link href={~p"/users/log-out"} method="delete" class="hover:text-base-content">
+              Log out
+            </.link>
+          <% else %>
+            <.link href={~p"/users/register"} class="hover:text-base-content">
+              Register
+            </.link>
+            <.link href={~p"/users/log-in"} class="hover:text-base-content">
+              Log in
+            </.link>
+          <% end %>
+        </nav>
+
+        <a href="/" class="btn btn-ghost btn-circle" aria-label="Ir al inicio">
+          <.icon name="hero-home-solid" class="size-6" />
         </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="/" class="btn btn-ghost btn-circle">
-              <.icon name="hero-home-solid" class="size-6" />
-            </a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-        </ul>
+        <.theme_toggle />
       </div>
     </header>
 
