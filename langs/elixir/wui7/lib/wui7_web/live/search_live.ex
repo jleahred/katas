@@ -25,7 +25,7 @@ defmodule Wui7Web.SearchLive do
   end
 
   defp load_pages do
-    page_sources()
+    live_routes()
     |> Enum.flat_map(fn %{module: module, path: path} ->
       with {:module, _} <- Code.ensure_loaded(module),
            true <- function_exported?(module, :meta_info, 0) do
@@ -46,13 +46,19 @@ defmodule Wui7Web.SearchLive do
     end)
   end
 
-  defp page_sources do
-    [
-      %{module: Wui7Web.CounterLive, path: ~p"/counter"},
-      %{module: Wui7Web.Counter2Live, path: ~p"/counter2"},
-      %{module: Wui7Web.CounterCpLive, path: ~p"/counter_cp"},
-      %{module: Wui7Web.CounterCp2Live, path: ~p"/counter_cp2"}
-    ]
+  defp live_routes do
+    Phoenix.Router.routes(Wui7Web.Router)
+    |> Enum.flat_map(fn
+      %{
+        plug: Phoenix.LiveView.Plug,
+        path: path,
+        metadata: %{phoenix_live_view: {module, _, _, _}}
+      } ->
+        [%{module: module, path: path}]
+
+      _ ->
+        []
+    end)
   end
 
   defp build_search_fields(info) do
