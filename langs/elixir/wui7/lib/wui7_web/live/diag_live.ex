@@ -1,5 +1,13 @@
-defmodule Wui7Web.TestLive do
+defmodule Wui7Web.DiagLive do
   use Wui7Web, :live_view
+
+  def meta_info do
+    %{
+      title: "Diagnóstico de sesión LiveView",
+      description: "Ver parámetros de usuario y conexión en la sesión LiveView actual.",
+      keywords: ["diagnóstico", "sesión", "liveview", "usuario", "conexión", "test"]
+    }
+  end
 
   def mount(_params, _session, socket) do
     socket =

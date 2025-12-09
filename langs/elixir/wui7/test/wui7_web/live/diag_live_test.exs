@@ -1,4 +1,4 @@
-defmodule Wui7Web.TestLiveTest do
+defmodule Wui7Web.DiagLiveTest do
   use Wui7Web.ConnCase, async: true
 
   import Phoenix.LiveViewTest
