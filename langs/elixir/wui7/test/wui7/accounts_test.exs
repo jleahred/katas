@@ -48,6 +48,19 @@ defmodule Wui7.AccountsTest do
     end
   end
 
+  describe "get_user/1" do
+    test "returns the user when it exists" do
+      user = user_fixture()
+      assert %User{id: returned_id} = Accounts.get_user(user.id)
+      assert returned_id == user.id
+    end
+
+    test "returns nil for unknown id" do
+      refute Accounts.get_user(-1)
+      refute Accounts.get_user("invalid")
+    end
+  end
+
   describe "register_user/1" do
     test "requires email to be set" do
       {:error, changeset} = Accounts.register_user(%{})
@@ -269,6 +282,29 @@ defmodule Wui7.AccountsTest do
 
     test "returns error if the user does not exist" do
       assert {:error, :not_found} = Accounts.toggle_user_enabled(-1)
+    end
+  end
+
+  describe "list_user_tokens/1" do
+    setup do
+      user = user_fixture()
+      Accounts.generate_user_session_token(user)
+      %{user: user}
+    end
+
+    test "returns tokens for the user", %{user: user} do
+      tokens = Accounts.list_user_tokens(user)
+      assert length(tokens) == 1
+      assert Enum.all?(tokens, &(&1.user_id == user.id))
+    end
+
+    test "accepts an integer id", %{user: user} do
+      tokens = Accounts.list_user_tokens(user.id)
+      assert [_token] = tokens
+    end
+
+    test "returns empty list for other inputs" do
+      assert [] == Accounts.list_user_tokens("invalid")
     end
   end
 

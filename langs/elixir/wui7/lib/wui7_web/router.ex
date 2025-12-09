@@ -32,6 +32,7 @@ defmodule Wui7Web.Router do
     live_session :admin,
       on_mount: [{Wui7Web.UserAuth, :ensure_authenticated_scope}] do
       live "/admin/users", AdminUsersLive
+      live "/admin/user/:id", AdminUserLive
     end
   end
 

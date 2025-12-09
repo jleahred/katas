@@ -61,6 +61,18 @@ defmodule Wui7.Accounts do
   def get_user!(id), do: Repo.get!(User, id)
 
   @doc """
+  Gets a user by id without raising.
+  """
+  def get_user(id) when is_integer(id), do: Repo.get(User, id)
+
+  def get_user(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int, ""} -> get_user(int)
+      _ -> nil
+    end
+  end
+
+  @doc """
   Lists all users ordered by newest first.
   """
   def list_users do
@@ -204,6 +216,20 @@ defmodule Wui7.Accounts do
     |> User.enabled_changeset(%{enabled: enabled})
     |> Repo.update()
   end
+
+  @doc """
+  Lists all tokens belonging to the given user ordered from newest to oldest.
+  """
+  def list_user_tokens(%User{id: user_id}), do: list_user_tokens(user_id)
+
+  def list_user_tokens(user_id) when is_integer(user_id) do
+    UserToken
+    |> where(user_id: ^user_id)
+    |> order_by(desc: :inserted_at)
+    |> Repo.all()
+  end
+
+  def list_user_tokens(_), do: []
 
   ## Session
 
