@@ -4,6 +4,9 @@
     "beam28Packages.elixir_1_19@latest",
     "vscode@latest"
   ],
+  "env": {
+    "HOME": "${PWD}/fake_home"
+  },
   "shell": {
     "init_hook": [
       "echo 'Welcome to devbox!' > /dev/null"
