@@ -28,11 +28,16 @@ defmodule Wui7Web.Router do
       live "/counter_cp2", CounterCp2Live
       live "/test", DiagLive
     end
+  end
+
+  scope "/", Wui7Web do
+    pipe_through [:browser, :require_authenticated_user]
 
     live_session :admin,
       on_mount: [{Wui7Web.UserAuth, :ensure_authenticated_scope}] do
       live "/admin/users", AdminUsersLive
       live "/admin/user/:id", AdminUserLive
+      live "/admin/roles", AdminRolesLive
     end
   end
 

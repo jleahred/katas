@@ -48,6 +48,49 @@ defmodule Wui7.AccountsTest do
     end
   end
 
+  describe "roles" do
+    setup do
+      {:ok, role} = Accounts.create_role(%{code: "admin", description: "Full access"})
+      %{role: role}
+    end
+
+    test "list_roles/0 returns all roles ordered by code", %{role: role} do
+      assert [^role] = Accounts.list_roles()
+    end
+
+    test "get_role!/1 returns the role by id", %{role: role} do
+      assert %Accounts.Role{id: fetched_id} = Accounts.get_role!(role.id)
+      assert fetched_id == role.id
+    end
+
+    test "create_role/1 with valid data", _ do
+      assert {:ok, role} = Accounts.create_role(%{code: "user", description: "Base role"})
+      assert role.code == "user"
+    end
+
+    test "create_role/1 with invalid data errors", _ do
+      assert {:error, changeset} = Accounts.create_role(%{code: "", description: ""})
+      assert %{code: [_ | _]} = errors_on(changeset)
+    end
+
+    test "normalizes code to lowercase", _ do
+      assert {:ok, role} =
+               Accounts.create_role(%{code: "  ADMIN2  ", description: "Case test"})
+
+      assert role.code == "admin2"
+    end
+
+    test "update_role/2 updates fields", %{role: role} do
+      {:ok, updated} = Accounts.update_role(role, %{description: "Updated"})
+      assert updated.description == "Updated"
+    end
+
+    test "delete_role/1 removes the role", %{role: role} do
+      {:ok, _} = Accounts.delete_role(role)
+      assert [] == Accounts.list_roles()
+    end
+  end
+
   describe "get_user/1" do
     test "returns the user when it exists" do
       user = user_fixture()

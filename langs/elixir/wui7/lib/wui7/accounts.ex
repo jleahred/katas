@@ -6,7 +6,7 @@ defmodule Wui7.Accounts do
   import Ecto.Query, warn: false
   alias Wui7.Repo
 
-  alias Wui7.Accounts.{User, UserToken, UserNotifier}
+  alias Wui7.Accounts.{Role, User, UserToken, UserNotifier}
 
   ## Database getters
 
@@ -79,6 +79,36 @@ defmodule Wui7.Accounts do
     User
     |> order_by(desc: :inserted_at)
     |> Repo.all()
+  end
+
+  ## Roles
+
+  def list_roles do
+    Role
+    |> order_by(asc: :code)
+    |> Repo.all()
+  end
+
+  def get_role!(id), do: Repo.get!(Role, id)
+
+  def change_role(%Role{} = role, attrs \\ %{}) do
+    Role.changeset(role, attrs)
+  end
+
+  def create_role(attrs) do
+    %Role{}
+    |> Role.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_role(%Role{} = role, attrs) do
+    role
+    |> Role.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_role(%Role{} = role) do
+    Repo.delete(role)
   end
 
   ## User registration
