@@ -176,6 +176,35 @@ defmodule Wui7.Accounts do
     |> update_user_and_delete_all_tokens()
   end
 
+  @doc """
+  Toggles whether the user is enabled.
+  """
+  def toggle_user_enabled(user_id) when is_integer(user_id) do
+    case Repo.get(User, user_id) do
+      nil ->
+        {:error, :not_found}
+
+      %User{} = user ->
+        set_user_enabled(user, !user.enabled)
+    end
+  end
+
+  def toggle_user_enabled(user_id) when is_binary(user_id) do
+    case Integer.parse(user_id) do
+      {int, ""} -> toggle_user_enabled(int)
+      _ -> {:error, :invalid_id}
+    end
+  end
+
+  @doc """
+  Sets the user enabled flag explicitly.
+  """
+  def set_user_enabled(%User{} = user, enabled) when is_boolean(enabled) do
+    user
+    |> User.enabled_changeset(%{enabled: enabled})
+    |> Repo.update()
+  end
+
   ## Session
 
   @doc """

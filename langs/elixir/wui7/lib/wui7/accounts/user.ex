@@ -6,6 +6,7 @@ defmodule Wui7.Accounts.User do
     field :email, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
+    field :enabled, :boolean, default: false
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
@@ -76,6 +77,12 @@ defmodule Wui7.Accounts.User do
     |> cast(attrs, [:password])
     |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
+  end
+
+  def enabled_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:enabled])
+    |> validate_required([:enabled])
   end
 
   defp validate_password(changeset, opts) do

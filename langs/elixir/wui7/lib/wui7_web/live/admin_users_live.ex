@@ -46,6 +46,7 @@ defmodule Wui7Web.AdminUsersLive do
               <tr>
                 <th class="px-4 py-3 text-left">Usuario</th>
                 <th class="px-4 py-3 text-left">Estado</th>
+                <th class="px-4 py-3 text-left">Activo</th>
                 <th class="px-4 py-3 text-left">Último acceso seguro</th>
                 <th class="px-4 py-3 text-left">Creado</th>
               </tr>
@@ -58,6 +59,29 @@ defmodule Wui7Web.AdminUsersLive do
                 </td>
                 <td class="px-4 py-3">
                   <span class={status_badge_classes(user)}>{status_label(user)}</span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-3">
+                    <button
+                      type="button"
+                      id={"toggle-enabled-#{user.id}"}
+                      phx-click="toggle-enabled"
+                      phx-value-id={user.id}
+                      role="switch"
+                      aria-checked={user.enabled}
+                      class={[
+                        "relative inline-flex h-6 w-12 items-center rounded-full border transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+                        user.enabled && "border-success/60 bg-success/90 text-base-100",
+                        !user.enabled && "border-base-300 bg-base-200 text-base-content/70"
+                      ]}
+                    >
+                      <span class={[
+                        "inline-block h-5 w-5 rounded-full bg-white shadow ring-1 ring-black/5 transition",
+                        user.enabled && "translate-x-6",
+                        !user.enabled && "translate-x-1"
+                      ]} />
+                    </button>
+                  </div>
                 </td>
                 <td class="px-4 py-3 font-mono text-xs">
                   {format_datetime(user.authenticated_at) || "—"}
@@ -75,6 +99,17 @@ defmodule Wui7Web.AdminUsersLive do
       </section>
     </Layouts.app>
     """
+  end
+
+  @impl true
+  def handle_event("toggle-enabled", %{"id" => user_id}, socket) do
+    case Accounts.toggle_user_enabled(user_id) do
+      {:ok, _user} ->
+        {:noreply, assign(socket, :users, Accounts.list_users())}
+
+      {:error, _reason} ->
+        {:noreply, socket}
+    end
   end
 
   defp status_label(%{confirmed_at: %DateTime{}}), do: "Confirmado"

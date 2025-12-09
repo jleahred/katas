@@ -252,6 +252,26 @@ defmodule Wui7.AccountsTest do
     end
   end
 
+  describe "toggle_user_enabled/1" do
+    setup do
+      %{user: user_fixture()}
+    end
+
+    test "toggles the enabled flag", %{user: user} do
+      refute user.enabled
+
+      assert {:ok, updated_user} = Accounts.toggle_user_enabled(user.id)
+      assert updated_user.enabled
+
+      assert {:ok, updated_user_again} = Accounts.toggle_user_enabled(user.id)
+      refute updated_user_again.enabled
+    end
+
+    test "returns error if the user does not exist" do
+      assert {:error, :not_found} = Accounts.toggle_user_enabled(-1)
+    end
+  end
+
   describe "generate_user_session_token/1" do
     setup do
       %{user: user_fixture()}

@@ -46,10 +46,10 @@ defmodule Wui7Web.CounterCp2Live do
   defp update_counter(socket, counter, value) do
     counter_a = if counter == "a", do: value, else: socket.assigns.counter_a
     counter_b = if counter == "b", do: value, else: socket.assigns.counter_b
-    
+
     push_patch(socket, to: ~p"/counter_cp2?a=#{counter_a}&b=#{counter_b}", replace: true)
-  end  
-  
+  end
+
   defp parse_count(nil), do: 0
 
   defp parse_count(value) when is_binary(value) do
