@@ -7,7 +7,7 @@
     "vscode@latest"
   ],
   "env": {
-    "HOME": "/home/maiquel/inet.prj/katas/langs/cpp/process/devbox/fake_home"
+    "HOME": "${PWD}/fake_home"
   },
   "shell": {
     "init_hook": [

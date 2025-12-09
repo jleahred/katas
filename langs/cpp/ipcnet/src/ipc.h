@@ -1,1 +1,0 @@
-/home/maiquel/inet.prj/katas/langs/cpp/ipc/src/ipc.h

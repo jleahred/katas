@@ -10,8 +10,8 @@ add_executable(ipc
     ../src/ipc.cpp
     ../src/ipc.h
     ../src/ipc_extra.cpp
-    ../src/netipc.cpp
-    ../src/netipc.h
+    ../src/ipcnet.cpp
+    ../src/ipcnet.h
 )
 
 find_package(Threads REQUIRED)

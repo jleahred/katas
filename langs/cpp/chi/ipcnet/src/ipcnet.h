@@ -11,7 +11,6 @@
 #include <future>
 #include <memory>
 #include <mutex>
-#include <optional>
 #include <span>
 #include <stop_token>
 #include <string>
@@ -21,9 +20,12 @@
 #include <vector>
 
 namespace chi {
-
 class QueueWriter;
 class QueueReader;
+}
+
+namespace chi::ipcnet {
+
 class TcpSession;
 
 struct NetThrottleConfig {

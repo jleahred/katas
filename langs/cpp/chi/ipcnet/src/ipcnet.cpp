@@ -1,4 +1,4 @@
-#include "netipc.h"
+#include "ipcnet.h"
 
 #define ASIO_STANDALONE
 
@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <optional>
 #include <stop_token>
-#include <tuple>
 #include <thread>
 #include <utility>
 
@@ -15,9 +14,9 @@
 
 #include "ipc.h"
 
-namespace chi {
-
 namespace {
+
+using namespace chi::ipcnet;
 
 using asio::ip::tcp;
 
@@ -172,6 +171,9 @@ void try_invoke_stats_client(const std::function<void(const std::string&, const 
 }
 
 }  // namespace
+
+namespace chi::ipcnet {
+
 
 ClientWriter::ClientWriter(std::string host,
                            std::uint16_t port,

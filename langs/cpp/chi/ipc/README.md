@@ -16,6 +16,8 @@ Basic usage:
   - `chi::QueueReader mut_reader("queue");`
   - `const auto result = mut_reader.read(10);`
   - `result.signature_changed` when the queue was recreated; `result.inconsistent` if the file is corrupt.
+  - `const auto preview = mut_reader.peek(1);` to inspect the next message without consuming it.
+  - After processing a peeked message successfully, call `mut_reader.consume(1);` to advance the cursor.
 
 The reader stores its position in `queue.cursor`. Single writer, multiple readers. Works on Linux/Windows with C++20.
 

@@ -5,8 +5,7 @@
 #include <string>
 #include <thread>
 
-#include "../src/ipc.h"
-#include "../src/netipc.h"
+#include "../src/ipcnet.h"
 
 namespace {
 
@@ -23,12 +22,12 @@ int main() {
         std::filesystem::create_directories(queue_root);
 
         // Resolver maps logical queue names to disk files.
-        const chi::QueuePathResolver resolver = [queue_root](const std::string& queue_name) {
+        const chi::ipcnet::QueuePathResolver resolver = [queue_root](const std::string& queue_name) {
             return queue_root / (queue_name + ".queue");
         };
 
         // Server side callbacks.
-        chi::ServerCallbacks mut_server_callbacks{};
+        chi::ipcnet::ServerCallbacks mut_server_callbacks{};
         mut_server_callbacks.on_th_client_connected = [](const std::string& queue_name) {
             std::cout << "[server] client connected for " << queue_name << "\n";
         };
@@ -36,7 +35,7 @@ int main() {
             std::cout << "[server] client disconnected for " << queue_name << "\n";
         };
         mut_server_callbacks.on_th_stats = [](const std::string& queue_name,
-                                              const chi::NetStats& stats) {
+                                              const chi::ipcnet::NetStats& stats) {
             std::cout << "[server] stats for " << queue_name << " msgs=" << stats.messages
                       << " bytes=" << stats.bytes << " chunks=" << stats.chunks << "\n";
         };
@@ -45,23 +44,23 @@ int main() {
         const std::uint16_t reader_port = 6002;
 
         // Server-side reader/writer listening on loopback.
-        chi::ServerWriter mut_server_writer("127.0.0.1", writer_port, resolver, {}, mut_server_callbacks);
-        chi::ServerReader mut_server_reader("127.0.0.1", reader_port, resolver, {}, mut_server_callbacks);
+        chi::ipcnet::ServerWriter mut_server_writer("127.0.0.1", writer_port, resolver, {}, mut_server_callbacks);
+        chi::ipcnet::ServerReader mut_server_reader("127.0.0.1", reader_port, resolver, {}, mut_server_callbacks);
         mut_server_writer.start();
         mut_server_reader.start();
 
         // Client callbacks.
-        chi::ClientCallbacks mut_client_callbacks{};
+        chi::ipcnet::ClientCallbacks mut_client_callbacks{};
         mut_client_callbacks.on_th_connected = []() { std::cout << "[client] connected\n"; };
         mut_client_callbacks.on_th_disconnected = []() { std::cout << "[client] disconnected\n"; };
-        mut_client_callbacks.on_th_stats = [](const chi::NetStats& stats) {
+        mut_client_callbacks.on_th_stats = [](const chi::ipcnet::NetStats& stats) {
             std::cout << "[client] stats msgs=" << stats.messages << " bytes=" << stats.bytes
                       << " chunks=" << stats.chunks << "\n";
         };
 
         // Client writer/reader dial the writer/reader ports.
-        chi::ClientWriter mut_client_writer("127.0.0.1", writer_port, {}, mut_client_callbacks);
-        chi::ClientReader mut_client_reader("127.0.0.1", reader_port, mut_client_callbacks);
+        chi::ipcnet::ClientWriter mut_client_writer("127.0.0.1", writer_port, {}, mut_client_callbacks);
+        chi::ipcnet::ClientReader mut_client_reader("127.0.0.1", reader_port, mut_client_callbacks);
         mut_client_writer.start();
         mut_client_reader.start();
 
