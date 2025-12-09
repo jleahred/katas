@@ -60,6 +60,15 @@ defmodule Wui7.Accounts do
   """
   def get_user!(id), do: Repo.get!(User, id)
 
+  @doc """
+  Lists all users ordered by newest first.
+  """
+  def list_users do
+    User
+    |> order_by(desc: :inserted_at)
+    |> Repo.all()
+  end
+
   ## User registration
 
   @doc """
