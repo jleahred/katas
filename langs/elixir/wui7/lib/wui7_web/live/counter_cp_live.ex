@@ -9,14 +9,14 @@ defmodule Wui7Web.CounterCpLive do
   @impl true
   def handle_params(params, _uri, socket) do
     count = parse_count(params["count"])
-    
+
     socket =
       socket
       |> assign(:count, count)
       |> assign(:color, get_color(count))
       |> assign(:emoji, get_emoji(count))
       |> assign(:message, get_message(count))
-    
+
     {:noreply, socket}
   end
 
@@ -41,6 +41,7 @@ defmodule Wui7Web.CounterCpLive do
   end
 
   defp parse_count(nil), do: 0
+
   defp parse_count(value) when is_binary(value) do
     case Integer.parse(value) do
       {num, _} -> num
@@ -111,8 +112,7 @@ defmodule Wui7Web.CounterCpLive do
               id="add-1"
               class="btn btn-lg btn-primary hover:scale-105 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-plus" class="w-6 h-6" />
-              +1
+              <.icon name="hero-plus" class="w-6 h-6" /> +1
             </button>
 
             <button
@@ -121,8 +121,7 @@ defmodule Wui7Web.CounterCpLive do
               id="add-5"
               class="btn btn-lg btn-secondary hover:scale-105 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-rocket-launch" class="w-6 h-6" />
-              +5
+              <.icon name="hero-rocket-launch" class="w-6 h-6" /> +5
             </button>
 
             <button
@@ -131,8 +130,7 @@ defmodule Wui7Web.CounterCpLive do
               id="sub-1"
               class="btn btn-lg btn-accent hover:scale-105 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-minus" class="w-6 h-6" />
-              -1
+              <.icon name="hero-minus" class="w-6 h-6" /> -1
             </button>
 
             <button
@@ -141,8 +139,7 @@ defmodule Wui7Web.CounterCpLive do
               id="sub-5"
               class="btn btn-lg btn-warning hover:scale-105 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-arrow-down" class="w-6 h-6" />
-              -5
+              <.icon name="hero-arrow-down" class="w-6 h-6" /> -5
             </button>
           </div>
 
@@ -154,8 +151,7 @@ defmodule Wui7Web.CounterCpLive do
               id="multiply-2"
               class="btn btn-lg btn-info hover:scale-105 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-x-mark" class="w-6 h-6" />
-              × 2
+              <.icon name="hero-x-mark" class="w-6 h-6" /> × 2
             </button>
 
             <button
@@ -163,8 +159,7 @@ defmodule Wui7Web.CounterCpLive do
               id="random-btn"
               class="btn btn-lg btn-success hover:rotate-12 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-sparkles" class="w-6 h-6" />
-              Aleatorio
+              <.icon name="hero-sparkles" class="w-6 h-6" /> Aleatorio
             </button>
 
             <button
@@ -172,8 +167,7 @@ defmodule Wui7Web.CounterCpLive do
               id="reset-btn"
               class="btn btn-lg btn-error hover:scale-105 transform transition-all duration-200 shadow-lg"
             >
-              <.icon name="hero-arrow-path" class="w-6 h-6" />
-              Reiniciar
+              <.icon name="hero-arrow-path" class="w-6 h-6" /> Reiniciar
             </button>
           </div>
 
@@ -216,9 +210,12 @@ defmodule Wui7Web.CounterCpLive do
                 <div class="stat-title">Estado</div>
                 <div class="stat-value text-accent">
                   <%= cond do %>
-                    <% @count > 0 -> %>Positivo
-                    <% @count < 0 -> %>Negativo
-                    <% true -> %>Cero
+                    <% @count > 0 -> %>
+                      Positivo
+                    <% @count < 0 -> %>
+                      Negativo
+                    <% true -> %>
+                      Cero
                   <% end %>
                 </div>
                 <div class="stat-desc">Tendencia actual</div>

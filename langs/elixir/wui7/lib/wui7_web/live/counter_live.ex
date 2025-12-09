@@ -2,7 +2,7 @@ defmodule Wui7Web.CounterLive do
   use Wui7Web, :live_view
 
   # codex
-  
+
   @count_param "count"
   @default_count 0
   @min_count -999

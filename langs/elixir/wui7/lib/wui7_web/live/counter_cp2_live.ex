@@ -10,12 +10,12 @@ defmodule Wui7Web.CounterCp2Live do
   def handle_params(params, _uri, socket) do
     counter_a = parse_count(params["a"])
     counter_b = parse_count(params["b"])
-    
+
     socket =
       socket
       |> assign(:counter_a, counter_a)
       |> assign(:counter_b, counter_b)
-    
+
     {:noreply, socket}
   end
 
@@ -37,11 +37,12 @@ defmodule Wui7Web.CounterCp2Live do
   defp update_counter(socket, counter, value) do
     counter_a = if counter == "a", do: value, else: socket.assigns.counter_a
     counter_b = if counter == "b", do: value, else: socket.assigns.counter_b
-    
+
     push_patch(socket, to: ~p"/counter_cp2?a=#{counter_a}&b=#{counter_b}")
   end
 
   defp parse_count(nil), do: 0
+
   defp parse_count(value) when is_binary(value) do
     case Integer.parse(value) do
       {num, _} -> num
@@ -64,7 +65,7 @@ defmodule Wui7Web.CounterCp2Live do
           <div class="card bg-primary/10 border border-primary/20 shadow-lg">
             <div class="card-body items-center text-center">
               <h2 class="card-title text-primary">Contador A</h2>
-              
+
               <div class="py-8">
                 <div class="text-7xl font-black text-primary">
                   {@counter_a}
@@ -104,7 +105,7 @@ defmodule Wui7Web.CounterCp2Live do
           <div class="card bg-secondary/10 border border-secondary/20 shadow-lg">
             <div class="card-body items-center text-center">
               <h2 class="card-title text-secondary">Contador B</h2>
-              
+
               <div class="py-8">
                 <div class="text-7xl font-black text-secondary">
                   {@counter_b}
@@ -150,12 +151,12 @@ defmodule Wui7Web.CounterCp2Live do
                 <div class="stat-title">Suma Total</div>
                 <div class="stat-value text-accent">{@counter_a + @counter_b}</div>
               </div>
-              
+
               <div class="stat">
                 <div class="stat-title">Diferencia</div>
                 <div class="stat-value text-info">{abs(@counter_a - @counter_b)}</div>
               </div>
-              
+
               <div class="stat">
                 <div class="stat-title">Producto</div>
                 <div class="stat-value text-success">{@counter_a * @counter_b}</div>
