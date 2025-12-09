@@ -8,7 +8,6 @@ defmodule Wui7Web.SearchLive do
 
     {:ok,
      socket
-     |> assign(:current_scope, nil)
      |> assign(:pages, pages)
      |> assign(:query, query)
      |> assign(:results, rank_pages(pages, query))

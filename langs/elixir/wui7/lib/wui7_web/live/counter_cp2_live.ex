@@ -12,7 +12,7 @@ defmodule Wui7Web.CounterCp2Live do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket |> assign(:current_scope, nil)}
+    {:ok, socket}
   end
 
   @impl true

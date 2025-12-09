@@ -22,7 +22,6 @@ defmodule Wui7Web.Counter2Live do
 
     {:ok,
      socket
-     |> assign(:current_scope, nil)
      |> assign(:page_title, "Contador doble")
      |> assign(:share_url, "")
      |> assign(:min_count, @min_count)

@@ -23,7 +23,6 @@ defmodule Wui7Web.CounterLive do
 
     {:ok,
      socket
-     |> assign(:current_scope, nil)
      |> assign(:page_title, "Contador reactivo")
      |> assign(:share_url, "")
      |> assign(:min_count, @min_count)
