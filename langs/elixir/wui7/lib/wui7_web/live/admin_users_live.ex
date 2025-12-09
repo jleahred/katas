@@ -47,8 +47,8 @@ defmodule Wui7Web.AdminUsersLive do
                 <th class="px-4 py-3 text-left">Usuario</th>
                 <th class="px-4 py-3 text-left">Estado</th>
                 <th class="px-4 py-3 text-left">Activo</th>
-                <th class="px-4 py-3 text-left">Último acceso seguro</th>
                 <th class="px-4 py-3 text-left">Creado</th>
+                <th class="px-4 py-3 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-base-100 text-sm text-base-content/80">
@@ -84,10 +84,17 @@ defmodule Wui7Web.AdminUsersLive do
                   </div>
                 </td>
                 <td class="px-4 py-3 font-mono text-xs">
-                  {format_datetime(user.authenticated_at) || "—"}
-                </td>
-                <td class="px-4 py-3 font-mono text-xs">
                   {format_datetime(user.inserted_at)}
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <.link
+                    navigate={~p"/admin/user/#{user.id}"}
+                    id={"user-view-#{user.id}"}
+                    class="btn btn-ghost btn-sm text-base-content/70 hover:text-base-content"
+                    aria-label={"Ver detalle de #{user.email}"}
+                  >
+                    <.icon name="hero-eye" class="w-5 h-5" />
+                  </.link>
                 </td>
               </tr>
             </tbody>

@@ -20,5 +20,6 @@ defmodule Wui7Web.AdminUsersLiveTest do
     assert html =~ user.email
     assert html =~ other_user.email
     assert html =~ "Usuarios"
+    assert html =~ ~p"/admin/user/#{user.id}"
   end
 end

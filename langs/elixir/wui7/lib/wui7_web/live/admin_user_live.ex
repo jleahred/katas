@@ -32,6 +32,17 @@ defmodule Wui7Web.AdminUserLive do
   end
 
   @impl true
+  def handle_event("toggle-enabled", %{"id" => user_id}, socket) do
+    case Accounts.toggle_user_enabled(user_id) do
+      {:ok, user} ->
+        {:noreply, assign(socket, :user, user)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
   def render(%{user: nil} = assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
@@ -72,6 +83,14 @@ defmodule Wui7Web.AdminUserLive do
                 <dd class="font-mono text-base-content">{@user.id}</dd>
               </div>
               <div class="flex items-center justify-between">
+                <dt class="text-base-content/60">Contraseña registrada</dt>
+                <dd>
+                  <span class={password_badge_classes(@user)}>
+                    {if(has_password?(@user), do: "Configurada", else: "No configurada")}
+                  </span>
+                </dd>
+              </div>
+              <div class="flex items-center justify-between">
                 <dt class="text-base-content/60">Estado</dt>
                 <dd>
                   <span class={status_badge_classes(@user)}>{status_label(@user)}</span>
@@ -79,8 +98,21 @@ defmodule Wui7Web.AdminUserLive do
               </div>
               <div class="flex items-center justify-between">
                 <dt class="text-base-content/60">Activo</dt>
-                <dd>
-                  <span class={enabled_badge_classes(@user.enabled)}>
+                <dd class="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    class={[
+                      "toggle toggle-success",
+                      !@user.enabled && "toggle-error/70"
+                    ]}
+                    id="user-enabled-toggle"
+                    role="switch"
+                    aria-checked={@user.enabled}
+                    checked={@user.enabled}
+                    phx-click="toggle-enabled"
+                    phx-value-id={@user.id}
+                  />
+                  <span class="text-xs font-medium text-base-content/70">
                     {if(@user.enabled, do: "Habilitado", else: "Deshabilitado")}
                   </span>
                 </dd>
@@ -169,8 +201,18 @@ defmodule Wui7Web.AdminUserLive do
 
   defp status_badge_classes(_user), do: "badge badge-warning badge-outline"
 
-  defp enabled_badge_classes(true), do: "badge badge-success badge-outline"
-  defp enabled_badge_classes(false), do: "badge badge-neutral badge-outline"
+  defp password_badge_classes(user) do
+    if has_password?(user) do
+      "badge badge-success badge-outline"
+    else
+      "badge badge-neutral badge-outline"
+    end
+  end
+
+  defp has_password?(%{hashed_password: hash}) when is_binary(hash) and byte_size(hash) > 0,
+    do: true
+
+  defp has_password?(_), do: false
 
   defp format_datetime(nil), do: nil
 

@@ -22,10 +22,24 @@ defmodule Wui7Web.AdminUserLiveTest do
 
     assert html =~ target_user.email
     assert html =~ "Detalle de usuario"
+    assert html =~ "No configurada"
 
     [token | _] = Accounts.list_user_tokens(target_user)
     encoded = Base.encode64(token.token)
     assert html =~ encoded
     assert html =~ target_user.id |> Integer.to_string()
+  end
+
+  test "allows toggling enabled state", %{conn: conn} do
+    %{conn: conn} = register_and_log_in_user(%{conn: conn})
+    target_user = user_fixture()
+
+    {:ok, view, _} = live(conn, ~p"/admin/user/#{target_user.id}")
+
+    assert render(view) =~ "Deshabilitado"
+
+    view |> element("#user-enabled-toggle") |> render_click()
+
+    assert render(view) =~ "Habilitado"
   end
 end
