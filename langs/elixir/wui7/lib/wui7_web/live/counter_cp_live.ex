@@ -1,6 +1,15 @@
 defmodule Wui7Web.CounterCpLive do
   use Wui7Web, :live_view
 
+  def meta_info do
+    %{
+      title: "Contador creativo con poderes",
+      description:
+        "Explora acciones rápidas, multiplicaciones y efectos visuales mientras sincronizas el parámetro count.",
+      keywords: ["contador", "creativo", "multiplicar", "aleatorio", "url"]
+    }
+  end
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, socket |> assign(:current_scope, nil)}

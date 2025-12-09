@@ -7,6 +7,15 @@ defmodule Wui7Web.Counter2Live do
   @min_count -999
   @max_count 999
 
+  def meta_info do
+    %{
+      title: "Doble contador avanzado",
+      description:
+        "Controla dos contadores con estadísticas combinadas y sincronía completa con los parámetros count_a y count_b.",
+      keywords: ["contador", "doble", "estadísticas", "url", "liveview"]
+    }
+  end
+
   @impl true
   def mount(params, _session, socket) do
     {count_a, count_b} = read_pair(params)

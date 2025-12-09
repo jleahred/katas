@@ -17,7 +17,7 @@ defmodule Wui7Web.Router do
   scope "/", Wui7Web do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", SearchLive
     live "/counter", CounterLive
     live "/counter2", Counter2Live
     live "/counter_cp", CounterCpLive

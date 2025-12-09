@@ -8,6 +8,15 @@ defmodule Wui7Web.CounterLive do
   @min_count -999
   @max_count 999
 
+  def meta_info do
+    %{
+      title: "Contador sincronizado con URL",
+      description:
+        "Incrementa, decrementa o reinicia y comparte el resultado mediante el parámetro count.",
+      keywords: ["contador", "url", "liveview", "formularios", "compartir"]
+    }
+  end
+
   @impl true
   def mount(params, _session, socket) do
     counter = read_counter(params)

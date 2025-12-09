@@ -1,6 +1,15 @@
 defmodule Wui7Web.CounterCp2Live do
   use Wui7Web, :live_view
 
+  def meta_info do
+    %{
+      title: "Doble contador esencial",
+      description:
+        "Dos contadores simples con botones circulares y sincronización mediante los parámetros a y b.",
+      keywords: ["contador", "doble", "sencillo", "url", "parametros"]
+    }
+  end
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, socket |> assign(:current_scope, nil)}
