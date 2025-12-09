@@ -56,7 +56,7 @@ defmodule Wui7Web.CounterLive do
   end
 
   defp push_count(socket, counter) do
-    push_patch(socket, to: counter_path(counter))
+    push_patch(socket, to: counter_path(counter), replace: true)
   end
 
   defp assign_counter(socket, counter) do

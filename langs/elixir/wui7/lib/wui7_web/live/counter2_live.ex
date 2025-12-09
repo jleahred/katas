@@ -74,7 +74,7 @@ defmodule Wui7Web.Counter2Live do
   defp push_pair(socket, count_a, count_b) do
     count_a = clamp(count_a)
     count_b = clamp(count_b)
-    push_patch(socket, to: counter2_path(count_a, count_b))
+    push_patch(socket, to: counter2_path(count_a, count_b), replace: true)
   end
 
   defp assign_pair(socket, count_a, count_b) do

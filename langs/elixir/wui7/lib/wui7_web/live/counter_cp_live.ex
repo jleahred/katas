@@ -32,21 +32,21 @@ defmodule Wui7Web.CounterCpLive do
   @impl true
   def handle_event("add", %{"val" => value}, socket) do
     new_count = socket.assigns.count + String.to_integer(value)
-    {:noreply, push_patch(socket, to: ~p"/counter_cp?count=#{new_count}")}
+    {:noreply, push_patch(socket, to: ~p"/counter_cp?count=#{new_count}", replace: true)}
   end
 
   def handle_event("multiply", %{"val" => value}, socket) do
     new_count = socket.assigns.count * String.to_integer(value)
-    {:noreply, push_patch(socket, to: ~p"/counter_cp?count=#{new_count}")}
+    {:noreply, push_patch(socket, to: ~p"/counter_cp?count=#{new_count}", replace: true)}
   end
 
   def handle_event("reset", _params, socket) do
-    {:noreply, push_patch(socket, to: ~p"/counter_cp")}
+    {:noreply, push_patch(socket, to: ~p"/counter_cp", replace: true)}
   end
 
   def handle_event("random", _params, socket) do
     new_count = Enum.random(-100..100)
-    {:noreply, push_patch(socket, to: ~p"/counter_cp?count=#{new_count}")}
+    {:noreply, push_patch(socket, to: ~p"/counter_cp?count=#{new_count}", replace: true)}
   end
 
   defp parse_count(nil), do: 0
