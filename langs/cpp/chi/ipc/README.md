@@ -1,6 +1,6 @@
 # Inter Process Communication
 
-Simple file-backed binary queue in C++20 (namespace `chi`) with `QueueWriter` and `QueueReader`.
+Simple file-backed binary queue in C++20 (namespace `chi::ipc`) with `QueueWriter` and `QueueReader`.
 
 `.queue` file format:
 - Header: little-endian `uint32` with signature length, then the signature (ISO timestamp + random suffix).
@@ -9,17 +9,20 @@ Simple file-backed binary queue in C++20 (namespace `chi`) with `QueueWriter` an
 
 Basic usage:
 - Writer:
-  - `chi::QueueWriter mut_writer("queue");`
+  - `chi::ipc::QueueWriter mut_writer("queue");`
   - `mut_writer.write("hello");`
   - `mut_writer.reset();` to start fresh with a new signature.
 - Reader:
-  - `chi::QueueReader mut_reader("queue");`
+  - `chi::ipc::QueueReader mut_reader("queue");`
+  - For multiple readers, give each one its own cursor file:
+    `chi::ipc::QueueReader mut_reader("queue", "queue.reader1.cursor");`
   - `const auto result = mut_reader.read(10);`
   - `result.signature_changed` when the queue was recreated; `result.inconsistent` if the file is corrupt.
+  - Use `result.at(i)` for bounds-checked access or `result.get(i)` to get an `std::optional<std::string_view>`.
   - `const auto preview = mut_reader.peek(1);` to inspect the next message without consuming it.
   - After processing a peeked message successfully, call `mut_reader.consume(1);` to advance the cursor.
 
-The reader stores its position in `queue.cursor`. Single writer, multiple readers. Works on Linux/Windows with C++20.
+The reader stores its position in `queue.cursor` by default. Use a distinct cursor file per reader to run multiple readers against the same queue. Works on Linux/Windows with C++20.
 
 ## Full example
 
@@ -30,17 +33,17 @@ Example file at `cmake/main.cpp`:
 #include "../src/ipc.h"
 
 int main() {
-    chi::QueueWriter mut_writer("example.queue");
+    chi::ipc::QueueWriter mut_writer("example.queue");
     mut_writer.write("hello");
     mut_writer.write("world");
 
-    chi::QueueReader mut_reader("example.queue");
+    chi::ipc::QueueReader mut_reader("example.queue");
     const auto result = mut_reader.read(2);
     if (result.signature_changed) {
         std::cout << "queue reset\n";
     }
-    for (const auto& msg : result.messages) {
-        std::cout << "message: " << msg << "\n";
+    for (std::size_t i = 0; i < result.size(); ++i) {
+        std::cout << "message: " << result.at(i) << "\n";
     }
 }
 ```
@@ -59,15 +62,15 @@ g++ -std=c++20 -I./src cmake/main.cpp src/ipc.cpp -o ipc_demo
 #include "../src/ipc.h"
 
 int main() {
-    chi::QueueWriter mut_writer("bin.queue");
+    chi::ipc::QueueWriter mut_writer("bin.queue");
     const auto bytes = std::array<std::byte, 4>{std::byte{0xDE}, std::byte{0xAD},
                                                 std::byte{0xBE}, std::byte{0xEF}};
     mut_writer.write(std::span<const std::byte>(bytes));
 
-    chi::QueueReader mut_reader("bin.queue");
+    chi::ipc::QueueReader mut_reader("bin.queue");
     const auto result = mut_reader.read(1);
-    if (!result.messages.empty()) {
-        const std::string& raw = result.messages.front();  // contains 0xDE 0xAD 0xBE 0xEF
+    if (!result.empty()) {
+        const std::string& raw = result.at(0);  // contains 0xDE 0xAD 0xBE 0xEF
         // raw.size() == 4; may contain '\0' without truncation.
     }
 }
@@ -124,16 +127,22 @@ Record from_bytes(const std::string& raw) {
 }
 
 int main() {
-    chi::QueueWriter mut_writer("struct.queue");
+    chi::ipc::QueueWriter mut_writer("struct.queue");
     const auto rec = Record{"alice", 42, 9.5};
     const auto payload = to_bytes(rec);
     mut_writer.write(std::span<const std::byte>(payload.data(), payload.size()));
 
-    chi::QueueReader mut_reader("struct.queue");
+    chi::ipc::QueueReader mut_reader("struct.queue");
     const auto result = mut_reader.read(1);
-    if (!result.messages.empty()) {
-        const auto got = from_bytes(result.messages.front());
+    if (!result.empty()) {
+        const auto got = from_bytes(result.at(0));
         // got.name == "alice", got.id == 42, got.score == 9.5
     }
 }
 ```
+
+
+## Hacking
+
+- Cursor writes use `queue.cursor.tmp` and rotate the previous cursor to `queue.cursor.prev` as a safety net; if the final rename fails, the reader automatically restores the last known cursor state.
+- Cursor files store the queue path, signature, and offset (in that order) to help avoid mixing cursors across queues.

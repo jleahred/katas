@@ -99,6 +99,23 @@ Puedes probar manualmente:
 - `bool chi::Process::write(std::string_view data)`: escribe en la entrada estándar del hijo; devuelve `false` si no hay proceso activo o si la escritura no pudo completarse.
 - `long chi::Process::pid() const`: obtiene el pid del hijo actual (0 si no hay).
 
+## Argv: puente entre vector y argc/argv
+
+`chi::proc::Argv` toma un `std::vector<std::string>` y genera un arreglo `argv` terminado en `nullptr` junto con su `argc`. Es útil cuando tienes los argumentos como vector y necesitas pasarlos a APIs tipo C que esperan `argc/argv`. El objeto mantiene la memoria viva: no modifiques ni destruyas el `Argv` mientras uses el puntero `argv()`.
+
+```cpp
+#include "process.h"
+
+std::vector<std::string> mut_args = {"/bin/echo", "hola", "mundo"};
+chi::proc::Argv mut_argv(std::move(mut_args));
+
+const auto argc = mut_argv.argc();
+char **argv = mut_argv.argv();
+
+// ejemplo de uso en una API C
+execvp(argv[0], argv);
+```
+
 ## Detalles de comportamiento
 
 - En Linux/Unix se usan pipes no bloqueantes y `waitpid` con `WNOHANG`; en Windows se usa `CreateProcess` y `PeekNamedPipe`.

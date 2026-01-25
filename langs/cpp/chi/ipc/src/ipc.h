@@ -8,13 +8,33 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <optional>
+#include <utility>
 
 namespace chi::ipc {
 
 struct ReadResult {
-  std::vector<std::string> messages;
+public:
+  std::size_t size() const noexcept { return messages_.size(); }
+  bool empty() const noexcept { return messages_.empty(); }
+  const std::string &at(const std::size_t index) const { return messages_.at(index); }
+  std::optional<std::string_view> get(const std::size_t index) const noexcept
+  {
+    if (index >= messages_.size()) {
+      return std::nullopt;
+    }
+    return std::string_view(messages_[index]);
+  }
+
   bool signature_changed{false};
   bool inconsistent{false};
+
+private:
+  std::vector<std::string> messages_;
+
+  void add_message(std::string payload) { messages_.emplace_back(std::move(payload)); }
+
+  friend class QueueReader;
 };
 
 class QueueWriter {
@@ -44,6 +64,7 @@ private:
 class QueueReader {
 public:
   explicit QueueReader(std::filesystem::path queue_path);
+  QueueReader(std::filesystem::path queue_path, std::filesystem::path cursor_path);
 
   // Read at most max_records records.
   ReadResult read(const std::size_t max_records);
