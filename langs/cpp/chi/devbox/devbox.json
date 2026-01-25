@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": [
+    "gcc@latest",
+    "clang@latest",
+    "qtcreator@latest",
+    "vscode@latest"
+  ],
+  "env": {
+    "HOME": "/home/maiquel/inet.prj/katas/langs/cpp/chi/devbox/fake_home",
+    "XDG_CONFIG_HOME": "$HOME/.config",
+    "XDG_CACHE_HOME": "$HOME/.cache",
+    "XDG_DATA_HOME": "$HOME/.local/share",
+    "XDG_STATE_HOME": "$HOME/.local/state",
+    "CCACHE_DIR": "$HOME/.cache/ccache",
+    "CLANGD_CACHE_DIR": "$HOME/.cache/clangd",
+    "CMAKE_USER_HOME": "$HOME/.cmake",
+    "PIP_CACHE_DIR": "$HOME/.cache/pip",
+    "NPM_CONFIG_CACHE": "$HOME/.cache/npm",
+    "CARGO_HOME": "$HOME/.cargo",
+    "RUSTUP_HOME": "$HOME/.rustup"
+    /*"GIT_CONFIG_GLOBAL": "$HOME/.gitconfig",
+    "GIT_CONFIG_SYSTEM": "/dev/null"*/
+  },
+  "shell": {
+    "init_hook": [
+      "mkdir -p $HOME/.config $HOME/.cache $HOME/.local/share $HOME/.local/state",
+      "mkdir -p $HOME/.cache/ccache $HOME/.cache/clangd",
+      "echo 'Welcome to devbox!' > /dev/null"
+    ],
+    "scripts": {
+      "test": [
+        "echo \"Error: no test specified\" && exit 1"
+      ]
+    }
+  }
+}
