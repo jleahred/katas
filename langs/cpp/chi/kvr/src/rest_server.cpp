@@ -99,7 +99,9 @@ void RestServer::setup_routes() {
                 const auto& bucket = config.poll_client_buckets[bucket_index];
                 json << "{";
                 json << "\"name\":\"" << json_escape(bucket.name) << "\",";
-                json << "\"poll_interval_ms\":" << bucket.poll_interval.count();
+                json << "\"poll_interval_ms\":" << bucket.poll_interval.count() << ",";
+                json << "\"poll_interval_active_ms\":" << bucket.poll_interval_active.count() << ",";
+                json << "\"max_records_per_poll\":" << bucket.max_records_per_poll;
                 json << "}";
             }
             json << "]";
@@ -142,6 +144,8 @@ void RestServer::setup_routes() {
                 json << "\"host\":\"" << json_escape(config.host) << "\",";
                 json << "\"port\":" << config.port << ",";
                 json << "\"poll_interval_ms\":" << bucket.poll_interval.count() << ",";
+                json << "\"poll_interval_active_ms\":" << bucket.poll_interval_active.count() << ",";
+                json << "\"max_records_per_poll\":" << bucket.max_records_per_poll << ",";
                 json << "\"last_id\":" << mut_store_.last_id_for_bucket(bucket.name);
                 json << "}";
             }
@@ -272,6 +276,149 @@ void RestServer::setup_routes() {
             json << "\"next_key\":\"" << json_escape(result.next_key) << "\"";
             json << "}";
             response.set_content(json.str(), "application/json");
+        });
+
+    mut_server_.Get(R"(/buckets/([A-Za-z0-9_]+)/sub_keys)",
+        [this](const httplib::Request& request, httplib::Response& response) {
+            const auto bucket_name = request.matches[1];
+            if (!request.has_param("key")) {
+                response.status = 400;
+                response.set_content("{\"error\":\"Missing key\"}", "application/json");
+                return;
+            }
+            const auto key_prefix = url_decode(request.get_param_value("key"));
+            std::string last_full_key;
+            int64_t limit = 50;
+            if (request.has_param("last_full_key")) {
+                last_full_key = url_decode(request.get_param_value("last_full_key"));
+            }
+            if (request.has_param("limit")) {
+                limit = std::strtoll(request.get_param_value("limit").c_str(), nullptr, 10);
+            }
+            if (limit <= 0) {
+                response.status = 400;
+                response.set_content("{\"error\":\"Invalid limit\"}", "application/json");
+                return;
+            }
+            if (limit > 100) {
+                response.status = 400;
+                response.set_content("{\"error\":\"Limit too large\"}", "application/json");
+                return;
+            }
+
+            const auto result = mut_store_.get_sub_keys(bucket_name, key_prefix, last_full_key, limit);
+            std::ostringstream json;
+            json << "{";
+            json << "\"sub_keys\":[";
+            for (size_t index = 0; index < result.sub_keys.size(); ++index) {
+                if (index > 0) {
+                    json << ",";
+                }
+                json << "\"" << json_escape(result.sub_keys[index]) << "\"";
+            }
+            json << "],";
+            json << "\"last_full_key\":\"" << json_escape(result.last_full_key) << "\"";
+            json << "}";
+            response.set_content(json.str(), "application/json");
+        });
+
+    mut_server_.Get(R"(/buckets/([A-Za-z0-9_]+)/history)",
+        [this](const httplib::Request& request, httplib::Response& response) {
+            const auto bucket_name = request.matches[1];
+            if (!request.has_param("key")) {
+                response.status = 400;
+                response.set_content("{\"error\":\"Missing key\"}", "application/json");
+                return;
+            }
+            const auto key = url_decode(request.get_param_value("key"));
+            int64_t start = 0;
+            int64_t limit = 50;
+            if (request.has_param("start")) {
+                start = std::strtoll(request.get_param_value("start").c_str(), nullptr, 10);
+            }
+            if (request.has_param("limit")) {
+                limit = std::strtoll(request.get_param_value("limit").c_str(), nullptr, 10);
+            }
+            if (start < 0) {
+                start = 0;
+            }
+            if (limit <= 0) {
+                response.status = 400;
+                response.set_content("{\"error\":\"Invalid limit\"}", "application/json");
+                return;
+            }
+            if (limit > 100) {
+                response.status = 400;
+                response.set_content("{\"error\":\"Limit too large\"}", "application/json");
+                return;
+            }
+
+            const auto result = mut_store_.list_history(bucket_name, key, start, limit);
+            std::ostringstream json;
+            json << "{";
+            json << "\"records\":[";
+            for (size_t index = 0; index < result.size(); ++index) {
+                if (index > 0) {
+                    json << ",";
+                }
+                const auto& record = result[index];
+                json << "{";
+                json << "\"id\":" << record.id << ",";
+                json << "\"created_at\":" << record.created_at << ",";
+                json << "\"deleted_at\":" << record.deleted_at << ",";
+                json << "\"value\":\"" << json_escape(record.value) << "\"";
+                json << "}";
+            }
+            json << "]";
+            json << "}";
+            response.set_content(json.str(), "application/json");
+        });
+
+    mut_server_.Get("/db_size",
+        [this](const httplib::Request&, httplib::Response& response) {
+            const auto size = mut_store_.db_size();
+            std::ostringstream json;
+            json << "{";
+            json << "\"db_bytes\":" << size.db_bytes << ",";
+            json << "\"wal_bytes\":" << size.wal_bytes << ",";
+            json << "\"shm_bytes\":" << size.shm_bytes << ",";
+            json << "\"total_bytes\":" << size.total_bytes << ",";
+            json << "\"page_count\":" << size.page_count << ",";
+            json << "\"page_size\":" << size.page_size << ",";
+            json << "\"freelist_count\":" << size.freelist_count << ",";
+            json << "\"used_bytes\":" << size.used_bytes << ",";
+            json << "\"free_bytes\":" << size.free_bytes << ",";
+            json << "\"fragmentation_pct\":" << size.fragmentation_pct;
+            json << "}";
+            response.set_content(json.str(), "application/json");
+        });
+
+    mut_server_.Post("/db/incremental_vacuum",
+        [this](const httplib::Request& request, httplib::Response& response) {
+            int64_t pages = 0;
+            if (request.has_param("pages")) {
+                pages = std::strtoll(request.get_param_value("pages").c_str(), nullptr, 10);
+            }
+            if (pages < 0) {
+                pages = 0;
+            }
+
+            if (!mut_store_.incremental_vacuum(pages)) {
+                response.status = 500;
+                response.set_content("{\"error\":\"Incremental vacuum failed\"}", "application/json");
+                return;
+            }
+            response.set_content("{\"ok\":true}", "application/json");
+        });
+
+    mut_server_.Post("/db/optimize",
+        [this](const httplib::Request&, httplib::Response& response) {
+            if (!mut_store_.optimize()) {
+                response.status = 500;
+                response.set_content("{\"error\":\"Optimize failed\"}", "application/json");
+                return;
+            }
+            response.set_content("{\"ok\":true}", "application/json");
         });
 }
 

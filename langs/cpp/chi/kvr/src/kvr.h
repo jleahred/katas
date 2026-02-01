@@ -6,10 +6,11 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
-#include <optional>
 #include <thread>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 struct sqlite3;
@@ -19,6 +20,23 @@ namespace kvr {
 enum class TcpSide {
     server,
     client,
+};
+
+template <typename T>
+class Optional {
+public:
+    Optional() : has_value_(false), value_() {}
+    Optional(const T& value) : has_value_(true), value_(value) {}
+    Optional(T&& value) : has_value_(true), value_(std::move(value)) {}
+
+    bool has_value() const { return has_value_; }
+    explicit operator bool() const { return has_value_; }
+    const T& value() const { return value_; }
+    T& value() { return value_; }
+
+private:
+    bool has_value_;
+    T value_;
 };
 
 class Kvr {
@@ -33,7 +51,7 @@ public:
     bool reset_bucket(const std::string& bucket_name);
     bool set(const std::string& bucket_name, const std::string& key, const std::string& value);
     bool del(const std::string& bucket_name, const std::string& key, const std::string& value);
-    std::optional<std::string> get(const std::string& bucket_name, const std::string& key);
+    Optional<std::string> get(const std::string& bucket_name, const std::string& key);
 
     struct PollServerBucketConfig {
         std::string name;
@@ -43,6 +61,8 @@ public:
     struct PollClientBucketConfig {
         std::string name;
         std::chrono::milliseconds poll_interval;
+        std::chrono::milliseconds poll_interval_active;
+        uint32_t max_records_per_poll;
     };
 
     struct PollConfig {
@@ -61,16 +81,52 @@ public:
         int64_t next_id;
         std::string next_key;
     };
+    struct SubKeyListResult {
+        std::vector<std::string> sub_keys;
+        std::string last_full_key;
+    };
+    struct HistoryRecord {
+        int64_t id;
+        int64_t created_at;
+        int64_t deleted_at;
+        std::string value;
+    };
+    struct DbSize {
+        int64_t db_bytes;
+        int64_t wal_bytes;
+        int64_t shm_bytes;
+        int64_t total_bytes;
+        int64_t page_count;
+        int64_t page_size;
+        int64_t freelist_count;
+        int64_t used_bytes;
+        int64_t free_bytes;
+        double fragmentation_pct;
+    };
+    struct MetaInfo {
+        int64_t max_deleted_per_key = 1;
+    };
 
     KeyListResult list_active_keys(const std::string& bucket_name, const std::string& key_prefix,
         const std::string& start_key, int64_t next_id, int64_t skip, int64_t limit);
+    SubKeyListResult get_sub_keys(const std::string& bucket_name, const std::string& sub_key,
+        const std::string& last_full_key = std::string(), int64_t limit = 50);
+    std::vector<HistoryRecord> list_history(const std::string& bucket_name, const std::string& key,
+        int64_t start = 0, int64_t limit = 50);
+    DbSize db_size() const;
+    bool incremental_vacuum(int64_t pages = 0);
+    bool optimize();
+    bool set_meta_info(const std::string& bucket_name, const MetaInfo& info);
+    MetaInfo get_meta_info(const std::string& bucket_name);
 
     void add_poll_server(const std::string& bucket_name, TcpSide tcp_side,
         const std::string& host, uint16_t port,
-        uint32_t poll_max_reply_count = 3);
+        uint32_t poll_max_reply_records_count = 10);
     void add_poll_client(const std::string& bucket_name, TcpSide tcp_side,
         const std::string& host, uint16_t port,
-        std::chrono::milliseconds poll_interval = std::chrono::seconds(1));
+        std::chrono::milliseconds poll_interval = std::chrono::seconds(1),
+        std::chrono::milliseconds poll_interval_active = std::chrono::milliseconds(0),
+        uint32_t max_records_per_poll = 3);
     bool start();
     void stop();
 
@@ -93,7 +149,13 @@ private:
 
     struct PollClientState {
         std::string name;
-        std::chrono::milliseconds interval;
+        std::chrono::milliseconds idle_interval;
+        std::chrono::milliseconds active_interval;
+        std::chrono::milliseconds current_interval;
+        bool using_active;
+        int empty_poll_streak;
+        bool had_reply_since_last_poll;
+        uint32_t max_records_per_poll;
         std::unique_ptr<asio::steady_timer> mut_timer;
     };
 
@@ -108,7 +170,8 @@ private:
     void add_poll_server_bucket(PollEndpoint& endpoint, const std::string& bucket_name,
         uint32_t poll_max_reply_count);
     void add_poll_client_bucket(PollEndpoint& endpoint, const std::string& bucket_name,
-        std::chrono::milliseconds poll_interval);
+        std::chrono::milliseconds poll_interval, std::chrono::milliseconds poll_interval_active,
+        uint32_t max_records_per_poll);
     PollEndpoint* find_poll_endpoint(TcpSide tcp_side, const std::string& host, uint16_t port);
     bool start_acceptor(PollEndpoint& endpoint);
     bool start_connect(PollEndpoint& endpoint);
@@ -116,7 +179,8 @@ private:
     void schedule_poll(const std::shared_ptr<PollConnection>& connection, size_t index);
     void start_reading(const std::shared_ptr<PollConnection>& connection);
     void handle_message(const std::shared_ptr<PollConnection>& connection);
-    void send_poll(const std::shared_ptr<PollConnection>& connection, const std::string& bucket_name);
+    void send_poll(const std::shared_ptr<PollConnection>& connection, const std::string& bucket_name,
+        uint32_t max_records_per_poll);
     void send_reply(const std::shared_ptr<PollConnection>& connection, const std::string& bucket_name,
         int64_t id, int64_t created_at, int64_t deleted_at, const std::string& key, const std::string& value);
     void send_reset(const std::shared_ptr<PollConnection>& connection, const std::string& bucket_name);
@@ -124,11 +188,18 @@ private:
     int64_t get_last_id(const std::string& bucket_name);
     bool apply_reply(const std::string& bucket_name, int64_t id, int64_t created_at, int64_t deleted_at,
         const std::string& key, const std::string& value);
+    void enforce_max_deleted_per_key(const std::string& bucket_name, const std::string& key);
+    static bool is_meta_key(const std::string& key);
+    MetaInfo get_meta_info_locked(const std::string& bucket_name);
+    static std::string serialize_meta_info(const MetaInfo& info);
+    static MetaInfo parse_meta_info(const std::string& value);
 
     sqlite3* mut_db_;
+    std::string mut_db_path_;
     std::recursive_mutex mut_db_mutex_;
     std::string mut_last_error_;
     std::unordered_set<std::string> mut_ensured_buckets_;
+    std::unordered_map<std::string, MetaInfo> mut_meta_info_;
     mutable std::mutex mut_poll_mutex_;
 
     std::vector<PollEndpoint> mut_poll_endpoints_;
