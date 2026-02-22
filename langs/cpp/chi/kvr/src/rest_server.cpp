@@ -1,5 +1,7 @@
 #include "rest_server.h"
 
+#ifndef KVR_REST_SERVER_DISABLED
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -411,6 +413,16 @@ void RestServer::setup_routes() {
             response.set_content("{\"ok\":true}", "application/json");
         });
 
+    mut_server_.Post("/db/compact_full",
+        [this](const httplib::Request&, httplib::Response& response) {
+            if (!mut_store_.compact_full()) {
+                response.status = 500;
+                response.set_content("{\"error\":\"Full compact failed\"}", "application/json");
+                return;
+            }
+            response.set_content("{\"ok\":true}", "application/json");
+        });
+
     mut_server_.Post("/db/optimize",
         [this](const httplib::Request&, httplib::Response& response) {
             if (!mut_store_.optimize()) {
@@ -419,6 +431,41 @@ void RestServer::setup_routes() {
                 return;
             }
             response.set_content("{\"ok\":true}", "application/json");
+        });
+
+    mut_server_.Post("/db/wal_checkpoint",
+        [this](const httplib::Request&, httplib::Response& response) {
+            if (!mut_store_.wal_checkpoint()) {
+                response.status = 500;
+                response.set_content("{\"error\":\"Wal checkpoint failed\"}", "application/json");
+                return;
+            }
+            response.set_content("{\"ok\":true}", "application/json");
+        });
+
+    mut_server_.Get("/poll_status",
+        [this](const httplib::Request&, httplib::Response& response) {
+            const auto connections = mut_store_.poll_connection_count();
+            const auto statuses = mut_store_.list_poll_client_status();
+            std::ostringstream json;
+            json << "{";
+            json << "\"connections\":" << connections << ",";
+            json << "\"clients\":[";
+            for (size_t index = 0; index < statuses.size(); ++index) {
+                if (index > 0) {
+                    json << ",";
+                }
+                const auto& status = statuses[index];
+                json << "{";
+                json << "\"bucket\":\"" << json_escape(status.bucket) << "\",";
+                json << "\"connected\":" << (status.connected ? "true" : "false") << ",";
+                json << "\"last_poll_ms_ago\":" << status.last_poll_ms_ago << ",";
+                json << "\"last_reply_ms_ago\":" << status.last_reply_ms_ago;
+                json << "}";
+            }
+            json << "]";
+            json << "}";
+            response.set_content(json.str(), "application/json");
         });
 }
 
@@ -534,3 +581,5 @@ std::string RestServer::json_escape(const std::string& value) const {
 }
 
 }  // namespace kvr
+
+#endif  // KVR_REST_SERVER_DISABLED

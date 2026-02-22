@@ -5,6 +5,15 @@
 #include <string>
 #include <thread>
 
+#if defined(__clang__)
+    // estamos en clang (da igual lo que diga __GNUC__)
+#elif defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ <= 9)
+#define KVR_REST_SERVER_DISABLED 1
+#endif
+
+
+#ifndef KVR_REST_SERVER_DISABLED
+
 #include <httplib.h>
 
 namespace kvr {
@@ -39,3 +48,24 @@ private:
 };
 
 }  // namespace kvr
+
+#else  // KVR_REST_SERVER_DISABLED
+
+namespace kvr {
+
+class Kvr;
+
+class RestServer {
+public:
+    RestServer(Kvr&, const std::string&, uint16_t) {}
+    bool start() { return false; }
+    void stop() {}
+    const std::string& last_error() const { return mut_last_error_; }
+
+private:
+    std::string mut_last_error_;
+};
+
+}  // namespace kvr
+
+#endif  // KVR_REST_SERVER_DISABLED

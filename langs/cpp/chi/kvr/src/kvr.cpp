@@ -10,7 +10,7 @@
 namespace {
 
 struct StatementFinalizer {
-  explicit StatementFinalizer(sqlite3_stmt *mut_stmt) : mut_stmt(mut_stmt) {}
+  explicit StatementFinalizer(sqlite3_stmt *stmt) : mut_stmt(stmt) {}
   ~StatementFinalizer() {
     if (mut_stmt != nullptr) {
       sqlite3_finalize(mut_stmt);
@@ -25,6 +25,7 @@ constexpr uint8_t k_message_reset = 3;
 constexpr uint32_t k_max_message_size = 1024 * 1024;
 constexpr const char* k_meta_key = "__meta_info__";
 constexpr int k_poll_empty_streak_to_idle = 2;
+constexpr auto k_reconnect_interval = std::chrono::seconds(5);
 
 struct PollRecord {
   int64_t id;
@@ -129,10 +130,20 @@ Kvr::MetaInfo Kvr::parse_meta_info(const std::string& value) {
   return info;
 }
 
+std::string Kvr::endpoint_key(TcpSide tcp_side, const std::string& host,
+                              uint16_t port) {
+  return (tcp_side == TcpSide::server ? "s:" : "c:") + host + ":" +
+         std::to_string(static_cast<unsigned int>(port));
+}
+
 Kvr::Kvr(const std::string &db_path)
     : mut_db_(nullptr),
       mut_db_path_(db_path),
+      mut_in_transaction_(false),
       mut_started_(false) {
+  struct stat st;
+  const bool is_new_db = (stat(db_path.c_str(), &st) != 0) || st.st_size == 0;
+
   const auto result = sqlite3_open(db_path.c_str(), &mut_db_);
   if (result != SQLITE_OK) {
     set_last_error("Failed to open sqlite database.");
@@ -149,17 +160,25 @@ Kvr::Kvr(const std::string &db_path)
     set_last_error("Failed to set sqlite pragmas.");
   }
 
-  const auto wal_result = sqlite3_exec(mut_db_, "PRAGMA journal_mode = WAL;",
-                                       nullptr, nullptr, nullptr);
-  if (wal_result != SQLITE_OK) {
-    set_last_error("Failed to enable sqlite WAL.");
-  }
-
   const auto vacuum_result =
       sqlite3_exec(mut_db_, "PRAGMA auto_vacuum = INCREMENTAL;", nullptr,
                    nullptr, nullptr);
   if (vacuum_result != SQLITE_OK) {
     set_last_error("Failed to enable sqlite auto_vacuum.");
+  }
+
+  if (is_new_db) {
+    const auto full_vacuum_result =
+        sqlite3_exec(mut_db_, "VACUUM;", nullptr, nullptr, nullptr);
+    if (full_vacuum_result != SQLITE_OK) {
+      set_last_error("Failed to apply sqlite auto_vacuum.");
+    }
+  }
+
+  const auto wal_result = sqlite3_exec(mut_db_, "PRAGMA journal_mode = WAL;",
+                                       nullptr, nullptr, nullptr);
+  if (wal_result != SQLITE_OK) {
+    set_last_error("Failed to enable sqlite WAL.");
   }
 }
 
@@ -193,7 +212,7 @@ bool read_single_int64(sqlite3 *db, const std::string &sql, int64_t &out_value) 
 }  // namespace
 
 Kvr::~Kvr() {
-  stop();
+  stop_polling();
   if (mut_db_ != nullptr) {
     sqlite3_close(mut_db_);
     mut_db_ = nullptr;
@@ -298,7 +317,8 @@ bool Kvr::set(const std::string &bucket_name, const std::string &key,
   }
 
   const auto table = table_name(bucket_name);
-  if (!execute("BEGIN IMMEDIATE;")) {
+  bool owned_tx = false;
+  if (!begin_if_needed(owned_tx)) {
     return false;
   }
 
@@ -311,7 +331,10 @@ bool Kvr::set(const std::string &bucket_name, const std::string &key,
                                                  -1, &mut_update_stmt, nullptr);
   if (update_prepare != SQLITE_OK) {
     set_last_error("Failed to prepare set update.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
   const StatementFinalizer update_finalizer(mut_update_stmt);
@@ -320,7 +343,10 @@ bool Kvr::set(const std::string &bucket_name, const std::string &key,
   const auto update_step = sqlite3_step(mut_update_stmt);
   if (update_step != SQLITE_DONE) {
     set_last_error("Failed to execute set update.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
@@ -332,7 +358,10 @@ bool Kvr::set(const std::string &bucket_name, const std::string &key,
                                                  -1, &mut_insert_stmt, nullptr);
   if (insert_prepare != SQLITE_OK) {
     set_last_error("Failed to prepare set insert.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
   const StatementFinalizer insert_finalizer(mut_insert_stmt);
@@ -343,13 +372,20 @@ bool Kvr::set(const std::string &bucket_name, const std::string &key,
   const auto insert_step = sqlite3_step(mut_insert_stmt);
   if (insert_step != SQLITE_DONE) {
     set_last_error("Failed to execute set insert.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
-  if (!execute("COMMIT;")) {
-    execute("ROLLBACK;");
-    return false;
+  if (owned_tx) {
+    if (!execute("COMMIT;")) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+      return false;
+    }
+    mut_in_transaction_ = false;
   }
 
   enforce_max_deleted_per_key(bucket_name, key);
@@ -364,7 +400,8 @@ bool Kvr::del(const std::string &bucket_name, const std::string &key,
   }
 
   const auto table = table_name(bucket_name);
-  if (!execute("BEGIN IMMEDIATE;")) {
+  bool owned_tx = false;
+  if (!begin_if_needed(owned_tx)) {
     return false;
   }
 
@@ -378,7 +415,10 @@ bool Kvr::del(const std::string &bucket_name, const std::string &key,
       sqlite3_prepare_v2(mut_db_, sql.c_str(), -1, &mut_stmt, nullptr);
   if (prepare_result != SQLITE_OK) {
     set_last_error("Failed to prepare delete statement.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
   const StatementFinalizer finalizer(mut_stmt);
@@ -388,13 +428,19 @@ bool Kvr::del(const std::string &bucket_name, const std::string &key,
   const auto step_result = sqlite3_step(mut_stmt);
   if (step_result != SQLITE_DONE) {
     set_last_error("Failed to execute delete statement.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
   const auto changes = sqlite3_changes(mut_db_);
   if (changes <= 0) {
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
@@ -406,7 +452,10 @@ bool Kvr::del(const std::string &bucket_name, const std::string &key,
                                                  -1, &mut_insert_stmt, nullptr);
   if (insert_prepare != SQLITE_OK) {
     set_last_error("Failed to prepare delete insert.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
   const StatementFinalizer insert_finalizer(mut_insert_stmt);
@@ -417,13 +466,20 @@ bool Kvr::del(const std::string &bucket_name, const std::string &key,
   const auto insert_step = sqlite3_step(mut_insert_stmt);
   if (insert_step != SQLITE_DONE) {
     set_last_error("Failed to execute delete insert.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
-  if (!execute("COMMIT;")) {
-    execute("ROLLBACK;");
-    return false;
+  if (owned_tx) {
+    if (!execute("COMMIT;")) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+      return false;
+    }
+    mut_in_transaction_ = false;
   }
 
   enforce_max_deleted_per_key(bucket_name, key);
@@ -515,6 +571,54 @@ std::vector<Kvr::PollConfig> Kvr::list_poll_configs() const {
     result.push_back(config);
   }
   return result;
+}
+
+std::vector<Kvr::PollClientStatus> Kvr::list_poll_client_status() const {
+  const std::lock_guard<std::mutex> lock(mut_poll_mutex_);
+  std::vector<PollClientStatus> result;
+  const auto now = std::chrono::steady_clock::now();
+  for (const auto& connection : mut_connections_) {
+    if (connection == nullptr) {
+      continue;
+    }
+    const bool connected =
+        connection->mut_socket != nullptr && connection->mut_socket->is_open();
+    for (const auto& state : connection->mut_poll_client_states) {
+      PollClientStatus status;
+      status.bucket = state.name;
+      status.connected = connected;
+      if (state.last_poll_at == std::chrono::steady_clock::time_point()) {
+        status.last_poll_ms_ago = -1;
+      } else {
+        status.last_poll_ms_ago =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - state.last_poll_at)
+                .count();
+      }
+      if (state.last_reply_at == std::chrono::steady_clock::time_point()) {
+        status.last_reply_ms_ago = -1;
+      } else {
+        status.last_reply_ms_ago =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - state.last_reply_at)
+                .count();
+      }
+      result.push_back(std::move(status));
+    }
+  }
+  return result;
+}
+
+size_t Kvr::poll_connection_count() const {
+  const std::lock_guard<std::mutex> lock(mut_poll_mutex_);
+  size_t count = 0;
+  for (const auto& connection : mut_connections_) {
+    if (connection != nullptr && connection->mut_socket != nullptr &&
+        connection->mut_socket->is_open()) {
+      ++count;
+    }
+  }
+  return count;
 }
 
 int64_t Kvr::last_id_for_bucket(const std::string &bucket_name) {
@@ -660,6 +764,103 @@ Kvr::DbSize Kvr::db_size() const {
   return result;
 }
 
+bool Kvr::begin_transaction() {
+  const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
+  if (mut_in_transaction_) {
+    return true;
+  }
+  bool owned_tx = false;
+  if (!begin_if_needed(owned_tx)) {
+    return false;
+  }
+  mut_in_transaction_ = true;
+  return true;
+}
+
+bool Kvr::commit_transaction() {
+  const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
+  if (!mut_in_transaction_) {
+    set_last_error("No active transaction.");
+    return false;
+  }
+  if (!execute("COMMIT;")) {
+    execute("ROLLBACK;");
+    mut_in_transaction_ = false;
+    return false;
+  }
+  mut_in_transaction_ = false;
+  return true;
+}
+
+bool Kvr::rollback_transaction() {
+  const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
+  if (!mut_in_transaction_) {
+    set_last_error("No active transaction.");
+    return false;
+  }
+  if (!execute("ROLLBACK;")) {
+    return false;
+  }
+  mut_in_transaction_ = false;
+  return true;
+}
+
+bool Kvr::begin_if_needed(bool& owned_tx) {
+  if (mut_in_transaction_) {
+    owned_tx = false;
+    return true;
+  }
+  if (!execute("BEGIN IMMEDIATE;")) {
+    return false;
+  }
+  mut_in_transaction_ = true;
+  owned_tx = true;
+  return true;
+}
+
+void Kvr::schedule_reconnect(TcpSide tcp_side, const std::string& host,
+                             uint16_t port) {
+  if (!mut_started_ || mut_io_context_ == nullptr) {
+    return;
+  }
+
+  const auto key = endpoint_key(tcp_side, host, port);
+  {
+    const std::lock_guard<std::mutex> poll_lock(mut_poll_mutex_);
+    if (mut_reconnect_timers_.find(key) != mut_reconnect_timers_.end()) {
+      return;
+    }
+    auto timer = std::make_unique<asio::steady_timer>(*mut_io_context_);
+    timer->expires_after(k_reconnect_interval);
+    auto* timer_ptr = timer.get();
+    mut_reconnect_timers_[key] = std::move(timer);
+
+    timer_ptr->async_wait([this, key, tcp_side, host, port](const asio::error_code& ec) {
+      if (ec) {
+        return;
+      }
+      {
+        const std::lock_guard<std::mutex> timer_lock(mut_poll_mutex_);
+        mut_reconnect_timers_.erase(key);
+      }
+      if (!mut_started_) {
+        return;
+      }
+      PollEndpoint* endpoint = nullptr;
+      {
+        const std::lock_guard<std::mutex> endpoint_lock(mut_poll_mutex_);
+        endpoint = find_poll_endpoint(tcp_side, host, port);
+        if (endpoint == nullptr || endpoint->mut_active) {
+          endpoint = nullptr;
+        }
+      }
+      if (endpoint != nullptr) {
+        start_connect(*endpoint);
+      }
+    });
+  }
+}
+
 bool Kvr::incremental_vacuum(int64_t pages) {
   const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
   if (mut_db_ == nullptr) {
@@ -685,6 +886,25 @@ bool Kvr::incremental_vacuum(int64_t pages) {
   return true;
 }
 
+bool Kvr::compact_full() {
+  const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
+  if (mut_db_ == nullptr) {
+    set_last_error("Database is not open.");
+    return false;
+  }
+  if (mut_in_transaction_) {
+    set_last_error("Cannot run full compact inside an active transaction.");
+    return false;
+  }
+
+  const auto result = sqlite3_exec(mut_db_, "VACUUM;", nullptr, nullptr, nullptr);
+  if (result != SQLITE_OK) {
+    set_last_error("Failed to run full compact.");
+    return false;
+  }
+  return true;
+}
+
 bool Kvr::optimize() {
   const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
   if (mut_db_ == nullptr) {
@@ -696,6 +916,22 @@ bool Kvr::optimize() {
       sqlite3_exec(mut_db_, "PRAGMA optimize;", nullptr, nullptr, nullptr);
   if (result != SQLITE_OK) {
     set_last_error("Failed to run sqlite optimize.");
+    return false;
+  }
+  return true;
+}
+
+bool Kvr::wal_checkpoint() {
+  const std::lock_guard<std::recursive_mutex> lock(mut_db_mutex_);
+  if (mut_db_ == nullptr) {
+    set_last_error("Database is not open.");
+    return false;
+  }
+
+  const auto result = sqlite3_exec(mut_db_, "PRAGMA wal_checkpoint(TRUNCATE);",
+                                   nullptr, nullptr, nullptr);
+  if (result != SQLITE_OK) {
+    set_last_error("Failed to run wal checkpoint.");
     return false;
   }
   return true;
@@ -754,7 +990,9 @@ void Kvr::enforce_max_deleted_per_key(const std::string& bucket_name,
   const auto table = table_name(bucket_name);
   if (info.max_deleted_per_key == 0) {
     const auto sql = "DELETE FROM \"" + table +
-                     "\" WHERE key = ? AND deleted_at != 0;";
+                     "\" WHERE key = ? AND deleted_at != 0 "
+                     "AND id != (SELECT COALESCE(MIN(id), 0) FROM \"" +
+                     table + "\");";
     sqlite3_stmt* mut_stmt = nullptr;
     const auto prepare_result =
         sqlite3_prepare_v2(mut_db_, sql.c_str(), -1, &mut_stmt, nullptr);
@@ -769,7 +1007,10 @@ void Kvr::enforce_max_deleted_per_key(const std::string& bucket_name,
   }
 
   const auto sql = "DELETE FROM \"" + table +
-                   "\" WHERE key = ? AND deleted_at != 0 AND id NOT IN ("
+                   "\" WHERE key = ? AND deleted_at != 0 "
+                   "AND id != (SELECT COALESCE(MIN(id), 0) FROM \"" +
+                   table +
+                   "\") AND id NOT IN ("
                    "SELECT id FROM \"" +
                    table +
                    "\" WHERE key = ? AND deleted_at != 0 "
@@ -835,7 +1076,7 @@ void Kvr::add_poll_client(const std::string &bucket_name, TcpSide tcp_side,
   }
 }
 
-bool Kvr::start() {
+bool Kvr::start_polling() {
   if (mut_started_) {
     return true;
   }
@@ -867,7 +1108,7 @@ bool Kvr::start() {
   return result;
 }
 
-void Kvr::stop() {
+void Kvr::stop_polling() {
   if (!mut_started_) {
     return;
   }
@@ -1075,13 +1316,17 @@ bool Kvr::start_acceptor(PollEndpoint &endpoint) {
   *mut_accept_loop = [this, mut_acceptor_ptr,
                       poll_server = endpoint.mut_poll_server_buckets,
                       poll_client = endpoint.mut_poll_client_buckets,
+                      host = endpoint.host, port = endpoint.port,
                       mut_accept_loop]() {
     auto mut_socket = std::make_shared<asio::ip::tcp::socket>(*mut_io_context_);
     mut_acceptor_ptr->async_accept(
         *mut_socket, [this, poll_server, poll_client, mut_socket,
-                      mut_accept_loop](const asio::error_code &ec) {
+                      host, port, mut_accept_loop](const asio::error_code &ec) {
           if (!ec) {
             auto connection = std::make_shared<PollConnection>();
+            connection->tcp_side = TcpSide::server;
+            connection->host = host;
+            connection->port = port;
             connection->mut_socket = mut_socket;
             connection->mut_poll_server_buckets = poll_server;
             std::vector<PollClientState> client_states;
@@ -1126,7 +1371,7 @@ bool Kvr::start_connect(PollEndpoint &endpoint) {
   auto mut_socket = std::make_shared<asio::ip::tcp::socket>(*mut_io_context_);
   auto mut_resolver =
       std::make_shared<asio::ip::tcp::resolver>(*mut_io_context_);
-  const auto port_string = std::to_string(endpoint.port);
+  const auto port_string = std::to_string(static_cast<unsigned int>(endpoint.port));
   mut_resolver->async_resolve(
       endpoint.host, port_string,
       [this, mut_socket, mut_resolver,
@@ -1139,6 +1384,10 @@ bool Kvr::start_connect(PollEndpoint &endpoint) {
           set_last_error("Failed to resolve TCP client host.");
           if (endpoint_ptr != nullptr) {
             endpoint_ptr->mut_active = false;
+          }
+          if (endpoint_ptr != nullptr) {
+            schedule_reconnect(TcpSide::client, endpoint_ptr->host,
+                               endpoint_ptr->port);
           }
           return;
         }
@@ -1153,9 +1402,18 @@ bool Kvr::start_connect(PollEndpoint &endpoint) {
                 if (endpoint_ptr != nullptr) {
                   endpoint_ptr->mut_active = false;
                 }
+                if (endpoint_ptr != nullptr) {
+                  schedule_reconnect(TcpSide::client, endpoint_ptr->host,
+                                     endpoint_ptr->port);
+                }
                 return;
               }
               auto connection = std::make_shared<PollConnection>();
+              connection->tcp_side = TcpSide::client;
+              if (endpoint_ptr != nullptr) {
+                connection->host = endpoint_ptr->host;
+                connection->port = endpoint_ptr->port;
+              }
               connection->mut_socket = mut_socket;
               connection->mut_poll_server_buckets = poll_server;
               std::vector<PollClientState> client_states;
@@ -1214,22 +1472,24 @@ void Kvr::schedule_poll(const std::shared_ptr<PollConnection> &connection,
         }
 
         if (index < connection->mut_poll_client_states.size()) {
-          auto &state = connection->mut_poll_client_states[index];
-          if (state.had_reply_since_last_poll) {
-            state.empty_poll_streak = 0;
-            state.using_active = true;
-          } else if (state.using_active) {
-            state.empty_poll_streak += 1;
-            if (state.empty_poll_streak >= k_poll_empty_streak_to_idle) {
-              state.using_active = false;
-              state.empty_poll_streak = 0;
+          auto &poll_state = connection->mut_poll_client_states[index];
+          if (poll_state.had_reply_since_last_poll) {
+            poll_state.empty_poll_streak = 0;
+            poll_state.using_active = true;
+          } else if (poll_state.using_active) {
+            poll_state.empty_poll_streak += 1;
+            if (poll_state.empty_poll_streak >= k_poll_empty_streak_to_idle) {
+              poll_state.using_active = false;
+              poll_state.empty_poll_streak = 0;
             }
           }
 
-          state.current_interval =
-              state.using_active ? state.active_interval : state.idle_interval;
-          state.had_reply_since_last_poll = false;
-          send_poll(connection, state.name, state.max_records_per_poll);
+          poll_state.current_interval = poll_state.using_active
+                                            ? poll_state.active_interval
+                                            : poll_state.idle_interval;
+          poll_state.had_reply_since_last_poll = false;
+          poll_state.last_poll_at = std::chrono::steady_clock::now();
+          send_poll(connection, poll_state.name, poll_state.max_records_per_poll);
         }
 
         schedule_poll(connection, index);
@@ -1245,6 +1505,7 @@ void Kvr::start_reading(const std::shared_ptr<PollConnection> &connection) {
       *connection->mut_socket, asio::buffer(connection->mut_header),
       [this, connection](const asio::error_code &ec, std::size_t) {
         if (ec) {
+          handle_disconnect(connection);
           return;
         }
 
@@ -1262,12 +1523,32 @@ void Kvr::start_reading(const std::shared_ptr<PollConnection> &connection) {
             *connection->mut_socket, asio::buffer(connection->mut_body),
             [this, connection](const asio::error_code &body_ec, std::size_t) {
               if (body_ec) {
+                handle_disconnect(connection);
                 return;
               }
               handle_message(connection);
               start_reading(connection);
             });
       });
+}
+
+void Kvr::handle_disconnect(const std::shared_ptr<PollConnection> &connection) {
+  if (connection == nullptr || connection->mut_socket == nullptr) {
+    return;
+  }
+  asio::error_code mut_ec;
+  connection->mut_socket->close(mut_ec);
+
+  if (connection->tcp_side == TcpSide::client) {
+    {
+      const std::lock_guard<std::mutex> endpoint_lock(mut_poll_mutex_);
+      auto* endpoint = find_poll_endpoint(connection->tcp_side, connection->host, connection->port);
+      if (endpoint != nullptr) {
+        endpoint->mut_active = false;
+      }
+    }
+    schedule_reconnect(TcpSide::client, connection->host, connection->port);
+  }
 }
 
 void Kvr::handle_message(const std::shared_ptr<PollConnection> &connection) {
@@ -1467,6 +1748,7 @@ void Kvr::handle_message(const std::shared_ptr<PollConnection> &connection) {
           });
       if (it != connection->mut_poll_client_states.end()) {
         it->had_reply_since_last_poll = true;
+        it->last_reply_at = std::chrono::steady_clock::now();
       }
     }
     return;
@@ -1653,7 +1935,8 @@ bool Kvr::apply_reply(const std::string &bucket_name, int64_t id,
   }
 
   const auto table = table_name(bucket_name);
-  if (!execute("BEGIN IMMEDIATE;")) {
+  bool owned_tx = false;
+  if (!begin_if_needed(owned_tx)) {
     return false;
   }
 
@@ -1666,7 +1949,10 @@ bool Kvr::apply_reply(const std::string &bucket_name, int64_t id,
                                                  -1, &mut_delete_stmt, nullptr);
   if (delete_prepare != SQLITE_OK) {
     set_last_error("Failed to prepare reply delete.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
   const StatementFinalizer delete_finalizer(mut_delete_stmt);
@@ -1676,7 +1962,10 @@ bool Kvr::apply_reply(const std::string &bucket_name, int64_t id,
   const auto delete_step = sqlite3_step(mut_delete_stmt);
   if (delete_step != SQLITE_DONE) {
     set_last_error("Failed to execute reply delete.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
@@ -1706,13 +1995,20 @@ bool Kvr::apply_reply(const std::string &bucket_name, int64_t id,
   const auto step_result = sqlite3_step(mut_stmt);
   if (step_result != SQLITE_DONE) {
     set_last_error("Failed to apply reply.");
-    execute("ROLLBACK;");
+    if (owned_tx) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+    }
     return false;
   }
 
-  if (!execute("COMMIT;")) {
-    execute("ROLLBACK;");
-    return false;
+  if (owned_tx) {
+    if (!execute("COMMIT;")) {
+      execute("ROLLBACK;");
+      mut_in_transaction_ = false;
+      return false;
+    }
+    mut_in_transaction_ = false;
   }
 
   if (is_meta_key(key)) {

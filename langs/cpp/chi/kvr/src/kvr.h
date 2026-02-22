@@ -26,8 +26,8 @@ template <typename T>
 class Optional {
 public:
     Optional() : has_value_(false), value_() {}
-    Optional(const T& value) : has_value_(true), value_(value) {}
-    Optional(T&& value) : has_value_(true), value_(std::move(value)) {}
+    Optional(const T& v) : has_value_(true), value_(v) {}
+    Optional(T&& v) : has_value_(true), value_(std::move(v)) {}
 
     bool has_value() const { return has_value_; }
     explicit operator bool() const { return has_value_; }
@@ -72,9 +72,17 @@ public:
         std::vector<PollServerBucketConfig> poll_server_buckets;
         std::vector<PollClientBucketConfig> poll_client_buckets;
     };
+    struct PollClientStatus {
+        std::string bucket;
+        bool connected;
+        int64_t last_poll_ms_ago;
+        int64_t last_reply_ms_ago;
+    };
 
     std::vector<std::string> list_buckets();
     std::vector<PollConfig> list_poll_configs() const;
+    std::vector<PollClientStatus> list_poll_client_status() const;
+    size_t poll_connection_count() const;
     int64_t last_id_for_bucket(const std::string& bucket_name);
     struct KeyListResult {
         std::vector<std::string> keys;
@@ -115,7 +123,12 @@ public:
         int64_t start = 0, int64_t limit = 50);
     DbSize db_size() const;
     bool incremental_vacuum(int64_t pages = 0);
+    bool compact_full();
     bool optimize();
+    bool wal_checkpoint();
+    bool begin_transaction();
+    bool commit_transaction();
+    bool rollback_transaction();
     bool set_meta_info(const std::string& bucket_name, const MetaInfo& info);
     MetaInfo get_meta_info(const std::string& bucket_name);
 
@@ -124,11 +137,11 @@ public:
         uint32_t poll_max_reply_records_count = 10);
     void add_poll_client(const std::string& bucket_name, TcpSide tcp_side,
         const std::string& host, uint16_t port,
-        std::chrono::milliseconds poll_interval = std::chrono::seconds(1),
-        std::chrono::milliseconds poll_interval_active = std::chrono::milliseconds(0),
+        std::chrono::milliseconds poll_interval = std::chrono::seconds(10),
+        std::chrono::milliseconds poll_interval_active = std::chrono::milliseconds(1000),
         uint32_t max_records_per_poll = 3);
-    bool start();
-    void stop();
+    bool start_polling();
+    void stop_polling();
 
     const std::string& last_error() const;
 
@@ -155,11 +168,16 @@ private:
         bool using_active;
         int empty_poll_streak;
         bool had_reply_since_last_poll;
+        std::chrono::steady_clock::time_point last_poll_at;
+        std::chrono::steady_clock::time_point last_reply_at;
         uint32_t max_records_per_poll;
         std::unique_ptr<asio::steady_timer> mut_timer;
     };
 
     struct PollConnection {
+        TcpSide tcp_side;
+        std::string host;
+        uint16_t port;
         std::shared_ptr<asio::ip::tcp::socket> mut_socket;
         std::vector<PollServerBucketConfig> mut_poll_server_buckets;
         std::vector<PollClientState> mut_poll_client_states;
@@ -178,6 +196,7 @@ private:
     void start_polling(const std::shared_ptr<PollConnection>& connection);
     void schedule_poll(const std::shared_ptr<PollConnection>& connection, size_t index);
     void start_reading(const std::shared_ptr<PollConnection>& connection);
+    void handle_disconnect(const std::shared_ptr<PollConnection>& connection);
     void handle_message(const std::shared_ptr<PollConnection>& connection);
     void send_poll(const std::shared_ptr<PollConnection>& connection, const std::string& bucket_name,
         uint32_t max_records_per_poll);
@@ -193,6 +212,9 @@ private:
     MetaInfo get_meta_info_locked(const std::string& bucket_name);
     static std::string serialize_meta_info(const MetaInfo& info);
     static MetaInfo parse_meta_info(const std::string& value);
+    void schedule_reconnect(TcpSide tcp_side, const std::string& host, uint16_t port);
+    static std::string endpoint_key(TcpSide tcp_side, const std::string& host, uint16_t port);
+    bool begin_if_needed(bool& owned_tx);
 
     sqlite3* mut_db_;
     std::string mut_db_path_;
@@ -200,6 +222,7 @@ private:
     std::string mut_last_error_;
     std::unordered_set<std::string> mut_ensured_buckets_;
     std::unordered_map<std::string, MetaInfo> mut_meta_info_;
+    bool mut_in_transaction_;
     mutable std::mutex mut_poll_mutex_;
 
     std::vector<PollEndpoint> mut_poll_endpoints_;
@@ -207,6 +230,7 @@ private:
     std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> mut_work_guard_;
     std::vector<std::unique_ptr<asio::ip::tcp::acceptor>> mut_acceptors_;
     std::vector<std::shared_ptr<PollConnection>> mut_connections_;
+    std::unordered_map<std::string, std::unique_ptr<asio::steady_timer>> mut_reconnect_timers_;
     std::thread mut_io_thread_;
     bool mut_started_;
 };

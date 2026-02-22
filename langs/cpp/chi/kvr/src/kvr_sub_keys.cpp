@@ -6,7 +6,7 @@ namespace kvr {
 namespace {
 
 struct StatementFinalizer {
-    explicit StatementFinalizer(sqlite3_stmt* mut_stmt) : mut_stmt(mut_stmt) {}
+    explicit StatementFinalizer(sqlite3_stmt* stmt) : mut_stmt(stmt) {}
     ~StatementFinalizer() {
         if (mut_stmt != nullptr) {
             sqlite3_finalize(mut_stmt);
